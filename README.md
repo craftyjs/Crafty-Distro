@@ -1,1 +1,1 @@
-A branch for distributing Crafty development builds
+built from commit bc11250 (Mon Apr 6 19:34:12 2015) of 'develop' branch
