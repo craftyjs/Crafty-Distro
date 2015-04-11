@@ -1029,8 +1029,6 @@ Crafty.c("Keyboard", {
  * @see Motion
  */
 Crafty.c("Multiway", {
-    _speed: 3,
-
     init: function () {
         this.requires("Motion");
 
@@ -1173,8 +1171,8 @@ Crafty.c("Multiway", {
             direction = this._keyDirection[keyCode];
             // add new data
             this._directionSpeed[direction] = {
-                x: this.__convertPixelsToMeters(Math.round(Math.cos(direction * (Math.PI / 180)) * 1000 * speed.x) / 1000),
-                y: this.__convertPixelsToMeters(Math.round(Math.sin(direction * (Math.PI / 180)) * 1000 * speed.y) / 1000)
+                x: Math.round(Math.cos(direction * (Math.PI / 180)) * 1000 * speed.x) / 1000,
+                y: Math.round(Math.sin(direction * (Math.PI / 180)) * 1000 * speed.y) / 1000
             };
         }
     },
@@ -1261,7 +1259,7 @@ Crafty.c("Fourway", {
     /**@
      * #.fourway
      * @comp Fourway
-     * @sign public this .fourway(Number speed)
+     * @sign public this .fourway([Number speed])
      * @param speed - Amount of pixels to move the entity whilst a key is down
      *
      * Constructor to initialize the speed. Component will listen for key events and move the entity appropriately.
@@ -1272,7 +1270,7 @@ Crafty.c("Fourway", {
      * @see Multiway, Motion
      */
     fourway: function (speed) {
-        this.multiway(speed, {
+        this.multiway(speed || this._speed, {
             UP_ARROW: -90,
             DOWN_ARROW: 90,
             RIGHT_ARROW: 0,
@@ -1301,7 +1299,8 @@ Crafty.c("Fourway", {
  * @see Gravity, Multiway, Fourway, Motion
  */
 Crafty.c("Twoway", {
-    _speed: 3,
+    _jumpSpeed: 6,
+
     /**@
      * #.canJump
      * @comp Twoway
@@ -1313,11 +1312,15 @@ Crafty.c("Twoway", {
      * @example
      * ~~~
      * var player = Crafty.e("2D, Twoway");
+     * player.hasDoubleJumpPowerUp = true; // allow player to double jump by granting him a powerup
      * player.bind("CheckJumping", function(ground) {
-     *    if (!ground && player.hasDoubleJumpPowerUp) { // custom behaviour
-     *       player.hasDoubleJumpPowerUp = false;
-     *       player.canJump = true;
-     *    }
+     *     if (!ground && player.hasDoubleJumpPowerUp) { // allow player to double jump by using up his double jump powerup
+     *         player.canJump = true;
+     *         player.hasDoubleJumpPowerUp = false;
+     *     }
+     * });
+     * player.bind("LandedOnGround", function(ground) {
+     *     player.hasDoubleJumpPowerUp = true; // give player new double jump powerup upon landing
      * });
      * ~~~
      */
@@ -1327,10 +1330,27 @@ Crafty.c("Twoway", {
         this.requires("Fourway, Motion, Supportable");
     },
 
+    remove: function() {
+        this.unbind("KeyDown", this._keydown_twoway);
+    },
+
+    _keydown_twoway: function (e) {
+        if (this.disableControls) return;
+
+        if (e.key === Crafty.keys.UP_ARROW || e.key === Crafty.keys.W || e.key === Crafty.keys.Z) {
+            var ground = this.ground;
+            this.canJump = !!ground;
+            this.trigger("CheckJumping", ground);
+            if (this.canJump) {
+                this.vy = -this._jumpSpeed;
+            }
+        }
+    },
+
     /**@
      * #.twoway
      * @comp Twoway
-     * @sign public this .twoway(Number speed[, Number jump])
+     * @sign public this .twoway([Number speed[, Number jump]])
      * @param speed - Amount of pixels to move left or right
      * @param jump - Vertical jump speed
      *
@@ -1346,7 +1366,7 @@ Crafty.c("Twoway", {
      */
     twoway: function (speed, jump) {
 
-        this.multiway(speed, {
+        this.multiway(speed || this._speed, {
             RIGHT_ARROW: 0,
             LEFT_ARROW: 180,
             D: 0,
@@ -1354,25 +1374,12 @@ Crafty.c("Twoway", {
             Q: 180
         });
 
-        if (speed) this._speed = speed;
         if (arguments.length < 2) {
-          this._jumpSpeed = this.__convertPixelsToMeters(this._speed * 2);
+          this._jumpSpeed = this._speed.y * 2;
         } else {
-          this._jumpSpeed = this.__convertPixelsToMeters(jump);
+          this._jumpSpeed = jump;
         }
-
-        var ground;
-        this.bind("KeyDown", function (e) {
-            if (this.disableControls) return;
-            if (e.key === Crafty.keys.UP_ARROW || e.key === Crafty.keys.W || e.key === Crafty.keys.Z) {
-                ground = this.ground();
-                this.canJump = !!ground;
-                this.trigger("CheckJumping", ground);
-                if (this.canJump) {
-                    this.vy = -this._jumpSpeed;
-                }
-            }
-        });
+        this.uniqueBind("KeyDown", this._keydown_twoway);
 
         return this;
     }
@@ -3436,6 +3443,7 @@ Crafty.extend({
              * Returns the target frames per second. This is not an actual frame rate.
              * @sign public void Crafty.timer.FPS(Number value)
              * @param value - the target rate
+             * @trigger FPSChange - Triggered when the target FPS is changed by user - Number - new target FPS
              * Sets the target frames per second. This is not an actual frame rate.
              * The default rate is 50.
              */
@@ -3445,6 +3453,7 @@ Crafty.extend({
                 else {
                     FPS = value;
                     milliSecPerFrame = 1000 / FPS;
+                    Crafty.trigger("FPSChange", value);
                 }
             },
 
@@ -11983,10 +11992,17 @@ Crafty.c("2D", {
  * @trigger CheckLanding - When entity is about to land. This event is triggered with the object the entity is about to land on. Third parties can respond to this event and prevent the entity from being able to land.
  *
  * Component that detects if the entity collides with the ground. This component is automatically added and managed by the Gravity component.
- * The appropriate events are fired when the entity state changes (lands on ground / lifts off ground). The current state can also be accessed with .ground().
+ * The appropriate events are fired when the entity state changes (lands on ground / lifts off ground). The current ground entity can also be accessed with `.ground`.
  */
 Crafty.c("Supportable", {
-    _ground: false,
+    /**@
+     * #.ground
+     * @comp Supportable
+     *
+     * Access the ground entity (which may be the actual ground entity if it exists, or `null` if it doesn't exist) and thus whether this entity is currently on the ground or not. 
+     * The ground entity is also available through the events, when the ground entity changes.
+     */
+    _ground: null,
     _groundComp: null,
 
     /**@
@@ -12001,8 +12017,9 @@ Crafty.c("Supportable", {
      * ~~~
      * var player = Crafty.e("2D, Gravity");
      * player.bind("CheckLanding", function(ground) {
-     *     if (player.isAirplane) // custom behaviour
+     *     if (player.y + player.h > ground.y + player.vy) { // forbid landing, if player's feet are not above ground
      *         player.canLand = false;
+     *     }
      * });
      * ~~~
      */
@@ -12010,7 +12027,8 @@ Crafty.c("Supportable", {
 
     init: function () {
         this.requires("2D");
-        this.__pos = {_x: 0, _y: 0, _w: 0, _h: 0};
+        this.__area = {_x: 0, _y: 0, _w: 0, _h: 0};
+        this.defineField("ground", function() { return this._ground; }, function(newValue) {});
     },
     remove: function(destroyed) {
         this.unbind("EnterFrame", this._detectGroundTick);
@@ -12059,55 +12077,55 @@ Crafty.c("Supportable", {
 
         return this;
     },
-    /**@
-     * #.ground
-     * @comp Supportable
-     * @sign public Object|false .ground()
-     * @return the ground entity if this entity is currently on the ground or false if this entity is not currently on the ground
-     * 
-     * Determine the ground entity and thus whether this entity is currently on the ground or not. 
-     * The information is also available through the events, when the state changes.
-     */
-    ground: function() {
-        return this._ground;
-    },
+
     _detectGroundTick: function() {
-        var obj, hit = false,
-            q, i = 0, l;
+        var groundComp = this._groundComp,
+            ground = this._ground,
+            overlap = Crafty.rectManager.overlap;
 
-        var pos = this.__pos;
-            pos._x = this._x;
-            pos._y = this._y + 1; //Increase by 1 to make sure map.search() finds the floor
-            pos._w = this._w;
-            pos._h = this._h;
+        var pos = this._cbr || this._mbr || this,
+            area = this.__area;
+        area._x = pos._x;
+        area._y = pos._y + 1; // Increase by 1 to make sure map.search() finds the floor
+        area._w = pos._w;
+        area._h = pos._h;
         // Decrease width by 1px from left and 1px from right, to fall more gracefully
-        // pos._x++; pos._w--;
-        
+        // area._x++; area._w--;
 
-        q = Crafty.map.search(pos);
-        l = q.length;
-        for (; i < l; ++i) {
-            obj = q[i];
-            //check for an intersection directly below the player
-            if (obj !== this && obj.has(this._groundComp) && obj.intersect(pos)) {
-                hit = obj;
-                break;
+        if (ground) {
+            var garea = ground._cbr || ground._mbr || ground;
+            if (!(ground.__c[groundComp] && overlap(garea, area))) {
+                this._ground = null;
+                this.trigger("LiftedOffGround", ground); // no collision with ground was detected for first time
+                ground = null;
             }
         }
 
+        if (!ground) {
+            var hit = false, obj, oarea,
+                results = Crafty.map.search(area, false),
+                i = 0,
+                l = results.length;
 
-        if (hit && !this._ground) { // collision with ground was detected for first time
-            this.canLand = true;
-            this.trigger("CheckLanding", hit); // is entity allowed to land?
-            if (this.canLand) {
-                this._ground = hit;
-                this.y = hit._y - this._h; // snap entity to ground object
-                this.trigger("LandedOnGround", this._ground);
+            for (; i < l; ++i) {
+                obj = results[i];
+                oarea = obj._cbr || obj._mbr || obj;
+                // check for an intersection with the player
+                if (obj !== this && obj.__c[groundComp] && overlap(oarea, area)) {
+                    hit = obj;
+                    break;
+                }
             }
-        } else if (!hit && this._ground) { // no collision with ground was detected for first time
-            var ground = this._ground;
-            this._ground = false;
-            this.trigger("LiftedOffGround", ground);
+
+            if (hit) {
+                this.canLand = true;
+                this.trigger("CheckLanding", hit); // is entity allowed to land?
+                if (this.canLand) {
+                    this._ground = ground = hit;
+                    this.y = hit._y - this._h; // snap entity to ground object
+                    this.trigger("LandedOnGround", ground); // collision with ground was detected for first time
+                }
+            }
         }
     }
 });
@@ -12157,9 +12175,10 @@ Crafty.c("GroundAttacher", {
  * @see Supportable, Motion
  */
 Crafty.c("Gravity", {
+    _gravityConst: 0.2,
+
     init: function () {
         this.requires("2D, Supportable, Motion");
-        this._gravityConst = this.__convertPixelsToMeters(9.81);
 
         this.bind("LiftedOffGround", this._startGravity); // start gravity if we are off ground
         this.bind("LandedOnGround", this._stopGravity); // stop gravity once landed
@@ -12223,7 +12242,7 @@ Crafty.c("Gravity", {
      * @sign public this .gravityConst(g)
      * @param g - gravitational constant
      *
-     * Set the gravitational constant to g. The default is 9.81 . The greater g, the faster the object falls.
+     * Set the gravitational constant to g. The default is 0.2 . The greater g, the faster the object falls.
      *
      * @example
      * ~~~
@@ -12235,21 +12254,22 @@ Crafty.c("Gravity", {
      * ~~~
      */
     gravityConst: function (g) {
-        var newGravityConst = this.__convertPixelsToMeters(g);
-        if (!this.ground()) { // gravity active, change acceleration
+        if (this._gravityActive) { // gravity active, change acceleration
             this.ay -= this._gravityConst;
-            this.ay += newGravityConst;
+            this.ay += g;
         }
-        this._gravityConst = newGravityConst;
+        this._gravityConst = g;
 
         return this;
     },
     _startGravity: function() {
+        this._gravityActive = true;
         this.ay += this._gravityConst;
     },
     _stopGravity: function() {
         this.ay = 0;
         this.vy = 0;
+        this._gravityActive = false;
     }
 });
 
@@ -12310,6 +12330,7 @@ var __motionVector = function(self, prefix, setter, vector) {
  * @trigger MotionChange - When a motion property has changed a MotionChange event is triggered. - { key: String, oldValue: Number } - Motion property name and old value
  *
  * Component that allows rotating an entity by applying angular velocity and acceleration.
+ * All angular motion values are expressed in degrees per frame (e.g. an entity with `vrotation` of 10 will rotate 10 degrees each frame).
  */
 Crafty.c("AngularMotion", {
     /**@
@@ -12373,9 +12394,16 @@ Crafty.c("AngularMotion", {
         this.__oldRevolution = 0;
 
         this.bind("EnterFrame", this._angularMotionTick);
+        this.bind("FPSChange", this._angularChangeFPS);
+        this._angularChangeFPS(Crafty.timer.FPS());
     },
     remove: function(destroyed) {
         this.unbind("EnterFrame", this._angularMotionTick);
+        this.unbind("FPSChange", this._angularChangeFPS);
+    },
+
+    _angularChangeFPS: function(fps) {
+        this._dtFactor = fps / 1000;
     },
 
     /**@
@@ -12399,7 +12427,7 @@ Crafty.c("AngularMotion", {
      * v += a * Δt
      */
     _angularMotionTick: function(frameData) {
-        var dt = frameData.dt/1000;
+        var dt = frameData.dt * this._dtFactor;
 
         var _vr = this._vrotation,
             dvr = _vr >> 31 | -_vr >>> 31; // Math.sign(this._vrotation)
@@ -12434,15 +12462,9 @@ Crafty.c("AngularMotion", {
  * @trigger MotionChange - When a motion property has changed a MotionChange event is triggered. - { key: String, oldValue: Number } - Motion property name and old value
  *
  * Component that allows moving an entity by applying linear velocity and acceleration.
+ * All linear motion values are expressed in pixels per frame (e.g. an entity with `vx` of 1 will move 1px on the x axis each frame).
  */
 Crafty.c("Motion", {
-    /*
-     * Utility function which converts the input argument `pixels` into `meters`.
-     */
-    __convertPixelsToMeters: function(pixels) {
-        return pixels * 100;
-    },
-
     /**@
      * #.vx
      * @comp Motion
@@ -12563,9 +12585,16 @@ Crafty.c("Motion", {
         this.__oldDirection = {x: 0, y: 0};
 
         this.bind("EnterFrame", this._linearMotionTick);
+        this.bind("FPSChange", this._linearChangeFPS);
+        this._linearChangeFPS(Crafty.timer.FPS());
     },
     remove: function(destroyed) {
         this.unbind("EnterFrame", this._linearMotionTick);
+        this.unbind("FPSChange", this._linearChangeFPS);
+    },
+
+    _linearChangeFPS: function(fps) {
+        this._dtFactor = fps / 1000;
     },
 
     /**@
@@ -12660,7 +12689,7 @@ Crafty.c("Motion", {
      * v += a * Δt
      */
     _linearMotionTick: function(frameData) {
-        var dt = frameData.dt/1000;
+        var dt = frameData.dt * this._dtFactor;
 
         var oldDirection = this.__oldDirection;
         var _vx = this._vx, dvx = _vx >> 31 | -_vx >>> 31, // Math.sign(this._vx)
