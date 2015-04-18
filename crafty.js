@@ -10164,7 +10164,9 @@ Crafty.extend({
     /**@
      * #Crafty.diamondIso
      * @category 2D
-     * Place entities in a 45deg diamond isometric fashion. It is similar to isometric but has another grid locations
+     * Place entities in a 45deg diamond isometric fashion. It is similar to Crafty.isometric but has another grid locations
+     * In this mode, the x axis and y axis are aligned to the edges of tiles with x increasing being down and to the
+     * right and y being down and to the left.
      */
     diamondIso: {
         _tile: {
@@ -10319,6 +10321,7 @@ Crafty.extend({
 
     }
 });
+
 },{"../core/core.js":6}],34:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
@@ -10327,7 +10330,10 @@ Crafty.extend({
     /**@
      * #Crafty.isometric
      * @category 2D
-     * Place entities in a 45deg isometric fashion.
+     * Place entities in a 45deg isometric fashion. The alignment of this
+     * grid's axes for tile placement is 90 degrees.  If you are looking
+     * to have the grid of tile indicies for this.place aligned to the tiles
+     * themselves, use DiamondIso instead.
      */
     isometric: {
         _tile: {
