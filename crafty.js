@@ -7757,8 +7757,7 @@ Crafty.c("Particles", {
 });
 
 },{"../core/core.js":6}],28:[function(require,module,exports){
-var Crafty = require('../core/core.js'),
-	Animation = require('../core/animation.js');
+var Crafty = require('../core/core.js');
 
 
 /**@
@@ -8235,7 +8234,7 @@ Crafty.c("SpriteAnimation", {
 	}
 });
 
-},{"../core/animation.js":5,"../core/core.js":6}],29:[function(require,module,exports){
+},{"../core/core.js":6}],29:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -11548,7 +11547,8 @@ Crafty.c("2D", {
             };
         }
 
-        return Crafty.rectManager.overlap(mbr, rect);
+        return mbr._x < rect._x + rect._w && mbr._x + mbr._w > rect._x &&
+            mbr._y < rect._y + rect._h && mbr._y + mbr._h > rect._y;
     },
 
     /**@
@@ -14807,7 +14807,7 @@ Crafty.extend({
        */
       overlap: function (rectA, rectB) {
         return (rectA._x < rectB._x + rectB._w && rectA._x + rectA._w > rectB._x &&
-                rectA._y < rectB._y + rectB._h && rectA._h + rectA._y > rectB._y);
+                rectA._y < rectB._y + rectB._h && rectA._y + rectA._h > rectB._y);
       },
 
       /**@
@@ -15005,7 +15005,6 @@ var Crafty = require('../core/core.js');
         search: function (rect, filter) {
             var keys = HashMap.key(rect, keyHolder),
                 i, j, k, l, cell,
-                overlap = Crafty.rectManager.overlap,
                 results = [];
 
             if (filter === undefined) filter = true; //default filter to true
@@ -15032,7 +15031,8 @@ var Crafty = require('../core/core.js');
                     id = obj[0]; //unique ID
                     obj = obj._mbr || obj;
                     //check if not added to hash and that actually intersects
-                    if (!found[id] && overlap(obj, rect))
+                    if (!found[id] && obj._x < rect._x + rect._w && obj._x + obj._w > rect._x &&
+                                      obj._y < rect._y + rect._h && obj._y + obj._h > rect._y)
                         found[id] = results[i];
                 }
 
