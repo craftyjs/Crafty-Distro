@@ -10,6 +10,659 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 
 },{}],2:[function(require,module,exports){
+var Crafty = require('../core/core.js');
+
+/**@
+ * #Draggable
+ * @category Controls
+ * Enable drag and drop of the entity. Listens to events from `MouseDrag` and moves entitiy accordingly.
+ */
+Crafty.c("Draggable", {
+    _origX: null,
+    _origY: null,
+    _oldX: null,
+    _oldY: null,
+    _dir: null,
+
+    init: function () {
+        this.requires("MouseDrag");
+        this.bind("StartDrag", this._startDrag)
+            .bind("Dragging", this._drag);
+    },
+
+    remove: function() {
+        this.unbind("StartDrag", this._startDrag)
+            .unbind("Dragging", this._drag);
+    },
+
+    /**@
+     * #.enableDrag
+     * @comp Draggable
+     * @sign public this .enableDrag(void)
+     *
+     * Reenable dragging of entity. Use if `.disableDrag` has been called.
+     *
+     * @see .disableDrag
+     */
+    enableDrag: function () {
+        this.uniqueBind("Dragging", this._drag);
+        return this;
+    },
+
+    /**@
+     * #.disableDrag
+     * @comp Draggable
+     * @sign public this .disableDrag(void)
+     *
+     * Disables entity dragging. Reenable with `.enableDrag()`.
+     *
+     * @see .enableDrag
+     */
+    disableDrag: function () {
+        this.unbind("Dragging", this._drag);
+        return this;
+    },
+
+    /**@
+     * #.dragDirection
+     * @comp Draggable
+     * Method used for modifying the drag direction.
+     * If direction is set, the entity being dragged will only move along the specified direction.
+     * If direction is not set, the entity being dragged will move along any direction.
+     *
+     * @sign public this .dragDirection()
+     * Remove any previously specified direction.
+     *
+     * @sign public this .dragDirection(vector)
+     * @param vector - Of the form of {x: valx, y: valy}, the vector (valx, valy) denotes the move direction.
+     *
+     * @sign public this .dragDirection(degree)
+     * @param degree - A number, the degree (clockwise) of the move direction with respect to the x axis.
+     * Specify the dragging direction.
+     *
+     * @example
+     * ~~~
+     * this.dragDirection()
+     * this.dragDirection({x:1, y:0}) //Horizontal
+     * this.dragDirection({x:0, y:1}) //Vertical
+     * // Note: because of the orientation of x and y axis,
+     * // this is 45 degree clockwise with respect to the x axis.
+     * this.dragDirection({x:1, y:1}) //45 degree.
+     * this.dragDirection(60) //60 degree.
+     * ~~~
+     */
+    dragDirection: function (dir) {
+        if (typeof dir === 'undefined') {
+            this._dir = null;
+        } else if (("" + parseInt(dir, 10)) == dir) { //dir is a number
+            this._dir = {
+                x: Math.cos(dir / 180 * Math.PI),
+                y: Math.sin(dir / 180 * Math.PI)
+            };
+        } else {
+            if (dir.x === 0 && dir.y === 0) {
+                this._dir = { x: 0, y: 0 };
+            } else {
+                var r = Math.sqrt(dir.x * dir.x + dir.y * dir.y);
+                this._dir = {
+                    x: dir.x / r,
+                    y: dir.y / r
+                };
+            }
+        }
+        return this;
+    },
+
+    _startDrag: function (e) {
+        this._origX = e.realX;
+        this._origY = e.realY;
+        this._oldX = this._x;
+        this._oldY = this._y;
+    },
+
+    _drag: function(e) {
+        if (this._dir) {
+            if (this._dir.x !== 0 || this._dir.y !== 0) {
+                var len = (e.realX - this._origX) * this._dir.x + (e.realY - this._origY) * this._dir.y;
+                this.x = this._oldX + len * this._dir.x;
+                this.y = this._oldY + len * this._dir.y;
+            }
+        } else {
+            this.x = this._oldX + (e.realX - this._origX);
+            this.y = this._oldY + (e.realY - this._origY);
+        }
+    }
+});
+
+/**@
+ * #Multiway
+ * @category Controls
+ * @trigger NewDirection - When entity has changed direction due to velocity on either x or y axis a NewDirection event is triggered. The event is triggered once, if direction is different from last frame. - { x: -1 | 0 | 1, y: -1 | 0 | 1 } - New direction
+ * @trigger Moved - When entity has moved due to velocity/acceleration on either x or y axis a Moved event is triggered. If the entity has moved on both axes for diagonal movement the event is triggered twice. - { axis: 'x' | 'y', oldValue: Number } - Old position
+ *
+ * Used to bind keys to directions and have the entity move accordingly.
+ *
+ * @see Motion
+ */
+Crafty.c("Multiway", {
+    _speed: null,
+    
+    init: function () {
+        this.requires("Keyboard, Motion");
+
+        this._keyDirection = {}; // keyCode -> direction
+        this._activeDirections = {}; // direction -> # of keys pressed for that direction
+        this._directionSpeed = {}; // direction -> {x: x_speed, y: y_speed}
+        this._speed = { x: 3, y: 3 };
+
+        this.bind("KeyDown", this._keydown)
+            .bind("KeyUp", this._keyup);
+    },
+
+    remove: function() {
+        this.unbind("KeyDown", this._keydown)
+            .unbind("KeyUp", this._keyup);
+
+        // unapply movement of pressed keys
+        this.__unapplyActiveDirections();
+    },
+
+    _keydown: function (e) {
+        var direction = this._keyDirection[e.key];
+        if (direction !== undefined) { // if this is a key we are interested in
+            if (this._activeDirections[direction] === 0 && !this.disableControls) { // if key is first one pressed for this direction
+                this.vx += this._directionSpeed[direction].x;
+                this.vy += this._directionSpeed[direction].y;
+            }
+            this._activeDirections[direction]++;
+        }
+    },
+
+    _keyup: function (e) {
+        var direction = this._keyDirection[e.key];
+        if (direction !== undefined) { // if this is a key we are interested in
+            this._activeDirections[direction]--;
+            if (this._activeDirections[direction] === 0 && !this.disableControls) { // if key is last one unpressed for this direction
+                this.vx -= this._directionSpeed[direction].x;
+                this.vy -= this._directionSpeed[direction].y;
+            }
+        }
+    },
+
+
+    /**@
+     * #.multiway
+     * @comp Multiway
+     * @sign public this .multiway([Number speed,] Object keyBindings )
+     * @param speed - Amount of pixels to move the entity whilst a key is down
+     * @param keyBindings - What keys should make the entity go in which direction. Direction is specified in degrees
+     *
+     * Constructor to initialize the speed and keyBindings. Component will listen to key events and move the entity appropriately.
+     * Can be called while a key is pressed to change direction & speed on the fly.
+     *
+     * @example
+     * ~~~
+     * this.multiway(3, {UP_ARROW: -90, DOWN_ARROW: 90, RIGHT_ARROW: 0, LEFT_ARROW: 180});
+     * this.multiway({x:3,y:1.5}, {UP_ARROW: -90, DOWN_ARROW: 90, RIGHT_ARROW: 0, LEFT_ARROW: 180});
+     * this.multiway({W: -90, S: 90, D: 0, A: 180});
+     * ~~~
+     *
+     * @see Motion
+     */
+    multiway: function (speed, keys) {
+        if (keys) {
+            if (speed.x !== undefined && speed.y !== undefined) {
+                this._speed.x = speed.x;
+                this._speed.y = speed.y;
+            } else {
+                this._speed.x = speed;
+                this._speed.y = speed;
+            }
+        } else {
+            keys = speed;
+        }
+
+
+        if (!this.disableControls) {
+            this.__unapplyActiveDirections();
+        }
+
+        this._updateKeys(keys);
+        this._updateSpeed(this._speed);
+
+        if (!this.disableControls) {
+            this.__applyActiveDirections();
+        }
+
+        return this;
+    },
+
+    /**@
+     * #.speed
+     * @comp Multiway
+     * @sign public this .speed(Object speed)
+     * @param speed - New speed the entity has, for x and y axis.
+     *
+     * Change the speed that the entity moves with. 
+     * Can be called while a key is pressed to change speed on the fly.
+     *
+     * @example
+     * ~~~
+     * this.speed({ x: 3, y: 1 });
+     * ~~~
+     */
+    speed: function (speed) {
+        if (!this.disableControls) {
+            this.__unapplyActiveDirections();
+        }
+
+        this._updateSpeed(speed);
+
+        if (!this.disableControls) {
+            this.__applyActiveDirections();
+        }
+
+        return this;
+    },
+
+    _updateKeys: function(keys) {
+        // reset data
+        this._keyDirection = {};
+        this._activeDirections = {};
+
+        for (var k in keys) {
+            var keyCode = Crafty.keys[k] || k;
+            // add new data
+            var direction = this._keyDirection[keyCode] = keys[k];
+            this._activeDirections[direction] = this._activeDirections[direction] || 0;
+            if (this.isDown(keyCode)) // add directions of already pressed keys
+                this._activeDirections[direction]++;
+        }
+    },
+
+    _updateSpeed: function(speed) {
+        // reset data
+        this._directionSpeed = {};
+
+        var direction;
+        for (var keyCode in this._keyDirection) {
+            direction = this._keyDirection[keyCode];
+            // add new data
+            this._directionSpeed[direction] = {
+                x: Math.round(Math.cos(direction * (Math.PI / 180)) * 1000 * speed.x) / 1000,
+                y: Math.round(Math.sin(direction * (Math.PI / 180)) * 1000 * speed.y) / 1000
+            };
+        }
+    },
+
+    __applyActiveDirections: function() {
+        for (var direction in this._activeDirections) {
+            if (this._activeDirections[direction] > 0) {
+                this.vx += this._directionSpeed[direction].x;
+                this.vy += this._directionSpeed[direction].y;
+            }
+        }
+    },
+
+    __unapplyActiveDirections: function() {
+        for (var direction in this._activeDirections) {
+            if (this._activeDirections[direction] > 0) {
+                this.vx -= this._directionSpeed[direction].x;
+                this.vy -= this._directionSpeed[direction].y;
+            }
+        }
+    },
+
+    /**@
+     * #.enableControl
+     * @comp Multiway
+     * @sign public this .enableControl()
+     *
+     * Enable the component to listen to key events.
+     *
+     * @example
+     * ~~~
+     * this.enableControl();
+     * ~~~
+     */
+    enableControl: function () {
+        if (this.disableControls) {
+            this.__applyActiveDirections();
+        }
+        this.disableControls = false;
+
+        return this;
+    },
+
+    /**@
+     * #.disableControl
+     * @comp Multiway
+     * @sign public this .disableControl()
+     *
+     * Disable the component to listen to key events.
+     *
+     * @example
+     * ~~~
+     * this.disableControl();
+     * ~~~
+     */
+
+    disableControl: function () {
+        if (!this.disableControls) {
+            this.__unapplyActiveDirections();
+        }
+        this.disableControls = true;
+
+        return this;
+    }
+});
+
+/**@
+ * #Fourway
+ * @category Controls
+ * @trigger NewDirection - When entity has changed direction due to velocity on either x or y axis a NewDirection event is triggered. The event is triggered once, if direction is different from last frame. - { x: -1 | 0 | 1, y: -1 | 0 | 1 } - New direction
+ * @trigger Moved - When entity has moved due to velocity/acceleration on either x or y axis a Moved event is triggered. If the entity has moved on both axes for diagonal movement the event is triggered twice. - { axis: 'x' | 'y', oldValue: Number } - Old position
+ *
+ * Move an entity in four directions by using the
+ * arrow keys or `W`, `A`, `S`, `D`.
+ *
+ * @see Multiway, Motion
+ */
+Crafty.c("Fourway", {
+
+    init: function () {
+        this.requires("Multiway");
+    },
+
+    /**@
+     * #.fourway
+     * @comp Fourway
+     * @sign public this .fourway([Number speed])
+     * @param speed - Amount of pixels to move the entity whilst a key is down
+     *
+     * Constructor to initialize the speed. Component will listen for key events and move the entity appropriately.
+     * This includes `Up Arrow`, `Right Arrow`, `Down Arrow`, `Left Arrow` as well as `W`, `A`, `S`, `D`.
+     *
+     * The key presses will move the entity in that direction by the speed passed in the argument.
+     *
+     * @see Multiway, Motion
+     */
+    fourway: function (speed) {
+        this.multiway(speed || this._speed, {
+            UP_ARROW: -90,
+            DOWN_ARROW: 90,
+            RIGHT_ARROW: 0,
+            LEFT_ARROW: 180,
+            W: -90,
+            S: 90,
+            D: 0,
+            A: 180,
+            Z: -90,
+            Q: 180
+        });
+
+        return this;
+    }
+});
+
+/**@
+ * #Twoway
+ * @category Controls
+ * @trigger NewDirection - When entity has changed direction due to velocity on either x or y axis a NewDirection event is triggered. The event is triggered once, if direction is different from last frame. - { x: -1 | 0 | 1, y: -1 | 0 | 1 } - New direction
+ * @trigger Moved - When entity has moved due to velocity/acceleration on either x or y axis a Moved event is triggered. If the entity has moved on both axes for diagonal movement the event is triggered twice. - { axis: 'x' | 'y', oldValue: Number } - Old position
+ * @trigger CheckJumping - When entity is about to jump. This event is triggered with the object the entity is about to jump from (if it exists). Third parties can respond to this event and enable the entity to jump.
+ *
+ * Move an entity left or right using the arrow keys or `D` and `A` and jump using up arrow or `W`.
+ *
+ * @see Gravity, Multiway, Fourway, Motion
+ */
+Crafty.c("Twoway", {
+    _jumpSpeed: 6,
+
+    /**@
+     * #.canJump
+     * @comp Twoway
+     *
+     * The canJump function determines if the entity is allowed to jump or not (e.g. perhaps the entity should be able to double jump).
+     * The Twoway component will trigger a "CheckJumping" event. 
+     * Interested parties can listen to this event and enable the entity to jump by setting `canJump` to true.
+     *
+     * @example
+     * ~~~
+     * var player = Crafty.e("2D, Twoway");
+     * player.hasDoubleJumpPowerUp = true; // allow player to double jump by granting him a powerup
+     * player.bind("CheckJumping", function(ground) {
+     *     if (!ground && player.hasDoubleJumpPowerUp) { // allow player to double jump by using up his double jump powerup
+     *         player.canJump = true;
+     *         player.hasDoubleJumpPowerUp = false;
+     *     }
+     * });
+     * player.bind("LandedOnGround", function(ground) {
+     *     player.hasDoubleJumpPowerUp = true; // give player new double jump powerup upon landing
+     * });
+     * ~~~
+     */
+    canJump: true,
+
+    init: function () {
+        this.requires("Keyboard, Fourway, Motion, Supportable");
+    },
+
+    remove: function() {
+        this.unbind("KeyDown", this._keydown_twoway);
+    },
+
+    _keydown_twoway: function (e) {
+        if (this.disableControls) return;
+
+        if (e.key === Crafty.keys.UP_ARROW || e.key === Crafty.keys.W || e.key === Crafty.keys.Z) {
+            var ground = this.ground;
+            this.canJump = !!ground;
+            this.trigger("CheckJumping", ground);
+            if (this.canJump) {
+                this.vy = -this._jumpSpeed;
+            }
+        }
+    },
+
+    /**@
+     * #.twoway
+     * @comp Twoway
+     * @sign public this .twoway([Number speed[, Number jump]])
+     * @param speed - Amount of pixels to move left or right
+     * @param jump - Vertical jump speed
+     *
+     * Constructor to initialize the speed and power of jump. Component will
+     * listen for key events and move the entity appropriately. This includes
+     * `Up Arrow`, `Right Arrow`, `Left Arrow` as well as `W`, `A`, `D`. Used with the
+     * `gravity` component to simulate jumping.
+     *
+     * The key presses will move the entity in that direction by the speed passed in
+     * the argument. Pressing the `Up Arrow` or `W` will cause the entity to jump.
+     *
+     * @see Gravity, Multiway, Fourway, Motion
+     */
+    twoway: function (speed, jump) {
+
+        this.multiway(speed || this._speed, {
+            RIGHT_ARROW: 0,
+            LEFT_ARROW: 180,
+            D: 0,
+            A: 180,
+            Q: 180
+        });
+
+        if (arguments.length < 2) {
+          this._jumpSpeed = this._speed.y * 2;
+        } else {
+          this._jumpSpeed = jump;
+        }
+        this.uniqueBind("KeyDown", this._keydown_twoway);
+
+        return this;
+    }
+});
+
+},{"../core/core.js":7}],3:[function(require,module,exports){
+var Crafty = require('../core/core.js');
+
+
+Crafty.extend({
+    /**@
+     * #Crafty.device
+     * @category Misc
+     */
+    device: {
+        _deviceOrientationCallback: false,
+        _deviceMotionCallback: false,
+
+        /**
+         * The HTML5 DeviceOrientation event returns three pieces of data:
+         *  * alpha the direction the device is facing according to the compass
+         *  * beta the angle in degrees the device is tilted front-to-back
+         *  * gamma the angle in degrees the device is tilted left-to-right.
+         *  * The angles values increase as you tilt the device to the right or towards you.
+         *
+         * Since Firefox uses the MozOrientationEvent which returns similar data but
+         * using different parameters and a different measurement system, we want to
+         * normalize that before we pass it to our _deviceOrientationCallback function.
+         *
+         * @param eventData HTML5 DeviceOrientation event
+         */
+        _normalizeDeviceOrientation: function (eventData) {
+            var data;
+            if (window.DeviceOrientationEvent) {
+                data = {
+                    // gamma is the left-to-right tilt in degrees, where right is positive
+                    'tiltLR': eventData.gamma,
+                    // beta is the front-to-back tilt in degrees, where front is positive
+                    'tiltFB': eventData.beta,
+                    // alpha is the compass direction the device is facing in degrees
+                    'dir': eventData.alpha,
+                    // deviceorientation does not provide this data
+                    'motUD': null
+                };
+            } else if (window.OrientationEvent) {
+                data = {
+                    // x is the left-to-right tilt from -1 to +1, so we need to convert to degrees
+                    'tiltLR': eventData.x * 90,
+                    // y is the front-to-back tilt from -1 to +1, so we need to convert to degrees
+                    // We also need to invert the value so tilting the device towards us (forward)
+                    // results in a positive value.
+                    'tiltFB': eventData.y * -90,
+                    // MozOrientation does not provide this data
+                    'dir': null,
+                    // z is the vertical acceleration of the device
+                    'motUD': eventData.z
+                };
+            }
+
+            Crafty.device._deviceOrientationCallback(data);
+        },
+
+        /**
+         * @param eventData HTML5 DeviceMotion event
+         */
+        _normalizeDeviceMotion: function (eventData) {
+            var acceleration = eventData.accelerationIncludingGravity,
+                facingUp = (acceleration.z > 0) ? +1 : -1;
+
+            var data = {
+                // Grab the acceleration including gravity from the results
+                'acceleration': acceleration,
+                'rawAcceleration': "[" + Math.round(acceleration.x) + ", " + Math.round(acceleration.y) + ", " + Math.round(acceleration.z) + "]",
+                // Z is the acceleration in the Z axis, and if the device is facing up or down
+                'facingUp': facingUp,
+                // Convert the value from acceleration to degrees acceleration.x|y is the
+                // acceleration according to gravity, we'll assume we're on Earth and divide
+                // by 9.81 (earth gravity) to get a percentage value, and then multiply that
+                // by 90 to convert to degrees.
+                'tiltLR': Math.round(((acceleration.x) / 9.81) * -90),
+                'tiltFB': Math.round(((acceleration.y + 9.81) / 9.81) * 90 * facingUp)
+            };
+
+            Crafty.device._deviceMotionCallback(data);
+        },
+
+        /**@
+         * #Crafty.device.deviceOrientation
+         * @comp Crafty.device
+         * @sign public Crafty.device.deviceOrientation(Function callback)
+         * @param callback - Callback method executed once as soon as device orientation is change
+         *
+         * Do something with normalized device orientation data:
+         * ~~~
+         * {
+         *   'tiltLR'    :   'gamma the angle in degrees the device is tilted left-to-right.',
+         *   'tiltFB'    :   'beta the angle in degrees the device is tilted front-to-back',
+         *   'dir'       :   'alpha the direction the device is facing according to the compass',
+         *   'motUD'     :   'The angles values increase as you tilt the device to the right or towards you.'
+         * }
+         * ~~~
+         *
+         * @example
+         * ~~~
+         * // Get DeviceOrientation event normalized data.
+         * Crafty.device.deviceOrientation(function(data){
+         *     console.log('data.tiltLR : '+Math.round(data.tiltLR)+', data.tiltFB : '+Math.round(data.tiltFB)+', data.dir : '+Math.round(data.dir)+', data.motUD : '+data.motUD+'');
+         * });
+         * ~~~
+         *
+         * See browser support at http://caniuse.com/#search=device orientation.
+         */
+        deviceOrientation: function (func) {
+            this._deviceOrientationCallback = func;
+            if (Crafty.support.deviceorientation) {
+                if (window.DeviceOrientationEvent) {
+                    // Listen for the deviceorientation event and handle DeviceOrientationEvent object
+                    Crafty.addEvent(this, window, 'deviceorientation', this._normalizeDeviceOrientation);
+                } else if (window.OrientationEvent) {
+                    // Listen for the MozOrientation event and handle OrientationData object
+                    Crafty.addEvent(this, window, 'MozOrientation', this._normalizeDeviceOrientation);
+                }
+            }
+        },
+
+        /**@
+         * #Crafty.device.deviceMotion
+         * @comp Crafty.device
+         * @sign public Crafty.device.deviceMotion(Function callback)
+         * @param callback - Callback method executed once as soon as device motion is change
+         *
+         * Do something with normalized device motion data:
+         * ~~~
+         * {
+         *     'acceleration' : ' Grab the acceleration including gravity from the results',
+         *     'rawAcceleration' : 'Display the raw acceleration data',
+         *     'facingUp' : 'Z is the acceleration in the Z axis, and if the device is facing up or down',
+         *     'tiltLR' : 'Convert the value from acceleration to degrees. acceleration.x is the acceleration according to gravity, we'll assume we're on Earth and divide by 9.81 (earth gravity) to get a percentage value, and then multiply that by 90 to convert to degrees.',
+         *     'tiltFB' : 'Convert the value from acceleration to degrees.'
+         * }
+         * ~~~
+         *
+         * @example
+         * ~~~
+         * // Get DeviceMotion event normalized data.
+         * Crafty.device.deviceMotion(function(data){
+         *     console.log('data.moAccel : '+data.rawAcceleration+', data.moCalcTiltLR : '+Math.round(data.tiltLR)+', data.moCalcTiltFB : '+Math.round(data.tiltFB)+'');
+         * });
+         * ~~~
+         *
+         * See browser support at http://caniuse.com/#search=motion.
+         */
+        deviceMotion: function (func) {
+            this._deviceMotionCallback = func;
+            if (Crafty.support.devicemotion) {
+                if (window.DeviceMotionEvent) {
+                    // Listen for the devicemotion event and handle DeviceMotionEvent object
+                    Crafty.addEvent(this, window, 'devicemotion', this._normalizeDeviceMotion);
+                }
+            }
+        }
+    }
+});
+
+},{"../core/core.js":7}],4:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -786,195 +1439,84 @@ Crafty.c("Button", {
 });
 
 /**@
- * #Draggable
+ * #MouseDrag
  * @category Input
- * Enable drag and drop of the entity.
+ * Provides the entity with drag and drop mouse events.
  * @trigger Dragging - is triggered each frame the entity is being dragged - MouseEvent
  * @trigger StartDrag - is triggered when dragging begins - MouseEvent
  * @trigger StopDrag - is triggered when dragging ends - MouseEvent
  */
-Crafty.c("Draggable", {
-    _origMouseDOMPos: null,
-    _oldX: null,
-    _oldY: null,
+Crafty.c("MouseDrag", {
     _dragging: false,
-    _dir: null,
 
     //Note: the code is not tested with zoom, etc., that may distort the direction between the viewport and the coordinate on the canvas.
     init: function () {
         this.requires("Mouse");
-        this.enableDrag();
+        this.bind("MouseDown", this._ondown);
     },
 
+    remove: function() {
+        this.unbind("MouseDown", this._ondown);
+    },
+
+    // When dragging is enabled, this method is bound to the MouseDown crafty event
+    _ondown: function (e) {
+        if (e.mouseButton !== Crafty.mouseButtons.LEFT) return;
+        this.startDrag(e);
+    },
+
+    // While a drag is occurring, this method is bound to the mousemove DOM event
     _ondrag: function (e) {
-        // While a drag is occurring, this method is bound to the mousemove DOM event
-        var pos = Crafty.domHelper.translate(e.clientX, e.clientY);
-
-        // ignore invalid 0 0 position - strange problem on ipad
-        if (pos.x === 0 || pos.y === 0) {
-            return false;
-        }
-
-        if (this._dir) {
-            if (this._dir.x !== 0 || this._dir.y !== 0) {
-                var len = (pos.x - this._origMouseDOMPos.x) * this._dir.x + (pos.y - this._origMouseDOMPos.y) * this._dir.y;
-                this.x = this._oldX + len * this._dir.x;
-                this.y = this._oldY + len * this._dir.y;
-            }
-        } else {
-            this.x = this._oldX + (pos.x - this._origMouseDOMPos.x);
-            this.y = this._oldY + (pos.y - this._origMouseDOMPos.y);
-        }
-
+        // ignore invalid 0 position - strange problem on ipad
+        if (!this._dragging || e.realX === 0 || e.realY === 0) return false;
         this.trigger("Dragging", e);
     },
 
-    _ondown: function (e) {
-        // When dragging is enabled, this method is bound to the MouseDown crafty event
-        if (e.mouseButton !== Crafty.mouseButtons.LEFT) return;
-        this._startDrag(e);
-    },
-
+    // While a drag is occurring, this method is bound to mouseup DOM event
     _onup: function (e) {
-        // While a drag is occurring, this method is bound to mouseup DOM event
-        if (e.mouseButton === Crafty.mouseButtons.LEFT && this._dragging === true) {
-            Crafty.removeEvent(this, Crafty.stage.elem, "mousemove", this._ondrag);
-            Crafty.removeEvent(this, Crafty.stage.elem, "mouseup", this._onup);
-            this._dragging = false;
-            this.trigger("StopDrag", e);
-        }
-    },
-
-    /**@
-     * #.dragDirection
-     * @comp Draggable
-     * @sign public this .dragDirection()
-     * Remove any previously specified direction.
-     *
-     * @sign public this .dragDirection(vector)
-     * @param vector - Of the form of {x: valx, y: valy}, the vector (valx, valy) denotes the move direction.
-     *
-     * @sign public this .dragDirection(degree)
-     * @param degree - A number, the degree (clockwise) of the move direction with respect to the x axis.
-     * Specify the dragging direction.
-     *
-     * @example
-     * ~~~
-     * this.dragDirection()
-     * this.dragDirection({x:1, y:0}) //Horizontal
-     * this.dragDirection({x:0, y:1}) //Vertical
-     * // Note: because of the orientation of x and y axis,
-     * // this is 45 degree clockwise with respect to the x axis.
-     * this.dragDirection({x:1, y:1}) //45 degree.
-     * this.dragDirection(60) //60 degree.
-     * ~~~
-     */
-    dragDirection: function (dir) {
-        if (typeof dir === 'undefined') {
-            this._dir = null;
-        } else if (("" + parseInt(dir, 10)) == dir) { //dir is a number
-            this._dir = {
-                x: Math.cos(dir / 180 * Math.PI),
-                y: Math.sin(dir / 180 * Math.PI)
-            };
-        } else {
-            if (dir.x === 0 && dir.y === 0) {
-                this._dir = { x: 0, y: 0 };
-            } else {
-                var r = Math.sqrt(dir.x * dir.x + dir.y * dir.y);
-                this._dir = {
-                    x: dir.x / r,
-                    y: dir.y / r
-                };
-            }
-        }
-    },
-
-
-    /**@
-     * #._startDrag
-     * @comp Draggable
-     * Internal method for starting a drag of an entity either programatically or via Mouse click
-     *
-     * @param e - a mouse event
-     */
-    _startDrag: function (e) {
-        this._origMouseDOMPos = Crafty.domHelper.translate(e.clientX, e.clientY);
-        this._oldX = this._x;
-        this._oldY = this._y;
-        this._dragging = true;
-
-        Crafty.addEvent(this, Crafty.stage.elem, "mousemove", this._ondrag);
-        Crafty.addEvent(this, Crafty.stage.elem, "mouseup", this._onup);
-        this.trigger("StartDrag", e);
-    },
-
-    /**@
-     * #.stopDrag
-     * @comp Draggable
-     * @sign public this .stopDrag(void)
-     * @trigger StopDrag - Called right after the mouse listeners are removed
-     *
-     * Stop the entity from dragging. Essentially reproducing the drop.
-     *
-     * @see .startDrag
-     */
-    stopDrag: function () {
-        Crafty.removeEvent(this, Crafty.stage.elem, "mousemove", this._ondrag);
-        Crafty.removeEvent(this, Crafty.stage.elem, "mouseup", this._onup);
-
-        this._dragging = false;
-        this.trigger("StopDrag");
-        return this;
+        if (e.mouseButton !== Crafty.mouseButtons.LEFT) return;
+        this.stopDrag(e);
     },
 
     /**@
      * #.startDrag
-     * @comp Draggable
+     * @comp MouseDrag
      * @sign public this .startDrag(void)
      *
-     * Make the entity follow the mouse positions.
+     * Make the entity produce drag events, essentially making the entity follow the mouse positions.
      *
      * @see .stopDrag
      */
-    startDrag: function () {
-        if (!this._dragging) {
-            //Use the last known position of the mouse
-            this._startDrag(Crafty.lastEvent);
-        }
-        return this;
-    },
+    startDrag: function (e) {
+        if (this._dragging) return;
+        this._dragging = true;
 
-    /**@
-     * #.enableDrag
-     * @comp Draggable
-     * @sign public this .enableDrag(void)
-     *
-     * Rebind the mouse events. Use if `.disableDrag` has been called.
-     *
-     * @see .disableDrag
-     */
-    enableDrag: function () {
-        this.bind("MouseDown", this._ondown);
-
+        Crafty.addEvent(this, Crafty.stage.elem, "mousemove", this._ondrag);
         Crafty.addEvent(this, Crafty.stage.elem, "mouseup", this._onup);
+
+        // if event undefined, use the last known position of the mouse
+        this.trigger("StartDrag", e || Crafty.lastEvent);
         return this;
     },
 
     /**@
-     * #.disableDrag
-     * @comp Draggable
-     * @sign public this .disableDrag(void)
+     * #.stopDrag
+     * @comp MouseDrag
+     * @sign public this .stopDrag(void)
      *
-     * Stops entity from being draggable. Reenable with `.enableDrag()`.
+     * Stop the entity from producing drag events, essentially reproducing the drop.
      *
-     * @see .enableDrag
+     * @see .startDrag
      */
-    disableDrag: function () {
-        this.unbind("MouseDown", this._ondown);
-        if (this._dragging) {
-            this.stopDrag();
-        }
+    stopDrag: function (e) {
+        if (!this._dragging) return;
+        this._dragging = false;
+
+        Crafty.removeEvent(this, Crafty.stage.elem, "mousemove", this._ondrag);
+        Crafty.removeEvent(this, Crafty.stage.elem, "mouseup", this._onup);
+
+        // if event undefined, use the last known position of the mouse
+        this.trigger("StopDrag", e || Crafty.lastEvent);
         return this;
     }
 });
@@ -1018,533 +1560,8 @@ Crafty.c("Keyboard", {
     }
 });
 
-/**@
- * #Multiway
- * @category Input
- * @trigger NewDirection - When entity has changed direction due to velocity on either x or y axis a NewDirection event is triggered. The event is triggered once, if direction is different from last frame. - { x: -1 | 0 | 1, y: -1 | 0 | 1 } - New direction
- * @trigger Moved - When entity has moved due to velocity/acceleration on either x or y axis a Moved event is triggered. If the entity has moved on both axes for diagonal movement the event is triggered twice. - { axis: 'x' | 'y', oldValue: Number } - Old position
- *
- * Used to bind keys to directions and have the entity move accordingly.
- *
- * @see Motion
- */
-Crafty.c("Multiway", {
-    init: function () {
-        this.requires("Motion");
 
-        this._keyDirection = {}; // keyCode -> direction
-        this._activeDirections = {}; // direction -> # of keys pressed for that direction
-        this._directionSpeed = {}; // direction -> {x: x_speed, y: y_speed}
-        this._speed = { x: 3, y: 3 };
-
-        this.bind("KeyDown", this._keydown)
-            .bind("KeyUp", this._keyup);
-    },
-
-    remove: function() {
-        this.unbind("KeyDown", this._keydown)
-            .unbind("KeyUp", this._keyup);
-
-        // unapply movement of pressed keys
-        this.__unapplyActiveDirections();
-    },
-
-    _keydown: function (e) {
-        var direction = this._keyDirection[e.key];
-        if (direction !== undefined) { // if this is a key we are interested in
-            if (this._activeDirections[direction] === 0 && !this.disableControls) { // if key is first one pressed for this direction
-                this.vx += this._directionSpeed[direction].x;
-                this.vy += this._directionSpeed[direction].y;
-            }
-            this._activeDirections[direction]++;
-        }
-    },
-
-    _keyup: function (e) {
-        var direction = this._keyDirection[e.key];
-        if (direction !== undefined) { // if this is a key we are interested in
-            this._activeDirections[direction]--;
-            if (this._activeDirections[direction] === 0 && !this.disableControls) { // if key is last one unpressed for this direction
-                this.vx -= this._directionSpeed[direction].x;
-                this.vy -= this._directionSpeed[direction].y;
-            }
-        }
-    },
-
-
-    /**@
-     * #.multiway
-     * @comp Multiway
-     * @sign public this .multiway([Number speed,] Object keyBindings )
-     * @param speed - Amount of pixels to move the entity whilst a key is down
-     * @param keyBindings - What keys should make the entity go in which direction. Direction is specified in degrees
-     *
-     * Constructor to initialize the speed and keyBindings. Component will listen to key events and move the entity appropriately.
-     * Can be called while a key is pressed to change direction & speed on the fly.
-     *
-     * @example
-     * ~~~
-     * this.multiway(3, {UP_ARROW: -90, DOWN_ARROW: 90, RIGHT_ARROW: 0, LEFT_ARROW: 180});
-     * this.multiway({x:3,y:1.5}, {UP_ARROW: -90, DOWN_ARROW: 90, RIGHT_ARROW: 0, LEFT_ARROW: 180});
-     * this.multiway({W: -90, S: 90, D: 0, A: 180});
-     * ~~~
-     *
-     * @see Motion
-     */
-    multiway: function (speed, keys) {
-        if (keys) {
-            if (speed.x !== undefined && speed.y !== undefined) {
-                this._speed.x = speed.x;
-                this._speed.y = speed.y;
-            } else {
-                this._speed.x = speed;
-                this._speed.y = speed;
-            }
-        } else {
-            keys = speed;
-        }
-
-
-        if (!this.disableControls) {
-            this.__unapplyActiveDirections();
-        }
-
-        this._updateKeys(keys);
-        this._updateSpeed(this._speed);
-
-        if (!this.disableControls) {
-            this.__applyActiveDirections();
-        }
-
-        return this;
-    },
-
-    /**@
-     * #.speed
-     * @comp Multiway
-     * @sign public this .speed(Object speed)
-     * @param speed - New speed the entity has, for x and y axis.
-     *
-     * Change the speed that the entity moves with. 
-     * Can be called while a key is pressed to change speed on the fly.
-     *
-     * @example
-     * ~~~
-     * this.speed({ x: 3, y: 1 });
-     * ~~~
-     */
-    speed: function (speed) {
-        if (!this.disableControls) {
-            this.__unapplyActiveDirections();
-        }
-
-        this._updateSpeed(speed);
-
-        if (!this.disableControls) {
-            this.__applyActiveDirections();
-        }
-
-        return this;
-    },
-
-    _updateKeys: function(keys) {
-        // reset data
-        this._keyDirection = {};
-        this._activeDirections = {};
-
-        for (var k in keys) {
-            var keyCode = Crafty.keys[k] || k;
-            // add new data
-            var direction = this._keyDirection[keyCode] = keys[k];
-            this._activeDirections[direction] = this._activeDirections[direction] || 0;
-            if (Crafty.keydown[keyCode]) // add directions of already pressed keys
-                this._activeDirections[direction]++;
-        }
-    },
-
-    _updateSpeed: function(speed) {
-        // reset data
-        this._directionSpeed = {};
-
-        var direction;
-        for (var keyCode in this._keyDirection) {
-            direction = this._keyDirection[keyCode];
-            // add new data
-            this._directionSpeed[direction] = {
-                x: Math.round(Math.cos(direction * (Math.PI / 180)) * 1000 * speed.x) / 1000,
-                y: Math.round(Math.sin(direction * (Math.PI / 180)) * 1000 * speed.y) / 1000
-            };
-        }
-    },
-
-    __applyActiveDirections: function() {
-        for (var direction in this._activeDirections) {
-            if (this._activeDirections[direction] > 0) {
-                this.vx += this._directionSpeed[direction].x;
-                this.vy += this._directionSpeed[direction].y;
-            }
-        }
-    },
-
-    __unapplyActiveDirections: function() {
-        for (var direction in this._activeDirections) {
-            if (this._activeDirections[direction] > 0) {
-                this.vx -= this._directionSpeed[direction].x;
-                this.vy -= this._directionSpeed[direction].y;
-            }
-        }
-    },
-
-    /**@
-     * #.enableControl
-     * @comp Multiway
-     * @sign public this .enableControl()
-     *
-     * Enable the component to listen to key events.
-     *
-     * @example
-     * ~~~
-     * this.enableControl();
-     * ~~~
-     */
-    enableControl: function () {
-        if (this.disableControls) {
-            this.__applyActiveDirections();
-        }
-        this.disableControls = false;
-
-        return this;
-    },
-
-    /**@
-     * #.disableControl
-     * @comp Multiway
-     * @sign public this .disableControl()
-     *
-     * Disable the component to listen to key events.
-     *
-     * @example
-     * ~~~
-     * this.disableControl();
-     * ~~~
-     */
-
-    disableControl: function () {
-        if (!this.disableControls) {
-            this.__unapplyActiveDirections();
-        }
-        this.disableControls = true;
-
-        return this;
-    }
-});
-
-/**@
- * #Fourway
- * @category Input
- * @trigger NewDirection - When entity has changed direction due to velocity on either x or y axis a NewDirection event is triggered. The event is triggered once, if direction is different from last frame. - { x: -1 | 0 | 1, y: -1 | 0 | 1 } - New direction
- * @trigger Moved - When entity has moved due to velocity/acceleration on either x or y axis a Moved event is triggered. If the entity has moved on both axes for diagonal movement the event is triggered twice. - { axis: 'x' | 'y', oldValue: Number } - Old position
- *
- * Move an entity in four directions by using the
- * arrow keys or `W`, `A`, `S`, `D`.
- *
- * @see Multiway, Motion
- */
-Crafty.c("Fourway", {
-
-    init: function () {
-        this.requires("Multiway");
-    },
-
-    /**@
-     * #.fourway
-     * @comp Fourway
-     * @sign public this .fourway([Number speed])
-     * @param speed - Amount of pixels to move the entity whilst a key is down
-     *
-     * Constructor to initialize the speed. Component will listen for key events and move the entity appropriately.
-     * This includes `Up Arrow`, `Right Arrow`, `Down Arrow`, `Left Arrow` as well as `W`, `A`, `S`, `D`.
-     *
-     * The key presses will move the entity in that direction by the speed passed in the argument.
-     *
-     * @see Multiway, Motion
-     */
-    fourway: function (speed) {
-        this.multiway(speed || this._speed, {
-            UP_ARROW: -90,
-            DOWN_ARROW: 90,
-            RIGHT_ARROW: 0,
-            LEFT_ARROW: 180,
-            W: -90,
-            S: 90,
-            D: 0,
-            A: 180,
-            Z: -90,
-            Q: 180
-        });
-
-        return this;
-    }
-});
-
-/**@
- * #Twoway
- * @category Input
- * @trigger NewDirection - When entity has changed direction due to velocity on either x or y axis a NewDirection event is triggered. The event is triggered once, if direction is different from last frame. - { x: -1 | 0 | 1, y: -1 | 0 | 1 } - New direction
- * @trigger Moved - When entity has moved due to velocity/acceleration on either x or y axis a Moved event is triggered. If the entity has moved on both axes for diagonal movement the event is triggered twice. - { axis: 'x' | 'y', oldValue: Number } - Old position
- * @trigger CheckJumping - When entity is about to jump. This event is triggered with the object the entity is about to jump from (if it exists). Third parties can respond to this event and enable the entity to jump.
- *
- * Move an entity left or right using the arrow keys or `D` and `A` and jump using up arrow or `W`.
- *
- * @see Gravity, Multiway, Fourway, Motion
- */
-Crafty.c("Twoway", {
-    _jumpSpeed: 6,
-
-    /**@
-     * #.canJump
-     * @comp Twoway
-     *
-     * The canJump function determines if the entity is allowed to jump or not (e.g. perhaps the entity should be able to double jump).
-     * The Twoway component will trigger a "CheckJumping" event. 
-     * Interested parties can listen to this event and enable the entity to jump by setting `canJump` to true.
-     *
-     * @example
-     * ~~~
-     * var player = Crafty.e("2D, Twoway");
-     * player.hasDoubleJumpPowerUp = true; // allow player to double jump by granting him a powerup
-     * player.bind("CheckJumping", function(ground) {
-     *     if (!ground && player.hasDoubleJumpPowerUp) { // allow player to double jump by using up his double jump powerup
-     *         player.canJump = true;
-     *         player.hasDoubleJumpPowerUp = false;
-     *     }
-     * });
-     * player.bind("LandedOnGround", function(ground) {
-     *     player.hasDoubleJumpPowerUp = true; // give player new double jump powerup upon landing
-     * });
-     * ~~~
-     */
-    canJump: true,
-
-    init: function () {
-        this.requires("Fourway, Motion, Supportable");
-    },
-
-    remove: function() {
-        this.unbind("KeyDown", this._keydown_twoway);
-    },
-
-    _keydown_twoway: function (e) {
-        if (this.disableControls) return;
-
-        if (e.key === Crafty.keys.UP_ARROW || e.key === Crafty.keys.W || e.key === Crafty.keys.Z) {
-            var ground = this.ground;
-            this.canJump = !!ground;
-            this.trigger("CheckJumping", ground);
-            if (this.canJump) {
-                this.vy = -this._jumpSpeed;
-            }
-        }
-    },
-
-    /**@
-     * #.twoway
-     * @comp Twoway
-     * @sign public this .twoway([Number speed[, Number jump]])
-     * @param speed - Amount of pixels to move left or right
-     * @param jump - Vertical jump speed
-     *
-     * Constructor to initialize the speed and power of jump. Component will
-     * listen for key events and move the entity appropriately. This includes
-     * `Up Arrow`, `Right Arrow`, `Left Arrow` as well as `W`, `A`, `D`. Used with the
-     * `gravity` component to simulate jumping.
-     *
-     * The key presses will move the entity in that direction by the speed passed in
-     * the argument. Pressing the `Up Arrow` or `W` will cause the entity to jump.
-     *
-     * @see Gravity, Multiway, Fourway, Motion
-     */
-    twoway: function (speed, jump) {
-
-        this.multiway(speed || this._speed, {
-            RIGHT_ARROW: 0,
-            LEFT_ARROW: 180,
-            D: 0,
-            A: 180,
-            Q: 180
-        });
-
-        if (arguments.length < 2) {
-          this._jumpSpeed = this._speed.y * 2;
-        } else {
-          this._jumpSpeed = jump;
-        }
-        this.uniqueBind("KeyDown", this._keydown_twoway);
-
-        return this;
-    }
-});
-
-},{"../core/core.js":6}],3:[function(require,module,exports){
-var Crafty = require('../core/core.js');
-
-
-Crafty.extend({
-    /**@
-     * #Crafty.device
-     * @category Misc
-     */
-    device: {
-        _deviceOrientationCallback: false,
-        _deviceMotionCallback: false,
-
-        /**
-         * The HTML5 DeviceOrientation event returns three pieces of data:
-         *  * alpha the direction the device is facing according to the compass
-         *  * beta the angle in degrees the device is tilted front-to-back
-         *  * gamma the angle in degrees the device is tilted left-to-right.
-         *  * The angles values increase as you tilt the device to the right or towards you.
-         *
-         * Since Firefox uses the MozOrientationEvent which returns similar data but
-         * using different parameters and a different measurement system, we want to
-         * normalize that before we pass it to our _deviceOrientationCallback function.
-         *
-         * @param eventData HTML5 DeviceOrientation event
-         */
-        _normalizeDeviceOrientation: function (eventData) {
-            var data;
-            if (window.DeviceOrientationEvent) {
-                data = {
-                    // gamma is the left-to-right tilt in degrees, where right is positive
-                    'tiltLR': eventData.gamma,
-                    // beta is the front-to-back tilt in degrees, where front is positive
-                    'tiltFB': eventData.beta,
-                    // alpha is the compass direction the device is facing in degrees
-                    'dir': eventData.alpha,
-                    // deviceorientation does not provide this data
-                    'motUD': null
-                };
-            } else if (window.OrientationEvent) {
-                data = {
-                    // x is the left-to-right tilt from -1 to +1, so we need to convert to degrees
-                    'tiltLR': eventData.x * 90,
-                    // y is the front-to-back tilt from -1 to +1, so we need to convert to degrees
-                    // We also need to invert the value so tilting the device towards us (forward)
-                    // results in a positive value.
-                    'tiltFB': eventData.y * -90,
-                    // MozOrientation does not provide this data
-                    'dir': null,
-                    // z is the vertical acceleration of the device
-                    'motUD': eventData.z
-                };
-            }
-
-            Crafty.device._deviceOrientationCallback(data);
-        },
-
-        /**
-         * @param eventData HTML5 DeviceMotion event
-         */
-        _normalizeDeviceMotion: function (eventData) {
-            var acceleration = eventData.accelerationIncludingGravity,
-                facingUp = (acceleration.z > 0) ? +1 : -1;
-
-            var data = {
-                // Grab the acceleration including gravity from the results
-                'acceleration': acceleration,
-                'rawAcceleration': "[" + Math.round(acceleration.x) + ", " + Math.round(acceleration.y) + ", " + Math.round(acceleration.z) + "]",
-                // Z is the acceleration in the Z axis, and if the device is facing up or down
-                'facingUp': facingUp,
-                // Convert the value from acceleration to degrees acceleration.x|y is the
-                // acceleration according to gravity, we'll assume we're on Earth and divide
-                // by 9.81 (earth gravity) to get a percentage value, and then multiply that
-                // by 90 to convert to degrees.
-                'tiltLR': Math.round(((acceleration.x) / 9.81) * -90),
-                'tiltFB': Math.round(((acceleration.y + 9.81) / 9.81) * 90 * facingUp)
-            };
-
-            Crafty.device._deviceMotionCallback(data);
-        },
-
-        /**@
-         * #Crafty.device.deviceOrientation
-         * @comp Crafty.device
-         * @sign public Crafty.device.deviceOrientation(Function callback)
-         * @param callback - Callback method executed once as soon as device orientation is change
-         *
-         * Do something with normalized device orientation data:
-         * ~~~
-         * {
-         *   'tiltLR'    :   'gamma the angle in degrees the device is tilted left-to-right.',
-         *   'tiltFB'    :   'beta the angle in degrees the device is tilted front-to-back',
-         *   'dir'       :   'alpha the direction the device is facing according to the compass',
-         *   'motUD'     :   'The angles values increase as you tilt the device to the right or towards you.'
-         * }
-         * ~~~
-         *
-         * @example
-         * ~~~
-         * // Get DeviceOrientation event normalized data.
-         * Crafty.device.deviceOrientation(function(data){
-         *     console.log('data.tiltLR : '+Math.round(data.tiltLR)+', data.tiltFB : '+Math.round(data.tiltFB)+', data.dir : '+Math.round(data.dir)+', data.motUD : '+data.motUD+'');
-         * });
-         * ~~~
-         *
-         * See browser support at http://caniuse.com/#search=device orientation.
-         */
-        deviceOrientation: function (func) {
-            this._deviceOrientationCallback = func;
-            if (Crafty.support.deviceorientation) {
-                if (window.DeviceOrientationEvent) {
-                    // Listen for the deviceorientation event and handle DeviceOrientationEvent object
-                    Crafty.addEvent(this, window, 'deviceorientation', this._normalizeDeviceOrientation);
-                } else if (window.OrientationEvent) {
-                    // Listen for the MozOrientation event and handle OrientationData object
-                    Crafty.addEvent(this, window, 'MozOrientation', this._normalizeDeviceOrientation);
-                }
-            }
-        },
-
-        /**@
-         * #Crafty.device.deviceMotion
-         * @comp Crafty.device
-         * @sign public Crafty.device.deviceMotion(Function callback)
-         * @param callback - Callback method executed once as soon as device motion is change
-         *
-         * Do something with normalized device motion data:
-         * ~~~
-         * {
-         *     'acceleration' : ' Grab the acceleration including gravity from the results',
-         *     'rawAcceleration' : 'Display the raw acceleration data',
-         *     'facingUp' : 'Z is the acceleration in the Z axis, and if the device is facing up or down',
-         *     'tiltLR' : 'Convert the value from acceleration to degrees. acceleration.x is the acceleration according to gravity, we'll assume we're on Earth and divide by 9.81 (earth gravity) to get a percentage value, and then multiply that by 90 to convert to degrees.',
-         *     'tiltFB' : 'Convert the value from acceleration to degrees.'
-         * }
-         * ~~~
-         *
-         * @example
-         * ~~~
-         * // Get DeviceMotion event normalized data.
-         * Crafty.device.deviceMotion(function(data){
-         *     console.log('data.moAccel : '+data.rawAcceleration+', data.moCalcTiltLR : '+Math.round(data.tiltLR)+', data.moCalcTiltFB : '+Math.round(data.tiltFB)+'');
-         * });
-         * ~~~
-         *
-         * See browser support at http://caniuse.com/#search=motion.
-         */
-        deviceMotion: function (func) {
-            this._deviceMotionCallback = func;
-            if (Crafty.support.devicemotion) {
-                if (window.DeviceMotionEvent) {
-                    // Listen for the devicemotion event and handle DeviceMotionEvent object
-                    Crafty.addEvent(this, window, 'devicemotion', this._normalizeDeviceMotion);
-                }
-            }
-        }
-    }
-});
-
-},{"../core/core.js":6}],4:[function(require,module,exports){
+},{"../core/core.js":7}],5:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -1761,7 +1778,7 @@ Crafty.extend({
         RIGHT: 2
     }
 });
-},{"../core/core.js":6}],5:[function(require,module,exports){
+},{"../core/core.js":7}],6:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -2018,7 +2035,7 @@ Crafty.c("Tween", {
 	}
 });
 
-},{"../core/core.js":6}],6:[function(require,module,exports){
+},{"../core/core.js":7}],7:[function(require,module,exports){
 var version = require('./version');
 
 /**@
@@ -3881,7 +3898,7 @@ if (typeof define === 'function') { // AMD
 
 module.exports = Crafty;
 
-},{"./version":14}],7:[function(require,module,exports){
+},{"./version":15}],8:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -4128,7 +4145,7 @@ Crafty.extend({
         Crafty.stage.elem.style.background = style;
     }
 });
-},{"../core/core.js":6}],8:[function(require,module,exports){
+},{"../core/core.js":7}],9:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -4567,7 +4584,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":6}],9:[function(require,module,exports){
+},{"../core/core.js":7}],10:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -4670,7 +4687,7 @@ Crafty.c('Model', {
   }
 });
 
-},{"../core/core.js":6}],10:[function(require,module,exports){
+},{"../core/core.js":7}],11:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -4839,7 +4856,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":6}],11:[function(require,module,exports){
+},{"../core/core.js":7}],12:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -4935,7 +4952,7 @@ Crafty.storage.remove = function(key){
   window.localStorage.removeItem(key);
 };
 
-},{"../core/core.js":6}],12:[function(require,module,exports){
+},{"../core/core.js":7}],13:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -5084,7 +5101,7 @@ Crafty.CraftySystem.prototype = {
 	}
 
 };
-},{"../core/core.js":6}],13:[function(require,module,exports){
+},{"../core/core.js":7}],14:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -5206,9 +5223,9 @@ Crafty.c("Delay", {
     }
 });
 
-},{"../core/core.js":6}],14:[function(require,module,exports){
+},{"../core/core.js":7}],15:[function(require,module,exports){
 module.exports = "0.6.2";
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 var Crafty = require('./core/core');
 
 require('./core/animation');
@@ -5248,6 +5265,7 @@ require('./graphics/webgl');
 require('./isometric/diamond-iso');
 require('./isometric/isometric');
 
+require('./controls/inputs');
 require('./controls/controls');
 require('./controls/device');
 require('./controls/keycodes');
@@ -5269,7 +5287,7 @@ if(window) window.Crafty = Crafty;
 
 module.exports = Crafty;
 
-},{"./controls/controls":2,"./controls/device":3,"./controls/keycodes":4,"./core/animation":5,"./core/core":6,"./core/extensions":7,"./core/loader":8,"./core/model":9,"./core/scenes":10,"./core/storage":11,"./core/systems":12,"./core/time":13,"./core/version":14,"./debug/debug-layer":16,"./graphics/canvas":18,"./graphics/canvas-layer":17,"./graphics/color":19,"./graphics/dom":22,"./graphics/dom-helper":20,"./graphics/dom-layer":21,"./graphics/drawing":23,"./graphics/gl-textures":24,"./graphics/html":25,"./graphics/image":26,"./graphics/particles":27,"./graphics/sprite":29,"./graphics/sprite-animation":28,"./graphics/text":30,"./graphics/viewport":31,"./graphics/webgl":32,"./isometric/diamond-iso":33,"./isometric/isometric":34,"./sound/sound":35,"./spatial/2d":36,"./spatial/collision":37,"./spatial/math":38,"./spatial/rect-manager":39,"./spatial/spatial-grid":40}],16:[function(require,module,exports){
+},{"./controls/controls":2,"./controls/device":3,"./controls/inputs":4,"./controls/keycodes":5,"./core/animation":6,"./core/core":7,"./core/extensions":8,"./core/loader":9,"./core/model":10,"./core/scenes":11,"./core/storage":12,"./core/systems":13,"./core/time":14,"./core/version":15,"./debug/debug-layer":17,"./graphics/canvas":19,"./graphics/canvas-layer":18,"./graphics/color":20,"./graphics/dom":23,"./graphics/dom-helper":21,"./graphics/dom-layer":22,"./graphics/drawing":24,"./graphics/gl-textures":25,"./graphics/html":26,"./graphics/image":27,"./graphics/particles":28,"./graphics/sprite":30,"./graphics/sprite-animation":29,"./graphics/text":31,"./graphics/viewport":32,"./graphics/webgl":33,"./isometric/diamond-iso":34,"./isometric/isometric":35,"./sound/sound":36,"./spatial/2d":37,"./spatial/collision":38,"./spatial/math":39,"./spatial/rect-manager":40,"./spatial/spatial-grid":41}],17:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -5645,7 +5663,7 @@ Crafty.DebugCanvas = {
 
 };
 
-},{"../core/core.js":6}],17:[function(require,module,exports){
+},{"../core/core.js":7}],18:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -5981,7 +5999,7 @@ Crafty.extend({
 
     }
 });
-},{"../core/core.js":6}],18:[function(require,module,exports){
+},{"../core/core.js":7}],19:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -6136,7 +6154,7 @@ Crafty.c("Canvas", {
     }
 });
 
-},{"../core/core.js":6}],19:[function(require,module,exports){
+},{"../core/core.js":7}],20:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6392,7 +6410,7 @@ Crafty.c("Color", {
 });
 
 
-},{"../core/core.js":6,"fs":1}],20:[function(require,module,exports){
+},{"../core/core.js":7,"fs":1}],21:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6495,7 +6513,7 @@ Crafty.extend({
         }
     }
 });
-},{"../core/core.js":6}],21:[function(require,module,exports){
+},{"../core/core.js":7}],22:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6626,7 +6644,7 @@ Crafty.extend({
 
     }
 });
-},{"../core/core.js":6}],22:[function(require,module,exports){
+},{"../core/core.js":7}],23:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6920,7 +6938,7 @@ Crafty.c("DOM", {
     }
 });
 
-},{"../core/core.js":6}],23:[function(require,module,exports){
+},{"../core/core.js":7}],24:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 Crafty.extend({
@@ -6964,7 +6982,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":6}],24:[function(require,module,exports){
+},{"../core/core.js":7}],25:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 // An object for wrangling textures
@@ -7147,7 +7165,7 @@ TextureWrapper.prototype = {
         gl.uniform2f(gl.getUniformLocation(shader, dimension_name), this.width, this.height);
 	}
 };
-},{"../core/core.js":6}],25:[function(require,module,exports){
+},{"../core/core.js":7}],26:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -7229,7 +7247,7 @@ Crafty.c("HTML", {
         return this;
     }
 });
-},{"../core/core.js":6}],26:[function(require,module,exports){
+},{"../core/core.js":7}],27:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -7373,7 +7391,7 @@ Crafty.c("Image", {
 
     }
 });
-},{"../core/core.js":6,"fs":1}],27:[function(require,module,exports){
+},{"../core/core.js":7,"fs":1}],28:[function(require,module,exports){
 var Crafty = require('../core/core.js'),    
     document = window.document;
 
@@ -7756,7 +7774,7 @@ Crafty.c("Particles", {
     }
 });
 
-},{"../core/core.js":6}],28:[function(require,module,exports){
+},{"../core/core.js":7}],29:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -8234,7 +8252,7 @@ Crafty.c("SpriteAnimation", {
 	}
 });
 
-},{"../core/core.js":6}],29:[function(require,module,exports){
+},{"../core/core.js":7}],30:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -8562,7 +8580,7 @@ Crafty.c("Sprite", {
     }
 });
 
-},{"../core/core.js":6,"fs":1}],30:[function(require,module,exports){
+},{"../core/core.js":7,"fs":1}],31:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -8829,7 +8847,7 @@ Crafty.c("Text", {
     }
 
 });
-},{"../core/core.js":6}],31:[function(require,module,exports){
+},{"../core/core.js":7}],32:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -9568,7 +9586,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":6}],32:[function(require,module,exports){
+},{"../core/core.js":7}],33:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -10156,7 +10174,7 @@ Crafty.extend({
 
     }
 });
-},{"../core/core.js":6}],33:[function(require,module,exports){
+},{"../core/core.js":7}],34:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -10322,7 +10340,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":6}],34:[function(require,module,exports){
+},{"../core/core.js":7}],35:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -10508,7 +10526,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":6}],35:[function(require,module,exports){
+},{"../core/core.js":7}],36:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -11062,7 +11080,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":6}],36:[function(require,module,exports){
+},{"../core/core.js":7}],37:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     HashMap = require('./spatial-grid.js');
 
@@ -12979,7 +12997,7 @@ Crafty.matrix.prototype = {
     }
 };
 
-},{"../core/core.js":6,"./spatial-grid.js":40}],37:[function(require,module,exports){
+},{"../core/core.js":7,"./spatial-grid.js":41}],38:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     DEG_TO_RAD = Math.PI / 180;
 
@@ -13673,7 +13691,7 @@ Crafty.c("Collision", {
     }
 });
 
-},{"../core/core.js":6}],38:[function(require,module,exports){
+},{"../core/core.js":7}],39:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -14770,7 +14788,7 @@ Crafty.math.Matrix2D = (function () {
 
     return Matrix2D;
 })();
-},{"../core/core.js":6}],39:[function(require,module,exports){
+},{"../core/core.js":7}],40:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -14930,7 +14948,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":6}],40:[function(require,module,exports){
+},{"../core/core.js":7}],41:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -15291,4 +15309,4 @@ var Crafty = require('../core/core.js');
 
     module.exports = HashMap;
 
-},{"../core/core.js":6}]},{},[15]);
+},{"../core/core.js":7}]},{},[16]);
