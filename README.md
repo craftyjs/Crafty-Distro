@@ -1,1 +1,1 @@
-built from commit 4b81387 (Mon May 18 18:12:34 2015) of 'develop' branch
+built from commit fd20979 (Thu May 21 08:30:56 2015) of 'develop' branch
