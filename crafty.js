@@ -1888,9 +1888,6 @@ Crafty.extend({
     }
 });
 },{"../core/core.js":7}],6:[function(require,module,exports){
-var Crafty = require('../core/core.js');
-
-
 /**@
  * #Crafty.easing
  * @category Animation
@@ -1915,7 +1912,7 @@ var Crafty = require('../core/core.js');
  * ~~~
  * @see Tween, SpriteAnimation
  */
-Crafty.easing = function(duration, easingFn) {
+var easing = function(duration, easingFn) {
 	this.timePerFrame = 1000 / Crafty.timer.FPS();
 	this.duration = duration;   //default duration given in ms
 	if (typeof easingFn === "function"){
@@ -1929,7 +1926,7 @@ Crafty.easing = function(duration, easingFn) {
 };
 
 
-Crafty.easing.prototype = {
+easing.prototype = {
 	duration: 0,
 	clock:0,
 	steps: null,
@@ -2008,143 +2005,8 @@ Crafty.easing.prototype = {
 	}
 };
 
-
-
-
-
-
-
-/**@
- * #Tween
- * @category Animation
- * @trigger TweenEnd - when a tween finishes - String - property
- *
- * Component to animate the change in 2D properties over time.
- */
-Crafty.c("Tween", {
-
-	init: function(){
-		this.tweenGroup = {};
-		this.tweenStart = {};
-		this.tweens = [];
-		this.bind("EnterFrame", this._tweenTick);
-
-	},
-
-	_tweenTick: function(frameData){
-		var tween, v, i;
-		for ( i = this.tweens.length-1; i>=0; i--){
-			tween = this.tweens[i];
-			tween.easing.tick(frameData.dt);
-			v  = tween.easing.value();
-			this._doTween(tween.props, v);
-			if (tween.easing.complete) {
-				this.tweens.splice(i, 1);
-				this._endTween(tween.props);
-			}
-		}
-	},
-
-	_doTween: function(props, v){
-		for (var name in props)
-			this[name] = (1-v) * this.tweenStart[name] + v * props[name];
-
-	},
-
-
-
-	/**@
-	* #.tween
-	* @comp Tween
-	* @sign public this .tween(Object properties, Number duration[, String|function easingFn])
-	* @param properties - Object of numeric properties and what they should animate to
-	* @param duration - Duration to animate the properties over, in milliseconds.
-	* @param easingFn - A string or custom function specifying an easing.  (Defaults to linear behavior.)  See Crafty.easing for more information.
-	*
-	* This method will animate numeric properties over the specified duration.
-	* These include `x`, `y`, `w`, `h`, `alpha` and `rotation`.
-	*
-	* The object passed should have the properties as keys and the value should be the resulting
-	* values of the properties.  The passed object might be modified if later calls to tween animate the same properties.
-	*
-	* @example
-	* Move an object to 100,100 and fade out over 200 ms.
-	* ~~~
-	* Crafty.e("2D, Tween")
-	*    .attr({alpha: 1.0, x: 0, y: 0})
-	*    .tween({alpha: 0.0, x: 100, y: 100}, 200)
-	* ~~~
-	* @example
-	* Rotate an object over 2 seconds, using the "smootherStep" easing function.
-	* ~~~
-	* Crafty.e("2D, Tween")
-	*    .attr({rotation:0})
-	*    .tween({rotation:180}, 2000, "smootherStep")
-	* ~~~
-	*
-	* @see Crafty.easing
-	*
-	*/
-	tween: function (props, duration, easingFn) {
-
-		var tween = {
-			props: props,
-			easing: new Crafty.easing(duration, easingFn)
-		};
-
-		// Tweens are grouped together by the original function call.
-		// Individual properties must belong to only a single group
-		// When a new tween starts, if it already belongs to a group, move it to the new one
-		// Record the group it currently belongs to, as well as its starting coordinate.
-		for (var propname in props){
-			if (typeof this.tweenGroup[propname] !== "undefined")
-				this.cancelTween(propname);
-			this.tweenStart[propname] = this[propname];
-			this.tweenGroup[propname] = props;
-		}
-		this.tweens.push(tween);
-
-		return this;
-
-	},
-
-	/**@
-	* #.cancelTween
-	* @comp Tween
-	* @sign public this .cancelTween(String target)
-	* @param target - The property to cancel
-	*
-	* @sign public this .cancelTween(Object target)
-	* @param target - An object containing the properties to cancel.
-	*
-	* Stops tweening the specified property or properties.
-	* Passing the object used to start the tween might be a typical use of the second signature.
-	*/
-	cancelTween: function(target){
-		if (typeof target === "string"){
-			if (typeof this.tweenGroup[target] == "object" )
-				delete this.tweenGroup[target][target];
-		} else if (typeof target === "object") {
-			for (var propname in target)
-				this.cancelTween(propname);
-		}
-
-		return this;
-
-	},
-
-	/*
-	* Stops tweening the specified group of properties, and fires the "TweenEnd" event.
-	*/
-	_endTween: function(properties){
-		for (var propname in properties){
-			delete this.tweenGroup[propname];
-		}
-		this.trigger("TweenEnd", properties);
-	}
-});
-
-},{"../core/core.js":7}],7:[function(require,module,exports){
+module.exports = easing;
+},{}],7:[function(require,module,exports){
 var version = require('./version');
 
 /**@
@@ -4007,9 +3869,9 @@ if (typeof define === 'function') { // AMD
 
 module.exports = Crafty;
 
-},{"./version":15}],8:[function(require,module,exports){
-var Crafty = require('../core/core.js'),
-    document = window.document;
+},{"./version":16}],8:[function(require,module,exports){
+var Crafty = require('./core');
+var document = window.document;
 
 /**@
  * #Crafty.support
@@ -4139,7 +4001,7 @@ var Crafty = require('../core/core.js'),
 
 })();
 
-Crafty.extend({
+module.exports = {
     _events: {},
 
     /**@
@@ -4253,12 +4115,11 @@ Crafty.extend({
     background: function (style) {
         Crafty.stage.elem.style.background = style;
     }
-});
-},{"../core/core.js":7}],9:[function(require,module,exports){
+};
+},{"./core":7}],9:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
-
-Crafty.extend({
+module.exports = {
     /**@
      * #Crafty.assets
      * @category Assets
@@ -4483,6 +4344,10 @@ Crafty.extend({
      */
     load: function (data, oncomplete, onprogress, onerror) {
       
+        if (Array.isArray(data)) {
+            Crafty.log("Calling Crafty.load with an array of assets no longer works; see the docs for more details.");
+        }
+
         data = (typeof data === "string" ? JSON.parse(data) : data);
       
         var j = 0,
@@ -4691,12 +4556,9 @@ Crafty.extend({
             }
         }
     }
-});
+};
 
 },{"../core/core.js":7}],10:[function(require,module,exports){
-var Crafty = require('../core/core.js');
-
-
 /**@
  * #Model
  * @category Model
@@ -4731,7 +4593,7 @@ var Crafty = require('../core/core.js');
  * person.changed // name
  * ~~~
  */
-Crafty.c('Model', {
+module.exports = {
   init: function() {
     this.changed = [];
     this.bind('Change', this._changed_attributes);
@@ -4794,13 +4656,14 @@ Crafty.c('Model', {
       return this.changed.indexOf(key) > -1;
     }
   }
-});
+};
 
-},{"../core/core.js":7}],11:[function(require,module,exports){
+
+},{}],11:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
-Crafty.extend({
+module.exports = {
     _scenes: {},
     _current: null,
 
@@ -4963,12 +4826,9 @@ Crafty.extend({
         return;
 
     }
-});
+};
 
 },{"../core/core.js":7}],12:[function(require,module,exports){
-var Crafty = require('../core/core.js');
-
-
 /**@
  * #Storage
  * @category Utilities
@@ -5015,7 +4875,7 @@ var Crafty = require('../core/core.js');
  * ~~~
  */
 
-Crafty.storage = function(key, value){
+var storage = function(key, value) {
   var storage = window.localStorage,
       _value = value;
 
@@ -5057,11 +4917,12 @@ Crafty.storage = function(key, value){
  * ~~~
  *
  */
-Crafty.storage.remove = function(key){
+storage.remove = function(key){
   window.localStorage.removeItem(key);
 };
 
-},{"../core/core.js":7}],13:[function(require,module,exports){
+module.exports = storage;
+},{}],13:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -5211,14 +5072,11 @@ Crafty.CraftySystem.prototype = {
 
 };
 },{"../core/core.js":7}],14:[function(require,module,exports){
-var Crafty = require('../core/core.js');
-
-
 /**@
  * #Delay
  * @category Utilities
  */
-Crafty.c("Delay", {
+module.exports = {
     init: function () {
         this._delays = [];
         this.bind("EnterFrame", function (frameData) {
@@ -5330,23 +5188,154 @@ Crafty.c("Delay", {
         }
         return this;
     }
-});
+};
 
-},{"../core/core.js":7}],15:[function(require,module,exports){
-module.exports = "0.6.2";
+},{}],15:[function(require,module,exports){
+/**@
+ * #Tween
+ * @category Animation
+ * @trigger TweenEnd - when a tween finishes - String - property
+ *
+ * Component to animate the change in 2D properties over time.
+ */
+module.exports = {
+
+  init: function(){
+    this.tweenGroup = {};
+    this.tweenStart = {};
+    this.tweens = [];
+    this.bind("EnterFrame", this._tweenTick);
+
+  },
+
+  _tweenTick: function(frameData){
+    var tween, v, i;
+    for ( i = this.tweens.length-1; i>=0; i--){
+      tween = this.tweens[i];
+      tween.easing.tick(frameData.dt);
+      v  = tween.easing.value();
+      this._doTween(tween.props, v);
+      if (tween.easing.complete) {
+        this.tweens.splice(i, 1);
+        this._endTween(tween.props);
+      }
+    }
+  },
+
+  _doTween: function(props, v){
+    for (var name in props)
+      this[name] = (1-v) * this.tweenStart[name] + v * props[name];
+
+  },
+
+
+
+  /**@
+  * #.tween
+  * @comp Tween
+  * @sign public this .tween(Object properties, Number duration[, String|function easingFn])
+  * @param properties - Object of numeric properties and what they should animate to
+  * @param duration - Duration to animate the properties over, in milliseconds.
+  * @param easingFn - A string or custom function specifying an easing.  (Defaults to linear behavior.)  See Crafty.easing for more information.
+  *
+  * This method will animate numeric properties over the specified duration.
+  * These include `x`, `y`, `w`, `h`, `alpha` and `rotation`.
+  *
+  * The object passed should have the properties as keys and the value should be the resulting
+  * values of the properties.  The passed object might be modified if later calls to tween animate the same properties.
+  *
+  * @example
+  * Move an object to 100,100 and fade out over 200 ms.
+  * ~~~
+  * Crafty.e("2D, Tween")
+  *    .attr({alpha: 1.0, x: 0, y: 0})
+  *    .tween({alpha: 0.0, x: 100, y: 100}, 200)
+  * ~~~
+  * @example
+  * Rotate an object over 2 seconds, using the "smootherStep" easing function.
+  * ~~~
+  * Crafty.e("2D, Tween")
+  *    .attr({rotation:0})
+  *    .tween({rotation:180}, 2000, "smootherStep")
+  * ~~~
+  *
+  * @see Crafty.easing
+  *
+  */
+  tween: function (props, duration, easingFn) {
+
+    var tween = {
+      props: props,
+      easing: new Crafty.easing(duration, easingFn)
+    };
+
+    // Tweens are grouped together by the original function call.
+    // Individual properties must belong to only a single group
+    // When a new tween starts, if it already belongs to a group, move it to the new one
+    // Record the group it currently belongs to, as well as its starting coordinate.
+    for (var propname in props){
+      if (typeof this.tweenGroup[propname] !== "undefined")
+        this.cancelTween(propname);
+      this.tweenStart[propname] = this[propname];
+      this.tweenGroup[propname] = props;
+    }
+    this.tweens.push(tween);
+
+    return this;
+
+  },
+
+  /**@
+  * #.cancelTween
+  * @comp Tween
+  * @sign public this .cancelTween(String target)
+  * @param target - The property to cancel
+  *
+  * @sign public this .cancelTween(Object target)
+  * @param target - An object containing the properties to cancel.
+  *
+  * Stops tweening the specified property or properties.
+  * Passing the object used to start the tween might be a typical use of the second signature.
+  */
+  cancelTween: function(target){
+    if (typeof target === "string"){
+      if (typeof this.tweenGroup[target] == "object" )
+        delete this.tweenGroup[target][target];
+    } else if (typeof target === "object") {
+      for (var propname in target)
+        this.cancelTween(propname);
+    }
+
+    return this;
+
+  },
+
+  /*
+  * Stops tweening the specified group of properties, and fires the "TweenEnd" event.
+  */
+  _endTween: function(properties){
+    for (var propname in properties){
+      delete this.tweenGroup[propname];
+    }
+    this.trigger("TweenEnd", properties);
+  }
+};
+
 },{}],16:[function(require,module,exports){
+module.exports = "0.6.2";
+},{}],17:[function(require,module,exports){
 var Crafty = require('./core/core');
 
-require('./core/animation');
-require('./core/extensions');
-require('./core/loader');
-require('./core/model');
-require('./core/scenes');
-require('./core/storage');
-require('./core/systems');
-require('./core/time');
-require('./core/version');
+Crafty.easing = require('./core/animation');
+Crafty.extend(require('./core/extensions'));
+Crafty.extend(require('./core/loader'));
+Crafty.c('Model', require('./core/model'));
+Crafty.extend(require('./core/scenes'));
+Crafty.storage = require('./core/storage');
+Crafty.c('Delay', require('./core/time'));
+Crafty.c('Tween', require('./core/tween'));
 
+require('./core/systems');
 
 require('./spatial/2d');
 require('./spatial/collision');
@@ -5382,21 +5371,13 @@ require('./controls/keycodes');
 require('./sound/sound');
 
 require('./debug/debug-layer');
-
-
-
-
-
-
-
-
-
+require('./debug/logging');
 
 if(window) window.Crafty = Crafty;
 
 module.exports = Crafty;
 
-},{"./controls/controls":2,"./controls/device":3,"./controls/inputs":4,"./controls/keycodes":5,"./core/animation":6,"./core/core":7,"./core/extensions":8,"./core/loader":9,"./core/model":10,"./core/scenes":11,"./core/storage":12,"./core/systems":13,"./core/time":14,"./core/version":15,"./debug/debug-layer":17,"./graphics/canvas":19,"./graphics/canvas-layer":18,"./graphics/color":20,"./graphics/dom":23,"./graphics/dom-helper":21,"./graphics/dom-layer":22,"./graphics/drawing":24,"./graphics/gl-textures":25,"./graphics/html":26,"./graphics/image":27,"./graphics/particles":28,"./graphics/sprite":30,"./graphics/sprite-animation":29,"./graphics/text":31,"./graphics/viewport":32,"./graphics/webgl":33,"./isometric/diamond-iso":34,"./isometric/isometric":35,"./sound/sound":36,"./spatial/2d":37,"./spatial/collision":38,"./spatial/math":39,"./spatial/rect-manager":40,"./spatial/spatial-grid":41}],17:[function(require,module,exports){
+},{"./controls/controls":2,"./controls/device":3,"./controls/inputs":4,"./controls/keycodes":5,"./core/animation":6,"./core/core":7,"./core/extensions":8,"./core/loader":9,"./core/model":10,"./core/scenes":11,"./core/storage":12,"./core/systems":13,"./core/time":14,"./core/tween":15,"./debug/debug-layer":18,"./debug/logging":19,"./graphics/canvas":21,"./graphics/canvas-layer":20,"./graphics/color":22,"./graphics/dom":25,"./graphics/dom-helper":23,"./graphics/dom-layer":24,"./graphics/drawing":26,"./graphics/gl-textures":27,"./graphics/html":28,"./graphics/image":29,"./graphics/particles":30,"./graphics/sprite":32,"./graphics/sprite-animation":31,"./graphics/text":33,"./graphics/viewport":34,"./graphics/webgl":35,"./isometric/diamond-iso":36,"./isometric/isometric":37,"./sound/sound":38,"./spatial/2d":39,"./spatial/collision":40,"./spatial/math":41,"./spatial/rect-manager":42,"./spatial/spatial-grid":43}],18:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -5772,7 +5753,31 @@ Crafty.DebugCanvas = {
 
 };
 
-},{"../core/core.js":7}],18:[function(require,module,exports){
+},{"../core/core.js":7}],19:[function(require,module,exports){
+var Crafty = require('../core/core.js');
+
+
+/**@
+ * #Crafty.log
+ * @category Debug
+ *
+ * @sign Crafty.log( arguments )
+ * @param arguments - arguments which are passed to `console.log`
+ * 
+ * This is a simple wrapper for `console.log`.  You can disable logging messages by setting `Crafty.loggingEnabled` to false.
+ */
+
+Crafty.extend({
+	// Allow logging to be disabled
+	loggingEnabled: true,
+	// In some cases console.log doesn't exist, so provide a wrapper for it
+	log: function() {
+		if (Crafty.loggingEnabled && console && console.log) {
+			console.log.apply(this, arguments);
+		}
+	}
+});
+},{"../core/core.js":7}],20:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -6108,7 +6113,7 @@ Crafty.extend({
 
     }
 });
-},{"../core/core.js":7}],19:[function(require,module,exports){
+},{"../core/core.js":7}],21:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -6263,7 +6268,7 @@ Crafty.c("Canvas", {
     }
 });
 
-},{"../core/core.js":7}],20:[function(require,module,exports){
+},{"../core/core.js":7}],22:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6519,7 +6524,7 @@ Crafty.c("Color", {
 });
 
 
-},{"../core/core.js":7,"fs":1}],21:[function(require,module,exports){
+},{"../core/core.js":7,"fs":1}],23:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6622,7 +6627,7 @@ Crafty.extend({
         }
     }
 });
-},{"../core/core.js":7}],22:[function(require,module,exports){
+},{"../core/core.js":7}],24:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6753,7 +6758,7 @@ Crafty.extend({
 
     }
 });
-},{"../core/core.js":7}],23:[function(require,module,exports){
+},{"../core/core.js":7}],25:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -7047,7 +7052,7 @@ Crafty.c("DOM", {
     }
 });
 
-},{"../core/core.js":7}],24:[function(require,module,exports){
+},{"../core/core.js":7}],26:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 Crafty.extend({
@@ -7091,7 +7096,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],25:[function(require,module,exports){
+},{"../core/core.js":7}],27:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 // An object for wrangling textures
@@ -7274,7 +7279,7 @@ TextureWrapper.prototype = {
         gl.uniform2f(gl.getUniformLocation(shader, dimension_name), this.width, this.height);
 	}
 };
-},{"../core/core.js":7}],26:[function(require,module,exports){
+},{"../core/core.js":7}],28:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -7356,7 +7361,7 @@ Crafty.c("HTML", {
         return this;
     }
 });
-},{"../core/core.js":7}],27:[function(require,module,exports){
+},{"../core/core.js":7}],29:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -7500,7 +7505,7 @@ Crafty.c("Image", {
 
     }
 });
-},{"../core/core.js":7,"fs":1}],28:[function(require,module,exports){
+},{"../core/core.js":7,"fs":1}],30:[function(require,module,exports){
 var Crafty = require('../core/core.js'),    
     document = window.document;
 
@@ -7883,7 +7888,7 @@ Crafty.c("Particles", {
     }
 });
 
-},{"../core/core.js":7}],29:[function(require,module,exports){
+},{"../core/core.js":7}],31:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -8361,7 +8366,7 @@ Crafty.c("SpriteAnimation", {
 	}
 });
 
-},{"../core/core.js":7}],30:[function(require,module,exports){
+},{"../core/core.js":7}],32:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -8689,7 +8694,7 @@ Crafty.c("Sprite", {
     }
 });
 
-},{"../core/core.js":7,"fs":1}],31:[function(require,module,exports){
+},{"../core/core.js":7,"fs":1}],33:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -8956,7 +8961,7 @@ Crafty.c("Text", {
     }
 
 });
-},{"../core/core.js":7}],32:[function(require,module,exports){
+},{"../core/core.js":7}],34:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -9695,7 +9700,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],33:[function(require,module,exports){
+},{"../core/core.js":7}],35:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -10283,7 +10288,7 @@ Crafty.extend({
 
     }
 });
-},{"../core/core.js":7}],34:[function(require,module,exports){
+},{"../core/core.js":7}],36:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -10449,7 +10454,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],35:[function(require,module,exports){
+},{"../core/core.js":7}],37:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -10635,7 +10640,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],36:[function(require,module,exports){
+},{"../core/core.js":7}],38:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -11189,7 +11194,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],37:[function(require,module,exports){
+},{"../core/core.js":7}],39:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     HashMap = require('./spatial-grid.js');
 
@@ -13100,7 +13105,7 @@ Crafty.matrix.prototype = {
     }
 };
 
-},{"../core/core.js":7,"./spatial-grid.js":41}],38:[function(require,module,exports){
+},{"../core/core.js":7,"./spatial-grid.js":43}],40:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     DEG_TO_RAD = Math.PI / 180;
 
@@ -13794,7 +13799,7 @@ Crafty.c("Collision", {
     }
 });
 
-},{"../core/core.js":7}],39:[function(require,module,exports){
+},{"../core/core.js":7}],41:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -14891,7 +14896,7 @@ Crafty.math.Matrix2D = (function () {
 
     return Matrix2D;
 })();
-},{"../core/core.js":7}],40:[function(require,module,exports){
+},{"../core/core.js":7}],42:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -15051,7 +15056,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":7}],41:[function(require,module,exports){
+},{"../core/core.js":7}],43:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -15412,4 +15417,4 @@ var Crafty = require('../core/core.js');
 
     module.exports = HashMap;
 
-},{"../core/core.js":7}]},{},[16]);
+},{"../core/core.js":7}]},{},[17]);
