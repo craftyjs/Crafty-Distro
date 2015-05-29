@@ -80,6 +80,7 @@ Crafty.c("Draggable", {
      *
      * @sign public this .dragDirection(degree)
      * @param degree - A number, the degree (clockwise) of the move direction with respect to the x axis.
+     *
      * Specify the dragging direction.
      *
      * @example
@@ -2210,6 +2211,7 @@ Crafty.fn = Crafty.prototype = {
      * @param componentList - A string of components to add separated by a comma `,`
      * @sign public this .addComponent(String Component1[, .., String ComponentN])
      * @param Component# - Component ID to add.
+     *
      * Adds a component to the selected entities or entity.
      *
      * Components are used to extend the functionality of entities.
@@ -2280,6 +2282,7 @@ Crafty.fn = Crafty.prototype = {
      * @param ComponentList - A string of components to add or remove separated by a comma `,`
      * @sign public this .toggleComponent(String Component1[, .., String componentN])
      * @param Component# - Component ID to add or remove.
+     * 
      * Add or Remove Components from an entity.
      *
      * @example
@@ -2441,12 +2444,14 @@ Crafty.fn = Crafty.prototype = {
      * @param value - Value to set the property to
      * @param silent - If you would like to supress events
      * @param recursive - If you would like merge recursively
+     *
      * Use this method to set any property of the entity.
      *
      * @sign public this .attr(Object map[, Boolean silent[, Boolean recursive]])
      * @param map - Object where each key is the property to modify and the value as the property value
      * @param silent - If you would like to supress events
      * @param recursive - If you would like merge recursively
+     *
      * Use this method to set multiple properties of the entity.
      *
      * Setter options:
@@ -2456,6 +2461,7 @@ Crafty.fn = Crafty.prototype = {
      * @sign public Any .attr(String property)
      * @param property - Property of the entity to modify
      * @returns Value - the value of the property
+     *
      * Use this method to get any property of the entity. You can also retrieve the property using `this.property`.
      * 
      *
@@ -2634,6 +2640,7 @@ Crafty.fn = Crafty.prototype = {
      * @sign public this .bind(String eventName, Function callback)
      * @param eventName - Name of the event to bind to
      * @param callback - Method to execute when the event is triggered
+     *
      * Attach the current entity (or entities) to listen for an event.
      *
      * Callback will be invoked when an event with the event name passed
@@ -2724,6 +2731,7 @@ Crafty.fn = Crafty.prototype = {
      * @sign public this .unbind(String eventName[, Function callback])
      * @param eventName - Name of the event to unbind
      * @param callback - Function to unbind
+     *
      * Removes binding with an event from current entity.
      *
      * Passing an event name will remove all events bound to
@@ -2749,6 +2757,7 @@ Crafty.fn = Crafty.prototype = {
      * @sign public this .trigger(String eventName[, Object data])
      * @param eventName - Event to trigger
      * @param data - Arbitrary data that will be passed into every callback as an argument
+     *
      * Trigger an event with arbitrary data. Will invoke all callbacks with
      * the context (value of `this`) of the current entity object.
      *
@@ -2780,6 +2789,7 @@ Crafty.fn = Crafty.prototype = {
      * @comp Crafty Core
      * @sign public this .each(Function method)
      * @param method - Method to call on each iteration
+     *
      * Iterates over found entities, calling a function for every entity.
      *
      * The function will be called for every entity and will pass the index
@@ -2888,6 +2898,7 @@ Crafty.fn = Crafty.prototype = {
      * @sign public this .setter(String property, Function callback)
      * @param property - Property to watch for modification
      * @param callback - Method to execute if the property is modified
+     *
      * Will watch a property waiting for modification and will then invoke the
      * given callback when attempting to modify.
      *
@@ -3518,6 +3529,7 @@ Crafty.extend({
      * @sign public void Crafty.c(String name, Object component)
      * @param name - Name of the component
      * @param component - Object with the component's properties and methods
+     *
      * Creates a component where the first argument is the ID and the second
      * is the object that will be inherited by entities.
      *
@@ -4187,10 +4199,13 @@ module.exports = {
      * @sign public void Crafty.asset(String key, Object asset)
      * @param key - asset url.
      * @param asset - `Audio` or `Image` object.
+     *
      * Add new asset to assets object.
      *
      * @sign public void Crafty.asset(String key)
      * @param key - asset url.
+     *
+     *
      * Get asset from assets object.
      *
      * @example
@@ -4474,6 +4489,7 @@ module.exports = {
      *
      * @sign public void Crafty.removeAssets(Object assets)
      * @param data - Object JSON formatted (or JSON string), with assets to remove (accepts sounds, images and sprites)
+     *
      * Removes assets (audio, images, sprites - and related sprite components) in order to allow the browser
      * to free memory.
      * 
@@ -4677,11 +4693,13 @@ module.exports = {
      * @param sceneName - Name of the scene to add
      * @param init - Function to execute when scene is played
      * @param uninit - Function to execute before next scene is played, after entities with `2D` are destroyed
+     *
      * This is equivalent to calling `Crafty.defineScene`.
      *
      * @sign public void Crafty.scene(String sceneName[, Data])
      * @param sceneName - Name of scene to play
      * @param Data - The init function of the scene will be called with this data as its parameter.  Can be of any type other than a function.
+     *
      * This is equivalent to calling `Crafty.enterScene`.
      *
      * Method to create scenes on the stage. Pass an ID and function to register a scene.
@@ -5517,6 +5535,7 @@ Crafty.c("DebugRectangle", {
      * @comp DebugRectangle
      * @sign public  .debugRectangle(Object rect)
      * @param rect - an object with _x, _y, _w, and _h to draw
+     *
      * Sets the rectangle that this component draws to the debug canvas.
      *
      */
@@ -5601,6 +5620,7 @@ Crafty.c("DebugPolygon", {
      * @comp DebugPolygon
      * @sign public  .debugPolygon(Polygon poly)
      * @param poly - a polygon to render
+     *
      * Sets the polygon that this component renders to the debug canvas.
      *
      */
@@ -8394,6 +8414,7 @@ Crafty.extend({
      * @param paddingX - Horizontal space in between tiles. Defaults to 0.
      * @param paddingY - Vertical space in between tiles. Defaults to paddingX.
      * @param paddingAroundBorder - If padding should be applied around the border of the sprite sheet. If enabled the first tile starts at (paddingX,paddingY) instead of (0,0). Defaults to false.
+     *
      * Generates components based on positions in a sprite image to be applied to entities.
      *
      * Accepts a tile size, URL and map for the name of the sprite and its position.
@@ -11704,6 +11725,7 @@ Crafty.c("2D", {
      * @param h - Height of the rect
      * @sign public Boolean .intersect(Object rect)
      * @param rect - An object that must have the `_x, _y, _w, _h` values as properties
+     *
      * Determines if this entity intersects a rectangle.  If the entity is rotated, its MBR is used for the test.
      */
     intersect: function (x, y, w, h) {
@@ -11733,6 +11755,7 @@ Crafty.c("2D", {
      * @param h - Height of the rect
      * @sign public Boolean .within(Object rect)
      * @param rect - An object that must have the `_x, _y, _w, _h` values as properties
+     *
      * Determines if this current entity is within another rectangle.
      */
     within: function (x, y, w, h) {
@@ -11762,6 +11785,7 @@ Crafty.c("2D", {
      * @param h - Height of the rect
      * @sign public Boolean .contains(Object rect)
      * @param rect - An object that must have the `_x, _y, _w, _h` values as properties.
+     *
      * Determines if the rectangle is within the current entity.  If the entity is rotated, its MBR is used for the test.
      */
     contains: function (x, y, w, h) {
@@ -11787,6 +11811,7 @@ Crafty.c("2D", {
      * @sign public Object .pos(void)
      *
      * @param {{}=obj} pos
+     *
      * Returns the x, y, w, h properties as a new rect object if
      * no object is included. If object is inclued adds x, y, w, h 
      * to included object.
@@ -11830,6 +11855,7 @@ Crafty.c("2D", {
      * @sign public Boolean .isAt(Number x, Number y)
      * @param x - X position of the point
      * @param y - Y position of the point
+     *
      * Determines whether a point is contained by the entity. Unlike other methods,
      * an object can't be passed. The arguments require the x and y value.
      *
@@ -11852,6 +11878,7 @@ Crafty.c("2D", {
      * @sign public this .move(String dir, Number by)
      * @param dir - Direction to move (n,s,e,w,ne,nw,se,sw)
      * @param by - Amount to move in the specified direction
+     *
      * Quick method to move the entity in a direction (n, s, e, w, ne, nw, se, sw) by an amount of pixels.
      */
     move: function (dir, by) {
@@ -11871,6 +11898,7 @@ Crafty.c("2D", {
      * @param y - Amount to move Y
      * @param w - Amount to widen
      * @param h - Amount to increase height
+     *
      * Shift or move the entity by an amount. Use negative values
      * for an opposite direction.
      */
@@ -11888,6 +11916,7 @@ Crafty.c("2D", {
      * @comp 2D
      * @sign public void ._cascade(e)
      * @param e - An object describing the motion
+     *
      * Move or rotate the entity's children according to a certain motion.
      * This method is part of a function bound to "Move": It is used
      * internally for ensuring that when a parent moves, the child also
@@ -11924,6 +11953,7 @@ Crafty.c("2D", {
      * @comp 2D
      * @sign public this .attach(Entity obj[, .., Entity objN])
      * @param obj - Child entity(s) to attach
+     *
      * Sets one or more entities to be children, with the current entity (`this`)
      * as the parent. When the parent moves or rotates, its children move or
      * rotate by the same amount. (But not vice-versa: If you move a child, it
@@ -11958,6 +11988,7 @@ Crafty.c("2D", {
      * @comp 2D
      * @sign public this .detach([Entity obj])
      * @param obj - The entity to detach. Left blank will remove all attached entities
+     *
      * Stop an entity from following the current entity. Passing no arguments will stop
      * every entity attached.
      */
@@ -11986,11 +12017,14 @@ Crafty.c("2D", {
     /**@
      * #.origin
      * @comp 2D
+     *
      * @sign public this .origin(Number x, Number y)
      * @param x - Pixel value of origin offset on the X axis
      * @param y - Pixel value of origin offset on the Y axis
+     *
      * @sign public this .origin(String offset)
      * @param offset - Combination of center, top, bottom, middle, left and right
+     *
      * Set the origin point of an entity for it to rotate around.
      *
      * @example
@@ -12813,6 +12847,7 @@ Crafty.c("Motion", {
      *
      * @sign public Vector2D .velocity()
      * @return The velocity Vector2D with the properties {x, y} that reflect the velocities in the <x, y> direction of the entity.
+     *
      * Returns the current velocity. You can access/modify the properties in order to retrieve/change the velocity.
 
      * @example
@@ -12839,6 +12874,7 @@ Crafty.c("Motion", {
      * 
      * @sign public Vector2D .acceleration()
      * @return The acceleration Vector2D with the properties {x, y} that reflects the acceleration in the <x, y> direction of the entity.
+     *
      * Returns the current acceleration. You can access/modify the properties in order to retrieve/change the acceleration.
      *
      * @example
@@ -13595,10 +13631,13 @@ Crafty.c("Collision", {
     /**@
      * #.ignoreHits
      * @comp Collision
+     *
      * @sign public this .ignoreHits()
+     *
      * @sign public this .ignoreHits(String componentList)
      * @param componentList - A comma seperated list of components to stop checking
      * for collisions with.
+     *
      * @sign public this .ignoreHits(String component1[, .., String componentN])
      * @param component# - A component to stop checking for collisions with.
      *
@@ -15419,6 +15458,7 @@ var Crafty = require('../core/core.js');
      * @comp Crafty.HashMap
      * @sign public Object Crafty.HashMap.key(Object obj)
      * @param obj - an Object that has .mbr() or _x, _y, _w and _h.
+     *
      * Get the rectangular region (in terms of the grid, with grid size `cellsize`), where the object may fall in. This region is determined by the object's bounding box.
      * The `cellsize` is 64 by default.
      *
