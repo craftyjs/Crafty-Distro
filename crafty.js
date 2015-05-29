@@ -5222,7 +5222,7 @@ module.exports = {
     this.tweenGroup = {};
     this.tweenStart = {};
     this.tweens = [];
-    this.bind("EnterFrame", this._tweenTick);
+    this.uniqueBind("EnterFrame", this._tweenTick);
 
   },
 
