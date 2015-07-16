@@ -10,6 +10,71 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 
 },{}],2:[function(require,module,exports){
+// shim for using process in browser
+
+var process = module.exports = {};
+
+process.nextTick = (function () {
+    var canSetImmediate = typeof window !== 'undefined'
+    && window.setImmediate;
+    var canPost = typeof window !== 'undefined'
+    && window.postMessage && window.addEventListener
+    ;
+
+    if (canSetImmediate) {
+        return function (f) { return window.setImmediate(f) };
+    }
+
+    if (canPost) {
+        var queue = [];
+        window.addEventListener('message', function (ev) {
+            var source = ev.source;
+            if ((source === window || source === null) && ev.data === 'process-tick') {
+                ev.stopPropagation();
+                if (queue.length > 0) {
+                    var fn = queue.shift();
+                    fn();
+                }
+            }
+        }, true);
+
+        return function nextTick(fn) {
+            queue.push(fn);
+            window.postMessage('process-tick', '*');
+        };
+    }
+
+    return function nextTick(fn) {
+        setTimeout(fn, 0);
+    };
+})();
+
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+}
+
+// TODO(shtylman)
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+
+},{}],3:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 /**@
@@ -609,7 +674,7 @@ Crafty.c("Twoway", {
     }
 });
 
-},{"../core/core.js":7}],3:[function(require,module,exports){
+},{"../core/core.js":8}],4:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -770,7 +835,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],4:[function(require,module,exports){
+},{"../core/core.js":8}],5:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -1679,7 +1744,7 @@ Crafty.c("Keyboard", {
 });
 
 
-},{"../core/core.js":7}],5:[function(require,module,exports){
+},{"../core/core.js":8}],6:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -1896,7 +1961,7 @@ Crafty.extend({
         RIGHT: 2
     }
 });
-},{"../core/core.js":7}],6:[function(require,module,exports){
+},{"../core/core.js":8}],7:[function(require,module,exports){
 /**@
  * #Crafty.easing
  * @category Animation
@@ -2015,7 +2080,7 @@ easing.prototype = {
 };
 
 module.exports = easing;
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var version = require('./version');
 
 /**@
@@ -3297,12 +3362,15 @@ Crafty.extend({
                 // When first called, set the  gametime one frame before now!
                 if (typeof gameTime === "undefined")
                     gameTime = (new Date().getTime()) - milliSecPerFrame;
-                var onFrame = window.requestAnimationFrame ||
+
+                var onFrame = (typeof window !== "undefined") && (
+                    window.requestAnimationFrame ||
                     window.webkitRequestAnimationFrame ||
                     window.mozRequestAnimationFrame ||
                     window.oRequestAnimationFrame ||
                     window.msRequestAnimationFrame ||
-                    null;
+                    null
+                );
 
                 if (onFrame) {
                     tick = function () {
@@ -3326,13 +3394,15 @@ Crafty.extend({
 
                 if (typeof tick !== "function") clearInterval(tick);
 
-                var onFrame = window.cancelAnimationFrame ||
+                var onFrame = (typeof window !== "undefined") && (
+                    window.cancelAnimationFrame ||
                     window.cancelRequestAnimationFrame ||
                     window.webkitCancelRequestAnimationFrame ||
                     window.mozCancelRequestAnimationFrame ||
                     window.oCancelRequestAnimationFrame ||
                     window.msCancelRequestAnimationFrame ||
-                    null;
+                    null
+                );
 
                 if (onFrame) onFrame(requestID);
                 tick = null;
@@ -3909,9 +3979,10 @@ if (typeof define === 'function') { // AMD
 
 module.exports = Crafty;
 
-},{"./version":16}],8:[function(require,module,exports){
+},{"./version":17}],9:[function(require,module,exports){
+(function (process){
 var Crafty = require('./core');
-var document = window.document;
+var document = (typeof window !== "undefined") && window.document;
 
 /**@
  * #Crafty.support
@@ -3920,11 +3991,12 @@ var document = window.document;
  */
 (function testSupport() {
     var support = Crafty.support = {},
-        ua = navigator.userAgent.toLowerCase(),
+        ua = (typeof navigator !== "undefined" && navigator.userAgent.toLowerCase()) || (typeof process !== "undefined" && process.version),
         match = /(webkit)[ \/]([\w.]+)/.exec(ua) ||
             /(o)pera(?:.*version)?[ \/]([\w.]+)/.exec(ua) ||
             /(ms)ie ([\w.]+)/.exec(ua) ||
-            /(moz)illa(?:.*? rv:([\w.]+))?/.exec(ua) || [],
+            /(moz)illa(?:.*? rv:([\w.]+))?/.exec(ua) ||
+            /(v)\d+\.(\d+)/.exec(ua) || [],
         mobile = /iPad|iPod|iPhone|Android|webOS|IEMobile/i.exec(ua);
 
     /**@
@@ -3964,18 +4036,19 @@ var document = window.document;
      * @comp Crafty.support
      * Is HTML5 `Audio` supported?
      */
-    support.audio = ('canPlayType' in document.createElement('audio'));
+    support.audio = (typeof window !== "undefined") && ('canPlayType' in document.createElement('audio'));
 
     /**@
      * #Crafty.support.prefix
      * @comp Crafty.support
-     * Returns the browser specific prefix (`Moz`, `O`, `ms`, `webkit`).
+     * Returns the browser specific prefix (`Moz`, `O`, `ms`, `webkit`, `node`).
      */
     support.prefix = (match[1] || match[0]);
 
     //browser specific quirks
     if (support.prefix === "moz") support.prefix = "Moz";
     if (support.prefix === "o") support.prefix = "O";
+    if (support.prefix === "v") support.prefix = "node";
 
     if (match[2]) {
         /**@
@@ -3998,7 +4071,7 @@ var document = window.document;
      * @comp Crafty.support
      * Is the `canvas` element supported?
      */
-    support.canvas = ('getContext' in document.createElement("canvas"));
+    support.canvas = (typeof window !== "undefined") && ('getContext' in document.createElement("canvas"));
 
     /**@
      * #Crafty.support.webgl
@@ -4023,21 +4096,21 @@ var document = window.document;
      * @comp Crafty.support
      * Is css3Dtransform supported by browser.
      */
-    support.css3dtransform = (typeof document.createElement("div").style.Perspective !== "undefined") || (typeof document.createElement("div").style[support.prefix + "Perspective"] !== "undefined");
+    support.css3dtransform = (typeof window !== "undefined") && ((typeof document.createElement("div").style.Perspective !== "undefined") || (typeof document.createElement("div").style[support.prefix + "Perspective"] !== "undefined"));
 
     /**@
      * #Crafty.support.deviceorientation
      * @comp Crafty.support
      * Is deviceorientation event supported by browser.
      */
-    support.deviceorientation = (typeof window.DeviceOrientationEvent !== "undefined") || (typeof window.OrientationEvent !== "undefined");
+    support.deviceorientation = (typeof window !== "undefined") && ((typeof window.DeviceOrientationEvent !== "undefined") || (typeof window.OrientationEvent !== "undefined"));
 
     /**@
      * #Crafty.support.devicemotion
      * @comp Crafty.support
      * Is devicemotion event supported by browser.
      */
-    support.devicemotion = (typeof window.DeviceMotionEvent !== "undefined");
+    support.devicemotion = (typeof window !== "undefined") && (typeof window.DeviceMotionEvent !== "undefined");
 
 })();
 
@@ -4160,7 +4233,9 @@ module.exports = {
         Crafty.stage.elem.style.background = style;
     }
 };
-},{"./core":7}],9:[function(require,module,exports){
+
+}).call(this,require("JkpR2F"))
+},{"./core":8,"JkpR2F":2}],10:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 module.exports = {
@@ -4606,7 +4681,7 @@ module.exports = {
     }
 };
 
-},{"../core/core.js":7}],10:[function(require,module,exports){
+},{"../core/core.js":8}],11:[function(require,module,exports){
 /**@
  * #Model
  * @category Model
@@ -4707,7 +4782,7 @@ module.exports = {
 };
 
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -4878,13 +4953,16 @@ module.exports = {
     }
 };
 
-},{"../core/core.js":7}],12:[function(require,module,exports){
+},{"../core/core.js":8}],13:[function(require,module,exports){
+
+var storage = (typeof window !== "undefined" && window.localStorage) || (new require('node-localstorage').LocalStorage('./localStorage'));
+
 /**@
  * #Storage
  * @category Utilities
- *
- *
- * Very simple way to get and set values, which will persist when the browser is closed also. Storage wraps around HTML5 Web Storage, which is well-supported across browsers and platforms, but limited to 5MB total storage per domain.
+ * Very simple way to get and set values, which will persist when the browser is closed also.
+ * Storage wraps around HTML5 Web Storage, which is well-supported across browsers and platforms, but limited to 5MB total storage per domain.
+ * Storage is also available for node, which is permanently persisted to the `./localStorage` folder - take care of removing entries. Note that multiple Crafty instances use the same storage, so care has to be taken not to overwrite existing entries.
  */
 /**@
  * #Crafty.storage
@@ -4933,9 +5011,8 @@ module.exports = {
  * ~~~
  */
 
-var storage = function(key, value) {
-  var storage = window.localStorage,
-      _value = value;
+var store = function(key, value){
+  var _value = value;
 
   if(!storage){
     return false;
@@ -4975,12 +5052,13 @@ var storage = function(key, value) {
  * ~~~
  *
  */
-storage.remove = function(key){
-  window.localStorage.removeItem(key);
+store.remove = function(key){
+  storage.removeItem(key);
 };
 
-module.exports = storage;
-},{}],13:[function(require,module,exports){
+module.exports = store;
+
+},{}],14:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -5131,7 +5209,7 @@ Crafty.CraftySystem.prototype = {
 	}
 
 };
-},{"../core/core.js":7}],14:[function(require,module,exports){
+},{"../core/core.js":8}],15:[function(require,module,exports){
 /**@
  * #Delay
  * @category Utilities
@@ -5254,7 +5332,7 @@ module.exports = {
     }
 };
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 /**@
  * #Tween
  * @category Animation
@@ -5385,9 +5463,9 @@ module.exports = {
   }
 };
 
-},{}],16:[function(require,module,exports){
-module.exports = "0.6.2";
 },{}],17:[function(require,module,exports){
+module.exports = "0.6.2";
+},{}],18:[function(require,module,exports){
 var Crafty = require('./core/core');
 
 Crafty.easing = require('./core/animation');
@@ -5441,7 +5519,7 @@ if(window) window.Crafty = Crafty;
 
 module.exports = Crafty;
 
-},{"./controls/controls":2,"./controls/device":3,"./controls/inputs":4,"./controls/keycodes":5,"./core/animation":6,"./core/core":7,"./core/extensions":8,"./core/loader":9,"./core/model":10,"./core/scenes":11,"./core/storage":12,"./core/systems":13,"./core/time":14,"./core/tween":15,"./debug/debug-layer":18,"./debug/logging":19,"./graphics/canvas":21,"./graphics/canvas-layer":20,"./graphics/color":22,"./graphics/dom":25,"./graphics/dom-helper":23,"./graphics/dom-layer":24,"./graphics/drawing":26,"./graphics/gl-textures":27,"./graphics/html":28,"./graphics/image":29,"./graphics/particles":30,"./graphics/sprite":32,"./graphics/sprite-animation":31,"./graphics/text":33,"./graphics/viewport":34,"./graphics/webgl":35,"./isometric/diamond-iso":36,"./isometric/isometric":37,"./sound/sound":38,"./spatial/2d":39,"./spatial/collision":40,"./spatial/math":41,"./spatial/rect-manager":42,"./spatial/spatial-grid":43}],18:[function(require,module,exports){
+},{"./controls/controls":3,"./controls/device":4,"./controls/inputs":5,"./controls/keycodes":6,"./core/animation":7,"./core/core":8,"./core/extensions":9,"./core/loader":10,"./core/model":11,"./core/scenes":12,"./core/storage":13,"./core/systems":14,"./core/time":15,"./core/tween":16,"./debug/debug-layer":19,"./debug/logging":20,"./graphics/canvas":22,"./graphics/canvas-layer":21,"./graphics/color":23,"./graphics/dom":26,"./graphics/dom-helper":24,"./graphics/dom-layer":25,"./graphics/drawing":27,"./graphics/gl-textures":28,"./graphics/html":29,"./graphics/image":30,"./graphics/particles":31,"./graphics/sprite":33,"./graphics/sprite-animation":32,"./graphics/text":34,"./graphics/viewport":35,"./graphics/webgl":36,"./isometric/diamond-iso":37,"./isometric/isometric":38,"./sound/sound":39,"./spatial/2d":40,"./spatial/collision":41,"./spatial/math":42,"./spatial/rect-manager":43,"./spatial/spatial-grid":44}],19:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -5819,7 +5897,7 @@ Crafty.DebugCanvas = {
 
 };
 
-},{"../core/core.js":7}],19:[function(require,module,exports){
+},{"../core/core.js":8}],20:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -5843,7 +5921,7 @@ Crafty.extend({
 		}
 	}
 });
-},{"../core/core.js":7}],20:[function(require,module,exports){
+},{"../core/core.js":8}],21:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -6179,7 +6257,7 @@ Crafty.extend({
 
     }
 });
-},{"../core/core.js":7}],21:[function(require,module,exports){
+},{"../core/core.js":8}],22:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -6334,7 +6412,7 @@ Crafty.c("Canvas", {
     }
 });
 
-},{"../core/core.js":7}],22:[function(require,module,exports){
+},{"../core/core.js":8}],23:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6590,7 +6668,7 @@ Crafty.c("Color", {
 });
 
 
-},{"../core/core.js":7,"fs":1}],23:[function(require,module,exports){
+},{"../core/core.js":8,"fs":1}],24:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6693,7 +6771,7 @@ Crafty.extend({
         }
     }
 });
-},{"../core/core.js":7}],24:[function(require,module,exports){
+},{"../core/core.js":8}],25:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6824,7 +6902,7 @@ Crafty.extend({
 
     }
 });
-},{"../core/core.js":7}],25:[function(require,module,exports){
+},{"../core/core.js":8}],26:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -7119,7 +7197,7 @@ Crafty.c("DOM", {
     }
 });
 
-},{"../core/core.js":7}],26:[function(require,module,exports){
+},{"../core/core.js":8}],27:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 Crafty.extend({
@@ -7166,7 +7244,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],27:[function(require,module,exports){
+},{"../core/core.js":8}],28:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 // An object for wrangling textures
@@ -7349,7 +7427,7 @@ TextureWrapper.prototype = {
         gl.uniform2f(gl.getUniformLocation(shader, dimension_name), this.width, this.height);
 	}
 };
-},{"../core/core.js":7}],28:[function(require,module,exports){
+},{"../core/core.js":8}],29:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -7434,7 +7512,7 @@ Crafty.c("HTML", {
         return this;
     }
 });
-},{"../core/core.js":7}],29:[function(require,module,exports){
+},{"../core/core.js":8}],30:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -7579,7 +7657,7 @@ Crafty.c("Image", {
 
     }
 });
-},{"../core/core.js":7,"fs":1}],30:[function(require,module,exports){
+},{"../core/core.js":8,"fs":1}],31:[function(require,module,exports){
 var Crafty = require('../core/core.js'),    
     document = window.document;
 
@@ -7965,7 +8043,7 @@ Crafty.c("Particles", {
     }
 });
 
-},{"../core/core.js":7}],31:[function(require,module,exports){
+},{"../core/core.js":8}],32:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -8443,7 +8521,7 @@ Crafty.c("SpriteAnimation", {
 	}
 });
 
-},{"../core/core.js":7}],32:[function(require,module,exports){
+},{"../core/core.js":8}],33:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -8778,7 +8856,7 @@ Crafty.c("Sprite", {
     }
 });
 
-},{"../core/core.js":7,"fs":1}],33:[function(require,module,exports){
+},{"../core/core.js":8,"fs":1}],34:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -9048,7 +9126,7 @@ Crafty.c("Text", {
     }
 
 });
-},{"../core/core.js":7}],34:[function(require,module,exports){
+},{"../core/core.js":8}],35:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -9787,7 +9865,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],35:[function(require,module,exports){
+},{"../core/core.js":8}],36:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -10375,7 +10453,7 @@ Crafty.extend({
 
     }
 });
-},{"../core/core.js":7}],36:[function(require,module,exports){
+},{"../core/core.js":8}],37:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -10584,7 +10662,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":7}],37:[function(require,module,exports){
+},{"../core/core.js":8}],38:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -10775,7 +10853,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],38:[function(require,module,exports){
+},{"../core/core.js":8}],39:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -11329,7 +11407,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],39:[function(require,module,exports){
+},{"../core/core.js":8}],40:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     HashMap = require('./spatial-grid.js');
 
@@ -13254,7 +13332,7 @@ Crafty.matrix.prototype = {
     }
 };
 
-},{"../core/core.js":7,"./spatial-grid.js":43}],40:[function(require,module,exports){
+},{"../core/core.js":8,"./spatial-grid.js":44}],41:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     DEG_TO_RAD = Math.PI / 180;
 
@@ -13942,7 +14020,7 @@ Crafty.c("Collision", {
     }
 });
 
-},{"../core/core.js":7}],41:[function(require,module,exports){
+},{"../core/core.js":8}],42:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -15040,7 +15118,7 @@ Crafty.math.Matrix2D = (function () {
 
     return Matrix2D;
 })();
-},{"../core/core.js":7}],42:[function(require,module,exports){
+},{"../core/core.js":8}],43:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -15200,7 +15278,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":7}],43:[function(require,module,exports){
+},{"../core/core.js":8}],44:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -15566,4 +15644,4 @@ var Crafty = require('../core/core.js');
 
     module.exports = HashMap;
 
-},{"../core/core.js":7}]},{},[17]);
+},{"../core/core.js":8}]},{},[18]);
