@@ -777,7 +777,7 @@ Crafty.extend({
          * ~~~
          * // Get DeviceOrientation event normalized data.
          * Crafty.device.deviceOrientation(function(data){
-         *     console.log('data.tiltLR : '+Math.round(data.tiltLR)+', data.tiltFB : '+Math.round(data.tiltFB)+', data.dir : '+Math.round(data.dir)+', data.motUD : '+data.motUD+'');
+         *     Crafty.log('data.tiltLR : '+Math.round(data.tiltLR)+', data.tiltFB : '+Math.round(data.tiltFB)+', data.dir : '+Math.round(data.dir)+', data.motUD : '+data.motUD+'');
          * });
          * ~~~
          *
@@ -817,7 +817,7 @@ Crafty.extend({
          * ~~~
          * // Get DeviceMotion event normalized data.
          * Crafty.device.deviceMotion(function(data){
-         *     console.log('data.moAccel : '+data.rawAcceleration+', data.moCalcTiltLR : '+Math.round(data.tiltLR)+', data.moCalcTiltFB : '+Math.round(data.tiltFB)+'');
+         *     Crafty.log('data.moAccel : '+data.rawAcceleration+', data.moCalcTiltLR : '+Math.round(data.tiltLR)+', data.moCalcTiltFB : '+Math.round(data.tiltFB)+'');
          * });
          * ~~~
          *
@@ -913,7 +913,7 @@ Crafty.extend({
      *    .color('green')
      *    .bind('TouchStart',function(e){ alert('big GREEN box was touched', e); });
      * 
-     * console.log("multitouch is "+Crafty.multitouch());
+     * Crafty.log("multitouch is "+Crafty.multitouch());
      * ~~~
      * @see Crafty.touchDispatch
      */
@@ -1482,7 +1482,7 @@ Crafty.bind("CraftyStop", function () {
  *
  * myEntity.bind('MouseUp', function(e) {
  *    if( e.mouseButton == Crafty.mouseButtons.RIGHT )
- *        console.log("Clicked right button");
+ *        Crafty.log("Clicked right button");
  * })
  * ~~~
  * @see Crafty.mouseDispatch
@@ -1526,11 +1526,11 @@ Crafty.c("Mouse", {
  * .attr({x: 10, y: 10, w: 40, h: 40})
  * .color('green')
  * .bind('TouchStart', function(TouchPoint){
- *   console.log('myEntity has been touched', TouchPoint);
+ *   Crafty.log('myEntity has been touched', TouchPoint);
  * }).bind('TouchMove', function(TouchPoint) {
- *   console.log('Finger moved over myEntity at the { x: ' + TouchPoint.realX + ', y: ' + TouchPoint.realY + ' } coordinates.');
+ *   Crafty.log('Finger moved over myEntity at the { x: ' + TouchPoint.realX + ', y: ' + TouchPoint.realY + ' } coordinates.');
  * }).bind('TouchEnd', function() {
- *   console.log('Touch over myEntity has finished.');
+ *   Crafty.log('Touch over myEntity has finished.');
  * });
  * ~~~
  * @see Crafty.multitouch
@@ -1579,7 +1579,7 @@ Crafty.c("AreaMap", {
      * Crafty.e("2D, DOM, Color, Mouse")
      *     .color("red")
      *     .attr({ w: 100, h: 100 })
-     *     .bind('MouseOver', function() {console.log("over")})
+     *     .bind('MouseOver', function() {Crafty.log("over")})
      *     .areaMap([0, 0, 50, 0, 50, 50, 0, 50) 
      * ~~~
      *
@@ -3020,7 +3020,7 @@ Crafty.fn = Crafty.prototype = {
      * });
      *
      * ent.customData = "2" // set customData to 2
-     * console.log(ent.customData) // prints 2
+     * Crafty.log(ent.customData) // prints 2
      * ~~~
      */
     defineField: function (prop, getCallback, setCallback) {
@@ -3378,7 +3378,7 @@ Crafty.extend({
                         if (tick !== null) {
                             requestID = onFrame(tick);
                         }
-                        //console.log(requestID + ', ' + frame)
+                        //Crafty.log(requestID + ', ' + frame)
                     };
 
                     tick();
@@ -3921,7 +3921,7 @@ Crafty.extend({
      * });
      *
      * ent.customData = "2" // set customData to 2
-     * console.log(ent.customData) // prints 2
+     * Crafty.log(ent.customData) // prints 2
      * ~~~
      * @see Crafty Core#.defineField
      */
@@ -4145,7 +4145,7 @@ module.exports = {
      * ~~~
      * var player = Crafty.e("2D");
      *     player.onMouseDown = function(e) {
-     *         console.log(e.mouseButton, e.realX, e.realY);
+     *         Crafty.log(e.mouseButton, e.realX, e.realY);
      *     };
      * Crafty.addEvent(player, Crafty.stage.elem, "mousedown", player.onMouseDown);
      * ~~~
@@ -4282,7 +4282,7 @@ module.exports = {
      *     "ray": ['ray.mp3'] // This loads ray.mp3 from custom/audio/path/ray.mp3
      *   }
      * }, function() {
-     *   console.log('loaded');
+     *   Crafty.log('loaded');
      * });
      * ~~~
      *
@@ -4709,7 +4709,7 @@ module.exports = {
  * });
  * person = Crafty.e('Person').attr({name: 'blaine'});
  * person.bind('Change[name]', function() {
- *   console.log('name changed!');
+ *   Crafty.log('name changed!');
  * });
  * person.attr('name', 'blainesch'); // Triggers event
  * person.is_dirty('name'); // true
@@ -4945,7 +4945,7 @@ module.exports = {
         if (this._scenes.hasOwnProperty(name)) {
             this._scenes[name].initialize.call(this, data);
         } else {
-            console.error('The scene "' + name + '" does not exist');
+            Crafty.error('The scene "' + name + '" does not exist');
         }
 
         return;
@@ -5272,19 +5272,19 @@ module.exports = {
      *
      * The simplest delay
      * ~~~
-     * console.log("start");
+     * Crafty.log("start");
      * Crafty.e("Delay").delay(function() {
-     *   console.log("100ms later");
+     *   Crafty.log("100ms later");
      * }, 100, 0);
      * ~~~
      *
      * Delay with callbackOff to be executed after all delay iterations
      * ~~~
-     * console.log("start");
+     * Crafty.log("start");
      * Crafty.e("Delay").delay(function() {
-     *   console.log("100ms later");
+     *   Crafty.log("100ms later");
      * }, 100, 3, function() {
-     *   console.log("delay finished");
+     *   Crafty.log("delay finished");
      * });
      * ~~~
      *
@@ -5310,7 +5310,7 @@ module.exports = {
      * @example
      * ~~~
      * var doSomething = function(){
-     *   console.log("doing something");
+     *   Crafty.log("doing something");
      * };
      *
      * // execute doSomething each 100 miliseconds indefinetely
@@ -5907,10 +5907,20 @@ var Crafty = require('../core/core.js');
  *
  * @sign Crafty.log( arguments )
  * @param arguments - arguments which are passed to `console.log`
- * 
+ *
  * This is a simple wrapper for `console.log`.  You can disable logging messages by setting `Crafty.loggingEnabled` to false.
+ * It is recommended to use `Crafty.log`, as `console.log` can crash on IE9.
  */
-
+/**@
+ * #Crafty.error
+ * @category Debug
+ *
+ * @sign Crafty.error( arguments )
+ * @param arguments - arguments which are passed to `console.error`
+ *
+ * This is a simple wrapper for `console.error`.  You can disable logging messages by setting `Crafty.loggingEnabled` to false.
+ * It is recommended to use `Crafty.error`, as `console.error` can crash on IE9.
+ */
 Crafty.extend({
 	// Allow logging to be disabled
 	loggingEnabled: true,
@@ -5918,6 +5928,11 @@ Crafty.extend({
 	log: function() {
 		if (Crafty.loggingEnabled && console && console.log) {
 			console.log.apply(this, arguments);
+		}
+	},
+	error: function() {
+		if (Crafty.loggingEnabled && console && console.error) {
+			console.error.apply(this, arguments);
 		}
 	}
 });
@@ -6183,7 +6198,7 @@ Crafty.extend({
         },
 
         debug: function() {
-            console.log(this._changedObjs);
+            Crafty.log(this._changedObjs);
         },
 
         /** cleans up current dirty state, stores stale state for future passes */
@@ -6837,7 +6852,7 @@ Crafty.extend({
          * @sign public Crafty.domLayer.debug()
          */
         debug: function () {
-            console.log(this._changedObjs);
+            Crafty.log(this._changedObjs);
         },
 
 
@@ -10772,7 +10787,7 @@ Crafty.extend({
          * ~~~
          * var iso = Crafty.isometric.size(128,96);
          * var px = iso.pos2px(12800,4800);
-         * console.log(px); //Object { x=100, y=100}
+         * Crafty.log(px); //Object { x=100, y=100}
          * ~~~
          */
         px2pos: function (left, top) {
@@ -10798,7 +10813,7 @@ Crafty.extend({
          * ~~~
          * var iso = Crafty.isometric.size(128,96).centerAt(10,10); //Viewport is now moved
          * //After moving the viewport by another event you can get the new center point
-         * console.log(iso.centerAt());
+         * Crafty.log(iso.centerAt());
          * ~~~
          */
         centerAt: function (x, y) {
@@ -13732,10 +13747,10 @@ Crafty.c("Collision", {
      * Crafty.e("2D, Collision")
      *     .checkHits('Solid') // check for collisions with entities that have the Solid component in each frame
      *     .bind("HitOn", function(hitData) {
-     *         console.log("Collision with Solid entity occurred for the first time.");
+     *         Crafty.log("Collision with Solid entity occurred for the first time.");
      *     })
      *     .bind("HitOff", function(comp) {
-     *         console.log("Collision with Solid entity ended.");
+     *         Crafty.log("Collision with Solid entity ended.");
      *     });
      * ~~~
      *
@@ -13856,7 +13871,7 @@ Crafty.c("Collision", {
      * Crafty.e("2D, Collision")
      *     .checkHits('Solid')
      *     .bind("HitOn", function(hitData) {
-     *         console.log("Collision with Solid entity was reported in this frame again!");
+     *         Crafty.log("Collision with Solid entity was reported in this frame again!");
      *         this.resetHitChecks('Solid'); // fire the HitOn event in the next frame also, if the collision is still active.
      *     })
      * ~~~
