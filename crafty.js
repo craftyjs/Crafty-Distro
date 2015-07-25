@@ -1570,10 +1570,15 @@ Crafty.c("AreaMap", {
     /**@
      * #.areaMap
      * @comp AreaMap
+     *
      * @sign public this .areaMap(Crafty.polygon polygon)
      * @param polygon - Instance of Crafty.polygon used to check if the mouse coordinates are inside this region
-     * @sign public this .areaMap(Array point1, .., Array pointN)
-     * @param point# - Array with an `x` and `y` position to generate a polygon
+     *
+     * @sign public this .areaMap(Array coordinatePairs)
+     * @param coordinatePairs - Array of `x`, `y` coordinate pairs to generate a polygon
+     *
+     * @sign public this .areaMap(x1, y1,.., xN, yN)
+     * @param point# - List of `x`, `y` coordinate pairs to generate a polygon
      *
      * Assign a polygon to the entity so that pointer (mouse or touch) events will only be triggered if
      * the coordinates are inside the given polygon.
@@ -1584,7 +1589,14 @@ Crafty.c("AreaMap", {
      *     .color("red")
      *     .attr({ w: 100, h: 100 })
      *     .bind('MouseOver', function() {Crafty.log("over")})
-     *     .areaMap([0, 0, 50, 0, 50, 50, 0, 50) 
+     *     .areaMap(0, 0, 50, 0, 50, 50, 0, 50);
+     *
+     * Crafty.e("2D, Mouse")
+     *     .areaMap([0, 0, 50, 0, 50, 50, 0, 50]);
+     *
+     * Crafty.e("2D, Mouse").areaMap(
+     *     new Crafty.polygon([0, 0, 50, 0, 50, 50, 0, 50])
+     * );
      * ~~~
      *
      * @see Crafty.polygon
@@ -1595,6 +1607,10 @@ Crafty.c("AreaMap", {
             //convert args to array to create polygon
             var args = Array.prototype.slice.call(arguments, 0);
             poly = new Crafty.polygon(args);
+        } else if (poly.constructor === Array) {
+            poly = new Crafty.polygon(poly.slice());
+        } else {
+            poly = poly.clone();
         }
 
         poly.shift(this._x, this._y);
@@ -13400,12 +13416,15 @@ Crafty.c("Collision", {
      * @trigger NewHitbox - when a new hitbox is assigned - Crafty.polygon
      *
      * @sign public this .collision([Crafty.polygon polygon])
-     * @param polygon - Crafty.polygon object that will act as the hit area.
+     * @param polygon - Optional Crafty.polygon object that will act as the hit area.
      *
-     * @sign public this .collision(x1, y1,.., xN, yN)
-     * @param point# - Array of x, y coordinate pairs to generate a hit area polygon.
+     * @sign public this .collision([Array coordinatePairs])
+     * @param coordinatePairs - Optional array of x, y coordinate pairs to generate a hit area polygon.
      *
-     * Constructor that takes a polygon or array of points to use as the hit area,
+     * @sign public this .collision([x1, y1,.., xN, yN])
+     * @param point# - Optional list of x, y coordinate pairs to generate a hit area polygon.
+     *
+     * Constructor that takes a polygon, an array of points or a list of points to use as the hit area,
      * with points being relative to the object's position in its unrotated state.
      *
      * The hit area must be a convex shape and not concave for collision detection to work properly.
@@ -13420,10 +13439,12 @@ Crafty.c("Collision", {
      * @example
      * ~~~
      * Crafty.e("2D, Collision").collision(
-     *     new Crafty.polygon([50, 0, 100, 100, 0,1 00])
+     *     new Crafty.polygon([50, 0,  100, 100,  0, 100])
      * );
      *
-     * Crafty.e("2D, Collision").collision([50, 0, 100, 100, 0, 100]);
+     * Crafty.e("2D, Collision").collision([50, 0,  100, 100,  0, 100]);
+     *
+     * Crafty.e("2D, Collision").collision(50, 0,  100, 100,  0, 100);
      * ~~~
      *
      * @see Crafty.polygon
@@ -13447,6 +13468,11 @@ Crafty.c("Collision", {
                 //convert args to array to create polygon
                 var args = Array.prototype.slice.call(arguments, 0);
                 poly = new Crafty.polygon(args);
+            // Otherwise, we set the specified hitbox, converting from an array of points to a polygon if necessary
+            } else if (poly.constructor === Array) {
+                //Clone the array so we don't modify it for anything else that might be using it
+                poly = new Crafty.polygon(poly.slice());
+            // Otherwise, we set the specified hitbox
             } else {
                 //Clone the poly so we don't modify it for anything else that might be using it
                 poly = poly.clone();
