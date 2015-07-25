@@ -268,6 +268,10 @@ Crafty.c("Multiway", {
      * Constructor to initialize the speed and keyBindings. Component will listen to key events and move the entity appropriately.
      * Can be called while a key is pressed to change direction & speed on the fly.
      *
+     * Multiway acts by adding a velocity on key press and removing the same velocity when the respective key is released.
+     * This works well in most cases, but can cause undesired behavior if you manipulate velocities by yourself while this component is in effect.
+     * If you need to resolve collisions, it's advised to correct the position directly rather than to manipulate the velocity. If you still need to reset the velocity once a collision happens, make sure to re-add the previous velocity once the collision is resolved.
+     *
      * @example
      * ~~~
      * this.multiway(150, {UP_ARROW: -90, DOWN_ARROW: 90, RIGHT_ARROW: 0, LEFT_ARROW: 180});
@@ -13416,6 +13420,9 @@ Crafty.c("Collision", {
      *
      * If a hitbox is set that is outside of the bounds of the entity itself, there will be a small performance penalty as it is tracked separately.
      *
+     * In order for your custom hitbox to have any effect, you have to add the `Collision` component to all other entities this entity needs to collide with using this custom hitbox.
+     * On the contrary the collisions will be resolved using the default hitbox. See `.hit()` - `MBR` represents default hitbox collision, `SAT` represents custom hitbox collision.
+     *
      * @example
      * ~~~
      * Crafty.e("2D, Collision").collision(
@@ -13604,6 +13611,10 @@ Crafty.c("Collision", {
      *   - *SAT:* Collision between any two convex polygons. Used when both colliding entities have the `Collision` component applied to them.
      * - **overlap:** If SAT collision was used, this will signify the overlap percentage between the colliding entities.
      *
+     * Keep in mind that both entities need to have the `Collision` component, if you want to check for `SAT` (custom hitbox) collisions between them.
+     *
+     * If you want more fine-grained control consider using `Crafty.map.search()`.
+     *
      * @see 2D
      */
     hit: function (comp) {
@@ -13666,7 +13677,8 @@ Crafty.c("Collision", {
      *
      * Creates an EnterFrame event calling .hit() each frame.  When a collision is detected the callback will be invoked.
      * Note that the `hit` callback will be invoked every frame the collision is active, not just the first time the collision occurs.
-     * If you want more fine-grained control consider using `.checkHits` or `.hit`.
+     *
+     * If you want more fine-grained control consider using `.checkHits()`, `.hit()` or even `Crafty.map.search()`.
      *
      * @see .checkHits
      * @see .hit
@@ -13741,6 +13753,8 @@ Crafty.c("Collision", {
      *
      * Calling this method more than once for the same component type will not
      * cause redundant hit checks.
+     *
+     * If you want more fine-grained control consider using `.hit()` or even `Crafty.map.search()`.
      *
      * @note Hit checks are performed upon entering each new frame (using
      * the *EnterFrame* event). It is entirely possible for object to move in
