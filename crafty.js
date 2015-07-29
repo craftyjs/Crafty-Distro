@@ -1610,6 +1610,8 @@ Crafty.c("AreaMap", {
      * #.areaMap
      * @comp AreaMap
      *
+     * @trigger NewAreaMap - when a new areaMap is assigned - Crafty.polygon
+     *
      * @sign public this .areaMap(Crafty.polygon polygon)
      * @param polygon - Instance of Crafty.polygon used to check if the mouse coordinates are inside this region
      *
@@ -1653,10 +1655,9 @@ Crafty.c("AreaMap", {
         }
 
         poly.shift(this._x, this._y);
-        //this.map = poly;
         this.mapArea = poly;
-
         this.attach(this.mapArea);
+        this.trigger("NewAreaMap", poly);
         return this;
     }
 });
@@ -5877,6 +5878,50 @@ Crafty.c("SolidHitBox", {
     },
     matchHitBox: function () {
         this.debugPolygon(this.map);
+    }
+});
+
+/**@
+ * #WiredAreaMap
+ * @category Debug
+ *
+ * Adding this component to an entity with an AreaMap component will cause its click polygon to be drawn to the debug canvas as an outline.
+ * Following click areas exist for an entity (in decreasing order of priority): AreaMap, Hitbox, MBR. Use the appropriate debug components to display them.
+ *
+ * The methods of DebugCanvas can be used to control this component's appearance.
+ * @see DebugPolygon, DebugCanvas
+ */
+Crafty.c("WiredAreaMap", {
+    init: function () {
+        this.requires("DebugPolygon")
+            .debugStroke("green")
+            .matchAreaMap();
+        this.bind("NewAreaMap", this.matchAreaMap);
+    },
+    matchAreaMap: function () {
+        this.debugPolygon(this.mapArea);
+    }
+});
+
+/**@
+ * #SolidAreaMap
+ * @category Debug
+ *
+ * Adding this component to an entity with an AreaMap component will cause its click polygon to be drawn to the debug canvas, with a default alpha level of 0.7.
+ * Following click areas exist for an entity (in decreasing order of priority): AreaMap, Hitbox, MBR. Use the appropriate debug components to display them.
+ *
+ * The methods of DebugCanvas can be used to control this component's appearance.
+ * @see DebugPolygon, DebugCanvas
+ */
+Crafty.c("SolidAreaMap", {
+    init: function () {
+        this.requires("DebugPolygon")
+            .debugFill("lime").debugAlpha(0.7)
+            .matchAreaMap();
+        this.bind("NewAreaMap", this.matchAreaMap);
+    },
+    matchAreaMap: function () {
+        this.debugPolygon(this.mapArea);
     }
 });
 
