@@ -972,7 +972,6 @@ Crafty.extend({
      * @see Crafty.multitouch
      */
     mouseDispatch: function (e) {
-
         if (!Crafty.mouseObjs) return;
         Crafty.lastEvent = e;
 
@@ -1434,7 +1433,7 @@ Crafty.extend({
 });
 
 //initialize the input events onload
-Crafty.bind("Load", function () {
+Crafty._preBind("Load", function () {
     Crafty.addEvent(this, "keydown", Crafty.keyboardDispatch);
     Crafty.addEvent(this, "keyup", Crafty.keyboardDispatch);
 
@@ -1458,7 +1457,7 @@ Crafty.bind("Load", function () {
         Crafty.addEvent(this, Crafty.stage.elem, "mousewheel", Crafty.mouseWheelDispatch);
 });
 
-Crafty.bind("CraftyStop", function () {
+Crafty._preBind("CraftyStop", function () {
     Crafty.removeEvent(this, "keydown", Crafty.keyboardDispatch);
     Crafty.removeEvent(this, "keyup", Crafty.keyboardDispatch);
 
@@ -3284,6 +3283,16 @@ Crafty.extend({
      * @see Crafty.stop,  Crafty.viewport
      */
     init: function (w, h, stage_elem) {
+        
+        // If necessary, attach any event handlers registered before Crafty started
+        if (!this._preBindDone) {
+            for(var i = 0; i < this._bindOnInit.length; i++) {
+
+                var preBind = this._bindOnInit[i];
+                Crafty.bind(preBind.event, preBind.handler);
+            }
+        }
+
         Crafty.viewport.init(w, h, stage_elem);
 
         //call all arbitrary functions attached to onload
@@ -3291,6 +3300,17 @@ Crafty.extend({
         this.timer.init();
 
         return this;
+    },
+
+    // There are some events that need to be bound to Crafty when it's started/restarted, so store them here
+    // Switching Crafty's internals to use the new system idiom should allow removing this hack
+    _bindOnInit: [],
+    _preBindDone: false,
+    _preBind: function(event, handler) {
+        this._bindOnInit.push({
+            event: event,
+            handler: handler
+        });
     },
 
     /**@
@@ -3313,7 +3333,7 @@ Crafty.extend({
     /**@
      * #Crafty.stop
      * @category Core
-     * @trigger CraftyStop - when the game is stopped
+     * @trigger CraftyStop - when the game is stopped  - {bool clearState}
      * @sign public this Crafty.stop([bool clearState])
      * @param clearState - if true the stage and all game state is cleared.
      *
@@ -3323,19 +3343,32 @@ Crafty.extend({
      * @see Crafty.init
      */
     stop: function (clearState) {
+        Crafty.trigger("CraftyStop", clearState);
+
         this.timer.stop();
         if (clearState) {
+            // Remove audio
             Crafty.audio.remove();
+
+            // Remove the stage element, and re-add a div with the same id
             if (Crafty.stage && Crafty.stage.elem.parentNode) {
                 var newCrStage = document.createElement('div');
                 newCrStage.id = Crafty.stage.elem.id;
                 Crafty.stage.elem.parentNode.replaceChild(newCrStage, Crafty.stage.elem);
             }
+
+            // Reset references to the now destroyed graphics layers
+            delete Crafty.canvasLayer.context;
+            delete Crafty.domLayer._div;
+            delete Crafty.webgl.context;
+
+            // reset callbacks, and indicate that prebound functions need to be bound on init again
+            Crafty._unbindAll();
+            Crafty._addCallbackMethods(Crafty);
+            this._preBindDone = false;
+
             initState();
         }
-
-        Crafty.trigger("CraftyStop");
-
         return this;
     },
 
@@ -4225,22 +4258,18 @@ module.exports = {
 
         //save anonymous function to be able to remove
         var afn = function (e) {
-            e = e || window.event;
-
-            if (typeof callback === 'function') {
-                callback.call(ctx, e);
-            }
+            callback.call(ctx, e);
         },
             id = ctx[0] || "";
 
-        if (!this._events[id + obj + type + callback]) this._events[id + obj + type + callback] = afn;
-        else return;
-
-        if (obj.attachEvent) { //IE
-            obj.attachEvent('on' + type, afn);
-        } else { //Everyone else
-            obj.addEventListener(type, afn, false);
+        if (!this._events[id + obj + type + callback]) 
+            this._events[id + obj + type + callback] = afn;
+        else  {
+            return;
         }
+
+        obj.addEventListener(type, afn, false);
+        
     },
 
     /**@
@@ -4270,9 +4299,7 @@ module.exports = {
             afn = this._events[id + obj + type + callback];
 
         if (afn) {
-            if (obj.detachEvent) {
-                obj.detachEvent('on' + type, afn);
-            } else obj.removeEventListener(type, afn, false);
+            obj.removeEventListener(type, afn, false);
             delete this._events[id + obj + type + callback];
         }
     },
@@ -6118,6 +6145,11 @@ Crafty.extend({
                 return;
             }
 
+            // set properties to initial values -- necessary on a restart
+            this._dirtyRects = [];
+            this._changedObjs = [];
+            this.layerCount = 0;
+
             //create an empty canvas element
             var c;
             c = document.createElement("canvas");
@@ -6917,6 +6949,10 @@ Crafty.extend({
         _div: null,
 
         init: function () {
+            // Set properties to initial values -- necessary on a restart
+            this._changedObjs = [];
+            this._dirtyViewport = false;
+
             // Create the div that will contain DOM elements
             var div = this._div = document.createElement("div");
 
@@ -9446,7 +9482,7 @@ Crafty.extend({
                 Crafty.unbind("EnterFrame", enterFrame);
             }
 
-            Crafty.bind("StopCamera", stopPan);
+            Crafty._preBind("StopCamera", stopPan);
 
             return function (dx, dy, time, easingFn) {
                 // Cancel any current camera control
@@ -9505,7 +9541,7 @@ Crafty.extend({
                 }
             }
 
-            Crafty.bind("StopCamera", stopFollow);
+            Crafty._preBind("StopCamera", stopFollow);
 
             return function (target, offsetx, offsety) {
                 if (!target || !target.has('2D'))
@@ -9577,7 +9613,7 @@ Crafty.extend({
             function stopZoom(){
                 Crafty.unbind("EnterFrame", enterFrame);
             }
-            Crafty.bind("StopCamera", stopZoom);
+            Crafty._preBind("StopCamera", stopZoom);
 
             var startingZoom, finalZoom, finalAmount, startingX, finalX, startingY, finalY, easing;
 
@@ -9785,10 +9821,16 @@ Crafty.extend({
         init: function (w, h, stage_elem) {
             // setters+getters for the viewport
             this._defineViewportProperties();
+
+            // Set initial values -- necessary on restart
+            this._x = 0;
+            this._y = 0;
+            this._scale = 1;
+            this.bounds = null;
+
             // If no width or height is defined, the width and height is set to fullscreen
             this._width = w || window.innerWidth;
             this._height = h || window.innerHeight;
-
 
             //check if stage exists
             if (typeof stage_elem === 'undefined')
@@ -10476,6 +10518,9 @@ Crafty.extend({
                 Crafty.stop();
                 return;
             }
+
+            // necessary on restart
+            this.changed_objects = [];
 
             //create an empty canvas element
             var c;
@@ -11605,6 +11650,7 @@ var M = Math,
  * @trigger Move - when the entity has moved - { _x:Number, _y:Number, _w:Number, _h:Number } - Old position
  * @trigger Invalidate - when the entity needs to be redrawn
  * @trigger Rotate - when the entity is rotated - { cos:Number, sin:Number, deg:Number, rad:Number, o: {x:Number, y:Number}}
+ * @trigger Reorder - when the entity's z index has changed
  */
 Crafty.c("2D", {
     /**@
@@ -12463,7 +12509,7 @@ Crafty.c("2D", {
             value = value==intValue ? intValue : intValue+1;
             this._globalZ = value*100000+this[0]; //magic number 10^5 is the max num of entities
             this[name] = value;
-            this.trigger("reorder");
+            this.trigger("Reorder");
             //if the rect bounds change, update the MBR and trigger move
         } else if (name === '_x' || name === '_y') {
             // mbr is the minimal bounding rectangle of the entity
