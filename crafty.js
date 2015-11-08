@@ -1,5 +1,5 @@
 /**
- * craftyjs 0.6.3
+ * craftyjs 0.7.0
  * http://craftyjs.com/
  *
  * Copyright 2015, Louis Stowasser
@@ -5623,7 +5623,7 @@ module.exports = {
 };
 
 },{}],17:[function(require,module,exports){
-module.exports = "0.6.2";
+module.exports = "0.7.0";
 },{}],18:[function(require,module,exports){
 var Crafty = require('./core/core');
 
