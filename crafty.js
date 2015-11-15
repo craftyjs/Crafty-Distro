@@ -3521,32 +3521,45 @@ Crafty.extend({
             /**@
              * #Crafty.timer.steptype
              * @comp Crafty.timer
+             *
+             * @trigger NewSteptype - when the current steptype changes - { mode, maxTimeStep } - New steptype
+             *
+             * Can be called to set the type of timestep the game loop uses.
              * @sign public void Crafty.timer.steptype(mode [, maxTimeStep])
-             * Can be called to set the type of timestep the game loop uses
              * @param mode - the type of time loop.  Allowed values are "fixed", "semifixed", and "variable".  Crafty defaults to "fixed".
              * @param maxTimeStep - For "fixed", sets the max number of frames per step.   For "variable" and "semifixed", sets the maximum time step allowed.
+             *
+             * Can be called to get the type of timestep the game loop uses.
+             * @sign public Object Crafty.timer.steptype(void)
+             * @returns Object containing the current timestep's properties { mode, maxTimeStep }
              *
              * * In "fixed" mode, each frame is sent the same value of `dt`, and to achieve the target game speed, mulitiple frame events are triggered before each render.
              * * In "variable" mode, there is only one frame triggered per render.  This recieves a value of `dt` equal to the actual elapsed time since the last frame.
              * * In "semifixed" mode, multiple frames per render are processed, and the total time since the last frame is divided evenly between them.
              *
+             * @see Crafty.timer.FPS
              */
-
             steptype: function (newmode, option) {
+                // setters
                 if (newmode === "variable" || newmode === "semifixed") {
                     mode = newmode;
                     if (option)
                         maxTimestep = option;
-
+                    Crafty.trigger("NewSteptype", {mode: mode, maxTimeStep: maxTimestep});
                 } else if (newmode === "fixed") {
                     mode = "fixed";
                     if (option)
                         maxFramesPerStep = option;
-                } else {
+                    Crafty.trigger("NewSteptype", {mode: mode, maxTimeStep: maxFramesPerStep});
+                } else if (newmode !== undefined) {
                     throw "Invalid step type specified";
+                // getter
+                } else {
+                    return {
+                        mode: mode,
+                        maxTimeStep: (mode === "variable" || mode === "semifixed") ? maxTimestep : maxFramesPerStep
+                    };
                 }
-
-
             },
 
             /**@
@@ -3566,6 +3579,7 @@ Crafty.extend({
              * Specifically it triggers `EnterFrame` & `ExitFrame` events for each frame and `PreRender`, `RenderScene` & `PostRender` events for each render.
              *
              * @see Crafty.timer.steptype
+             * @see Crafty.timer.FPS
              */
             step: function () {
                 var drawTimeStart, dt, lastFrameTime, loops = 0;
@@ -3648,6 +3662,8 @@ Crafty.extend({
              *
              * Sets the target frames per second. This is not an actual frame rate.
              * The default rate is 50.
+             *
+             * @see Crafty.timer.steptype
              */
             FPS: function (value) {
                 if (typeof value == "undefined")
@@ -12734,6 +12750,7 @@ Crafty.c("Supportable", {
         // Decrease width by 1px from left and 1px from right, to fall more gracefully
         // area._x++; area._w--;
 
+        // check if we lift-off
         if (ground) {
             var garea = ground._cbr || ground._mbr || ground;
             if (!(ground.__c[groundComp] && overlap(garea, area))) {
@@ -12743,6 +12760,7 @@ Crafty.c("Supportable", {
             }
         }
 
+        // check if we land (also possible to land on other ground object in same frame after lift-off from current ground object)
         if (!ground) {
             var obj, oarea,
                 results = Crafty.map.search(area, false),
@@ -12817,6 +12835,7 @@ Crafty.c("GroundAttacher", {
  */
 Crafty.c("Gravity", {
     _gravityConst: 500,
+    _gravityActive: false,
 
     init: function () {
         this.requires("2D, Supportable, Motion");
@@ -12857,7 +12876,7 @@ Crafty.c("Gravity", {
      * @see Supportable, Motion
      */
     gravity: function (comp) {
-        this.bind("CheckLanding", this._gravityCheckLanding);
+        this.uniqueBind("CheckLanding", this._gravityCheckLanding);
         this.startGroundDetection(comp);
         this._startGravity();
 
@@ -12890,7 +12909,7 @@ Crafty.c("Gravity", {
      * Crafty.e("2D, DOM, Color, Gravity")
      *   .color("red")
      *   .attr({ w: 100, h: 100 })
-     *   .gravityConst(5)
+     *   .gravityConst(750)
      *   .gravity("platform");
      * ~~~
      */
@@ -12903,14 +12922,17 @@ Crafty.c("Gravity", {
 
         return this;
     },
+
     _startGravity: function() {
+        if (this._gravityActive) return;
         this._gravityActive = true;
         this.ay += this._gravityConst;
     },
     _stopGravity: function() {
+        if (!this._gravityActive) return;
+        this._gravityActive = false;
         this.ay = 0;
         this.vy = 0;
-        this._gravityActive = false;
     }
 });
 
