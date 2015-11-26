@@ -7783,7 +7783,7 @@ Crafty.c("HTML", {
 var Crafty = require('../core/core.js');
 
 
-// 
+//
 // Define some variables required for webgl
 var fs = require('fs');
 var IMAGE_VERTEX_SHADER = "attribute vec2 aPosition;\nattribute vec3 aOrientation;\nattribute vec2 aLayer;\nattribute vec2 aTextureCoord;\n\nvarying mediump vec3 vTextureCoord;\n\nuniform vec4 uViewport;\nuniform mediump vec2 uTextureDimensions;\n\nmat4 viewportScale = mat4(2.0 / uViewport.z, 0, 0, 0,    0, -2.0 / uViewport.w, 0,0,    0, 0,1,0,    -1,+1,0,1);\nvec4 viewportTranslation = vec4(uViewport.xy, 0, 0);\n\nvoid main() {\n  vec2 pos = aPosition;\n  vec2 entityOrigin = aOrientation.xy;\n  mat2 entityRotationMatrix = mat2(cos(aOrientation.z), sin(aOrientation.z), -sin(aOrientation.z), cos(aOrientation.z));\n  \n  pos = entityRotationMatrix * (pos - entityOrigin) + entityOrigin ;\n  gl_Position = viewportScale * (viewportTranslation + vec4(pos, 1.0/(1.0+exp(aLayer.x) ), 1) );\n  vTextureCoord = vec3(aTextureCoord, aLayer.y);\n}";
@@ -7810,10 +7810,6 @@ Crafty.c("Image", {
 
     remove: function() {
         this.unbind("Draw", this._drawImage);
-        // Unregister webgl entities
-        if (this.program) {
-            this.program.unregisterEntity(this);
-        }
     },
 
     /**@
@@ -7832,7 +7828,7 @@ Crafty.c("Image", {
      * height will automatically assume that of the image. This is an
      * easy way to create an image without needing sprites.
      *
-     * If set to `no-repeat` and given dimensions larger than that of the image, 
+     * If set to `no-repeat` and given dimensions larger than that of the image,
      * the exact appearance will depend on what renderer (WebGL, DOM, or Canvas) is used.
      *
      * @example
@@ -7874,7 +7870,7 @@ Crafty.c("Image", {
     },
 
     _onImageLoad: function(){
-        
+
         if (this.has("Canvas")) {
             this._pattern = this._drawContext.createPattern(this.img, this._repeat);
         } else if (this.has("WebGL")) {
@@ -7887,8 +7883,8 @@ Crafty.c("Image", {
             this.h = this.h || this.img.height;
         }
 
-        
-        
+
+
         this.ready = true;
         this.trigger("Invalidate");
     },
@@ -7924,6 +7920,7 @@ Crafty.c("Image", {
 
     }
 });
+
 },{"../core/core.js":8,"fs":1}],31:[function(require,module,exports){
 var Crafty = require('../core/core.js'),    
     document = window.document;
