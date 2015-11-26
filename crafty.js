@@ -3326,6 +3326,11 @@ Crafty.extend({
             }
         }
 
+        // Define default graphics layers
+        Crafty.s("CanvasLayer", Crafty.canvasLayerObject);
+        Crafty.s("DomLayer", Crafty.domLayerObject);
+        Crafty.s("WebGLLayer", Crafty.webglLayerObject);
+
         Crafty.viewport.init(w, h, stage_elem);
 
         //call all arbitrary functions attached to onload
@@ -3374,7 +3379,7 @@ Crafty.extend({
      *
      * To restart, use `Crafty.init()`.
      * @see Crafty.init
-     */
+     */ 
     stop: function (clearState) {
         Crafty.trigger("CraftyStop", clearState);
 
@@ -3383,17 +3388,17 @@ Crafty.extend({
             // Remove audio
             Crafty.audio.remove();
 
+            //Destroy all systems
+            for (var s in Crafty._systems) {
+                Crafty._systems[s].destroy();
+            }
+
             // Remove the stage element, and re-add a div with the same id
             if (Crafty.stage && Crafty.stage.elem.parentNode) {
                 var newCrStage = document.createElement('div');
                 newCrStage.id = Crafty.stage.elem.id;
                 Crafty.stage.elem.parentNode.replaceChild(newCrStage, Crafty.stage.elem);
             }
-
-            // Reset references to the now destroyed graphics layers
-            delete Crafty.canvasLayer.context;
-            delete Crafty.domLayer._div;
-            delete Crafty.webgl.context;
 
             // reset callbacks, and indicate that prebound functions need to be bound on init again
             Crafty._unbindAll();
@@ -5287,7 +5292,7 @@ Crafty.s = function(name, obj, lazy) {
 Crafty._registerLazySystem = function(name, obj) {
 	// This is a bit of magic to only init a system if it's requested at least once.
 	// We define a getter for _systems[name] that will first initialize the system, 
-	// and then redefine _systems[name] to ` that getter.
+	// and then redefine _systems[name] to remove that getter.
 	Object.defineProperty(Crafty._systems, name, {
 		get: function() {
 			Object.defineProperty(Crafty._systems, name, { 
@@ -5700,6 +5705,7 @@ require('./graphics/sprite');
 require('./graphics/text');
 require('./graphics/viewport');
 require('./graphics/webgl');
+require('./graphics/webgl-layer');
 
 require('./isometric/diamond-iso');
 require('./isometric/isometric');
@@ -5718,7 +5724,7 @@ if(window) window.Crafty = Crafty;
 
 module.exports = Crafty;
 
-},{"./controls/controls":3,"./controls/device":4,"./controls/inputs":5,"./controls/keycodes":6,"./core/animation":7,"./core/core":8,"./core/extensions":9,"./core/loader":10,"./core/model":11,"./core/scenes":12,"./core/storage":13,"./core/systems":14,"./core/time":15,"./core/tween":16,"./debug/debug-layer":19,"./debug/logging":20,"./graphics/canvas":22,"./graphics/canvas-layer":21,"./graphics/color":23,"./graphics/dom":26,"./graphics/dom-helper":24,"./graphics/dom-layer":25,"./graphics/drawing":27,"./graphics/gl-textures":28,"./graphics/html":29,"./graphics/image":30,"./graphics/particles":31,"./graphics/sprite":33,"./graphics/sprite-animation":32,"./graphics/text":34,"./graphics/viewport":35,"./graphics/webgl":36,"./isometric/diamond-iso":37,"./isometric/isometric":38,"./sound/sound":39,"./spatial/2d":40,"./spatial/collision":41,"./spatial/math":42,"./spatial/rect-manager":43,"./spatial/spatial-grid":44}],19:[function(require,module,exports){
+},{"./controls/controls":3,"./controls/device":4,"./controls/inputs":5,"./controls/keycodes":6,"./core/animation":7,"./core/core":8,"./core/extensions":9,"./core/loader":10,"./core/model":11,"./core/scenes":12,"./core/storage":13,"./core/systems":14,"./core/time":15,"./core/tween":16,"./debug/debug-layer":19,"./debug/logging":20,"./graphics/canvas":22,"./graphics/canvas-layer":21,"./graphics/color":23,"./graphics/dom":26,"./graphics/dom-helper":24,"./graphics/dom-layer":25,"./graphics/drawing":27,"./graphics/gl-textures":28,"./graphics/html":29,"./graphics/image":30,"./graphics/particles":31,"./graphics/sprite":33,"./graphics/sprite-animation":32,"./graphics/text":34,"./graphics/viewport":35,"./graphics/webgl":37,"./graphics/webgl-layer":36,"./isometric/diamond-iso":38,"./isometric/isometric":39,"./sound/sound":40,"./spatial/2d":41,"./spatial/collision":42,"./spatial/math":43,"./spatial/rect-manager":44,"./spatial/spatial-grid":45}],19:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6184,342 +6190,336 @@ var Crafty = require('../core/core.js');
 
 
 /**@
- * #Crafty.canvasLayer
+ * #CanvasLayer
  * @category Graphics
  *
- * Collection of mostly private methods to draw entities on a canvas element.
+ * An object for creating the canvas layer system.
+ *
+ * Mostly contains private methods to draw entities on a canvas element.
  */
-Crafty.extend({
-    canvasLayer: {
-        _dirtyRects: [],
-        _changedObjs: [],
-        layerCount: 0,
-        _dirtyViewport: false,
+Crafty.canvasLayerObject = {
+    _dirtyRects: [],
+    _changedObjs: [],
+    layerCount: 0,
+    _dirtyViewport: false,
 
-        // Sort function for rendering in the correct order
-        _sort: function(a, b) {
-            return a._globalZ - b._globalZ;
-        },
+    // Sort function for rendering in the correct order
+    _sort: function(a, b) {
+        return a._globalZ - b._globalZ;
+    },
 
-        /**@
-         * #Crafty.canvasLayer.add
-         * @comp Crafty.canvasLayer
-         * @sign public Crafty.canvasLayer.add(ent)
-         * @param ent - The entity to add
-         *
-         * Add an entity to the list of Canvas objects to draw
-         */
-        add: function add(ent) {
-            this._changedObjs.push(ent);
-        },
-        /**@
-         * #Crafty.canvasLayer.context
-         * @comp Crafty.canvasLayer
-         *
-         * This will return the 2D context of the main canvas element.
-         * The value returned from `Crafty.canvasLayer._canvas.getContext('2d')`.
-         */
-        context: null,
-        /**@
-         * #Crafty.canvasLayer._canvas
-         * @comp Crafty.canvasLayer
-         *
-         * Main Canvas element
-         */
-         _canvas: null,
+    /**@
+     * #.add
+     * @comp CanvasLayer
+     * @sign public .add(ent)
+     * @param ent - The entity to add
+     *
+     * Add an entity to the list of Canvas objects to draw
+     */
+    add: function add(ent) {
+        this._changedObjs.push(ent);
+    },
 
-        /**@
-         * #Crafty.canvasLayer.init
-         * @comp Crafty.canvasLayer
-         * @sign public void Crafty.canvasLayer.init(void)
-         * @trigger NoCanvas - triggered if `Crafty.support.canvas` is false
-         *
-         * Creates a `canvas` element inside `Crafty.stage.elem`. Must be called
-         * before any entities with the Canvas component can be drawn.
-         *
-         * This method will automatically be called if no `Crafty.canvasLayer.context` is
-         * found.
-         */
-        init: function () {
-            //check if canvas is supported
-            if (!Crafty.support.canvas) {
-                Crafty.trigger("NoCanvas");
-                Crafty.stop();
-                return;
-            }
+    /**@
+     * #.context
+     * @comp CanvasLayer
+     *
+     * This will return the 2D context associated with the canvas layer's canvas element.
+     */
+    context: null,
 
-            // set properties to initial values -- necessary on a restart
-            this._dirtyRects = [];
-            this._changedObjs = [];
-            this.layerCount = 0;
+    /**@
+     * #._canvas
+     * @comp CanvasLayer
+     *
+     * The canvas element associated with the canvas layer.
+     */
+     _canvas: null,
 
-            //create an empty canvas element
-            var c;
-            c = document.createElement("canvas");
-            c.width = Crafty.viewport.width;
-            c.height = Crafty.viewport.height;
-            c.style.position = 'absolute';
-            c.style.left = "0px";
-            c.style.top = "0px";
-
-            var canvas = Crafty.canvasLayer;
-
-            Crafty.stage.elem.appendChild(c);
-            this.context = c.getContext('2d');
-            this._canvas = c;
-
-            //Set any existing transformations
-            var zoom = Crafty.viewport._scale;
-            if (zoom != 1)
-                c.scale(zoom, zoom);
-
-            // Set pixelart to current status, and listen for changes
-            this._setPixelart(Crafty._pixelartEnabled);
-            Crafty.uniqueBind("PixelartSet", this._setPixelart);
-
-            //Bind rendering of canvas context (see drawing.js)
-            Crafty.uniqueBind("RenderScene", this._render);
-            
-            Crafty.uniqueBind("ViewportResize", this._resize);
-
-            Crafty.bind("InvalidateViewport", function () {
-                Crafty.canvasLayer._dirtyViewport = true;
-            });
-        },
-
-
-        _render: function() {
-            var layer = Crafty.canvasLayer,
-                dirtyViewport = layer._dirtyViewport,
-                l = layer._changedObjs.length,
-                ctx = layer.context;
-            if (!l && !dirtyViewport) {
-                return;
-            }
-
-            if (dirtyViewport) {
-                var view = Crafty.viewport;
-                ctx.setTransform(view._scale, 0, 0, view._scale, Math.round(view._x*view._scale), Math.round(view._y*view._scale) );
-            }
-
-            //if the amount of changed objects is over 60% of the total objects
-            //do the naive method redrawing
-            // TODO: I'm not sure this condition really makes that much sense!
-            if (l / layer.layerCount > 0.6 || dirtyViewport) {
-                layer._drawAll();
-            } else {
-                layer._drawDirty();
-            }
-            //Clean up lists etc
-            layer._clean();
-        },
-
-        /**@
-         * #Crafty.canvasLayer.drawDirty
-         * @comp Crafty.canvasLayer
-         * @sign public Crafty.canvasLayer.drawDirty()
-         *
-         * - Triggered by the "RenderScene" event
-         * - If the number of rects is over 60% of the total number of objects
-         *  do the naive method redrawing `Crafty.canvasLayer.drawAll` instead
-         * - Otherwise, clear the dirty regions, and redraw entities overlapping the dirty regions.
-         *
-         * @see Canvas#.draw
-         */
-        _drawDirty: function () {
-
-            var i, j, q, rect,len, obj, ent,
-                changed = this._changedObjs,
-                l = changed.length,
-                dirty = this._dirtyRects,
-                rectManager = Crafty.rectManager,
-                overlap = rectManager.overlap,
-                ctx = this.context,
-                dupes = [],
-                objs = [];
-
-            // Calculate _dirtyRects from all changed objects, then merge some overlapping regions together
-            for (i = 0; i < l; i++) {
-                this._createDirty(changed[i]);
-            }
-            rectManager.mergeSet(dirty);
-
-
-            l = dirty.length;
-
-            // For each dirty rectangle, find entities near it, and draw the overlapping ones
-            for (i = 0; i < l; ++i) { //loop over every dirty rect
-                rect = dirty[i];
-                dupes.length = 0;
-                objs.length = 0;
-                if (!rect) continue;
-
-                // Find the smallest rectangle with integer coordinates that encloses rect
-                rect._w = rect._x + rect._w;
-                rect._h = rect._y + rect._h;
-                rect._x = (rect._x > 0) ? (rect._x|0) : (rect._x|0) - 1;
-                rect._y = (rect._y > 0) ? (rect._y|0) : (rect._y|0) - 1;
-                rect._w -= rect._x;
-                rect._h -= rect._y;
-                rect._w = (rect._w === (rect._w|0)) ? rect._w : (rect._w|0) + 1;
-                rect._h = (rect._h === (rect._h|0)) ? rect._h : (rect._h|0) + 1;
-
-                //search for ents under dirty rect
-                q = Crafty.map.search(rect, false);
-
-                //clear the rect from the main canvas
-                ctx.clearRect(rect._x, rect._y, rect._w, rect._h);
-
-                //Then clip drawing region to dirty rectangle
-                ctx.save();
-                ctx.beginPath();
-                ctx.rect(rect._x, rect._y, rect._w, rect._h);
-                ctx.clip();
-
-                // Loop over found objects removing dupes and adding visible canvas objects to array
-                for (j = 0, len = q.length; j < len; ++j) {
-                    obj = q[j];
-
-                    if (dupes[obj[0]] || !obj._visible || !obj.__c.Canvas)
-                        continue;
-                    dupes[obj[0]] = true;
-                    objs.push(obj);
-                }
-
-                // Sort objects by z level
-                objs.sort(this._sort);
-
-                // Then draw each object in that order
-                for (j = 0, len = objs.length; j < len; ++j) {
-                    obj = objs[j];
-                    var area = obj._mbr || obj;
-                    if (overlap(area, rect))
-                        obj.draw();
-                    obj._changed = false;
-                }
-
-                // Close rectangle clipping
-                ctx.closePath();
-                ctx.restore();
-
-            }
-
-            // Draw dirty rectangles for debugging, if that flag is set
-            if (Crafty.canvasLayer.debugDirty === true) {
-                ctx.strokeStyle = 'red';
-                for (i = 0, l = dirty.length; i < l; ++i) {
-                    rect = dirty[i];
-                    ctx.strokeRect(rect._x, rect._y, rect._w, rect._h);
-                }
-            }
-
-        },
-
-        /**@
-         * #Crafty.canvasLayer.drawAll
-         * @comp Crafty.canvasLayer
-         * @sign public Crafty.canvasLayer.drawAll([Object rect])
-         * @param rect - a rectangular region {_x: x_val, _y: y_val, _w: w_val, _h: h_val}
-         *
-         * - If rect is omitted, redraw within the viewport
-         * - If rect is provided, redraw within the rect
-         */
-        _drawAll: function (rect) {
-            rect = rect || Crafty.viewport.rect();
-            var q = Crafty.map.search(rect),
-                i = 0,
-                l = q.length,
-                ctx = this.context,
-                current;
-
-            ctx.clearRect(rect._x, rect._y, rect._w, rect._h);
-
-            //sort the objects by the global Z
-            q.sort(this._sort);
-            for (; i < l; i++) {
-                current = q[i];
-                if (current._visible && current.__c.Canvas) {
-                    current.draw();
-                    current._changed = false;
-                }
-            }
-        },
-
-        debug: function() {
-            Crafty.log(this._changedObjs);
-        },
-
-        /** cleans up current dirty state, stores stale state for future passes */
-        _clean: function () {
-            var rect, obj, i, l,
-                changed = this._changedObjs;
-             for (i = 0, l = changed.length; i < l; i++) {
-                 obj = changed[i];
-                 rect = obj._mbr || obj;
-                 if (typeof obj.staleRect === 'undefined')
-                     obj.staleRect = {};
-                 obj.staleRect._x = rect._x;
-                 obj.staleRect._y = rect._y;
-                 obj.staleRect._w = rect._w;
-                 obj.staleRect._h = rect._h;
-
-                 obj._changed = false;
-             }
-             changed.length = 0;
-             this._dirtyRects.length = 0;
-             this._dirtyViewport = false;
-
-        },
-
-         /** Takes the current and previous position of an object, and pushes the dirty regions onto the stack
-          *  If the entity has only moved/changed a little bit, the regions are squashed together */
-        _createDirty: function (obj) {
-
-            var rect = obj._mbr || obj,
-                dirty = this._dirtyRects,
-                rectManager = Crafty.rectManager;
-
-            if (obj.staleRect) {
-                //If overlap, merge stale and current position together, then return
-                //Otherwise just push stale rectangle
-                if (rectManager.overlap(obj.staleRect, rect)) {
-                    rectManager.merge(obj.staleRect, rect, obj.staleRect);
-                    dirty.push(obj.staleRect);
-                    return;
-                } else {
-                  dirty.push(obj.staleRect);
-                }
-            }
-
-            // We use the intermediate "currentRect" so it can be modified without messing with obj
-            obj.currentRect._x = rect._x;
-            obj.currentRect._y = rect._y;
-            obj.currentRect._w = rect._w;
-            obj.currentRect._h = rect._h;
-            dirty.push(obj.currentRect);
-
-        },
-
-
-        // Resize the canvas element to the current viewport
-        _resize: function() {
-            var c = Crafty.canvasLayer._canvas;
-            c.width = Crafty.viewport.width;
-            c.height = Crafty.viewport.height;
-
-        },
-
-        _setPixelart: function(enabled) {
-            var context = Crafty.canvasLayer.context;
-            context.imageSmoothingEnabled = !enabled;
-            context.mozImageSmoothingEnabled = !enabled;
-            context.webkitImageSmoothingEnabled = !enabled;
-            context.oImageSmoothingEnabled = !enabled;
-            context.msImageSmoothingEnabled = !enabled;
+    // When the system is first created, create the necessary canvas element and initial state
+    // Bind to the necessary events
+    init: function () {
+        //check if canvas is supported
+        if (!Crafty.support.canvas) {
+            Crafty.trigger("NoCanvas");
+            Crafty.stop();
+            return;
         }
 
+        // set referenced objects to initial values -- necessary to avoid shared state between systems
+        this._dirtyRects = [];
+        this._changedObjs = [];
+
+        //create an empty canvas element
+        var c;
+        c = document.createElement("canvas");
+        c.width = Crafty.viewport.width;
+        c.height = Crafty.viewport.height;
+        c.style.position = 'absolute';
+        c.style.left = "0px";
+        c.style.top = "0px";
+
+        var canvas = Crafty.s("Canvas");
+
+        Crafty.stage.elem.appendChild(c);
+        this.context = c.getContext('2d');
+        this._canvas = c;
+
+        //Set any existing transformations
+        var zoom = Crafty.viewport._scale;
+        if (zoom != 1)
+            c.scale(zoom, zoom);
+
+        // Set pixelart to current status, and listen for changes
+        this._setPixelart(Crafty._pixelartEnabled);
+        this.uniqueBind("PixelartSet", this._setPixelart);
+
+        //Bind rendering of canvas context (see drawing.js)
+        this.uniqueBind("RenderScene", this._render);
+        
+        this.uniqueBind("ViewportResize", this._resize);
+
+        this.bind("InvalidateViewport", function () {
+            this._dirtyViewport = true;
+        });
+    },
+
+    // When the system is destroyed, remove related resources
+    remove: function() {
+
+        this._canvas.parentNode.removeChild(this._canvas);
+    },
+
+    _render: function() {
+        var dirtyViewport = this._dirtyViewport,
+            l = this._changedObjs.length,
+            ctx = this.context;
+        if (!l && !dirtyViewport) {
+            return;
+        }
+
+        if (dirtyViewport) {
+            var view = Crafty.viewport;
+            ctx.setTransform(view._scale, 0, 0, view._scale, Math.round(view._x*view._scale), Math.round(view._y*view._scale) );
+        }
+
+        //if the amount of changed objects is over 60% of the total objects
+        //do the naive method redrawing
+        // TODO: I'm not sure this condition really makes that much sense!
+        if (l / this.layerCount > 0.6 || dirtyViewport) {
+            this._drawAll();
+        } else {
+            this._drawDirty();
+        }
+        //Clean up lists etc
+        this._clean();
+    },
+
+    /**@
+     * #._drawDirty
+     * @comp CanvasLayer
+     * @sign public ._drawDirty()
+     *
+     * - Triggered by the "RenderScene" event
+     * - If the number of rects is over 60% of the total number of objects
+     *  do the naive method redrawing `CanvasLayer.drawAll` instead
+     * - Otherwise, clear the dirty regions, and redraw entities overlapping the dirty regions.
+     *
+     * @see Canvas#.draw
+     */
+    _drawDirty: function () {
+
+        var i, j, q, rect,len, obj, ent,
+            changed = this._changedObjs,
+            l = changed.length,
+            dirty = this._dirtyRects,
+            rectManager = Crafty.rectManager,
+            overlap = rectManager.overlap,
+            ctx = this.context,
+            dupes = [],
+            objs = [];
+
+        // Calculate _dirtyRects from all changed objects, then merge some overlapping regions together
+        for (i = 0; i < l; i++) {
+            this._createDirty(changed[i]);
+        }
+        rectManager.mergeSet(dirty);
+
+
+        l = dirty.length;
+
+        // For each dirty rectangle, find entities near it, and draw the overlapping ones
+        for (i = 0; i < l; ++i) { //loop over every dirty rect
+            rect = dirty[i];
+            dupes.length = 0;
+            objs.length = 0;
+            if (!rect) continue;
+
+            // Find the smallest rectangle with integer coordinates that encloses rect
+            rect._w = rect._x + rect._w;
+            rect._h = rect._y + rect._h;
+            rect._x = (rect._x > 0) ? (rect._x|0) : (rect._x|0) - 1;
+            rect._y = (rect._y > 0) ? (rect._y|0) : (rect._y|0) - 1;
+            rect._w -= rect._x;
+            rect._h -= rect._y;
+            rect._w = (rect._w === (rect._w|0)) ? rect._w : (rect._w|0) + 1;
+            rect._h = (rect._h === (rect._h|0)) ? rect._h : (rect._h|0) + 1;
+
+            //search for ents under dirty rect
+            q = Crafty.map.search(rect, false);
+
+            //clear the rect from the main canvas
+            ctx.clearRect(rect._x, rect._y, rect._w, rect._h);
+
+            //Then clip drawing region to dirty rectangle
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(rect._x, rect._y, rect._w, rect._h);
+            ctx.clip();
+
+            // Loop over found objects removing dupes and adding visible canvas objects to array
+            for (j = 0, len = q.length; j < len; ++j) {
+                obj = q[j];
+
+                if (dupes[obj[0]] || !obj._visible || !obj.__c.Canvas)
+                    continue;
+                dupes[obj[0]] = true;
+                objs.push(obj);
+            }
+
+            // Sort objects by z level
+            objs.sort(this._sort);
+
+            // Then draw each object in that order
+            for (j = 0, len = objs.length; j < len; ++j) {
+                obj = objs[j];
+                var area = obj._mbr || obj;
+                if (overlap(area, rect))
+                    obj.draw();
+                obj._changed = false;
+            }
+
+            // Close rectangle clipping
+            ctx.closePath();
+            ctx.restore();
+
+        }
+
+        // Draw dirty rectangles for debugging, if that flag is set
+        if (this.debugDirty === true) {
+            ctx.strokeStyle = 'red';
+            for (i = 0, l = dirty.length; i < l; ++i) {
+                rect = dirty[i];
+                ctx.strokeRect(rect._x, rect._y, rect._w, rect._h);
+            }
+        }
+
+    },
+
+    /**@
+     * #._drawAll
+     * @comp CanvasLayer
+     * @sign public CanvasLayer.drawAll([Object rect])
+     * @param rect - a rectangular region {_x: x_val, _y: y_val, _w: w_val, _h: h_val}
+     *
+     * - If rect is omitted, redraw within the viewport
+     * - If rect is provided, redraw within the rect
+     */
+    _drawAll: function (rect) {
+        rect = rect || Crafty.viewport.rect();
+        var q = Crafty.map.search(rect),
+            i = 0,
+            l = q.length,
+            ctx = this.context,
+            current;
+
+        ctx.clearRect(rect._x, rect._y, rect._w, rect._h);
+
+        //sort the objects by the global Z
+        q.sort(this._sort);
+        for (; i < l; i++) {
+            current = q[i];
+            if (current._visible && current.__c.Canvas) {
+                current.draw();
+                current._changed = false;
+            }
+        }
+    },
+
+    debug: function() {
+        Crafty.log(this._changedObjs);
+    },
+
+    /** cleans up current dirty state, stores stale state for future passes */
+    _clean: function () {
+        var rect, obj, i, l,
+            changed = this._changedObjs;
+         for (i = 0, l = changed.length; i < l; i++) {
+             obj = changed[i];
+             rect = obj._mbr || obj;
+             if (typeof obj.staleRect === 'undefined')
+                 obj.staleRect = {};
+             obj.staleRect._x = rect._x;
+             obj.staleRect._y = rect._y;
+             obj.staleRect._w = rect._w;
+             obj.staleRect._h = rect._h;
+
+             obj._changed = false;
+         }
+         changed.length = 0;
+         this._dirtyRects.length = 0;
+         this._dirtyViewport = false;
+
+    },
+
+     /** Takes the current and previous position of an object, and pushes the dirty regions onto the stack
+      *  If the entity has only moved/changed a little bit, the regions are squashed together */
+    _createDirty: function (obj) {
+
+        var rect = obj._mbr || obj,
+            dirty = this._dirtyRects,
+            rectManager = Crafty.rectManager;
+
+        if (obj.staleRect) {
+            //If overlap, merge stale and current position together, then return
+            //Otherwise just push stale rectangle
+            if (rectManager.overlap(obj.staleRect, rect)) {
+                rectManager.merge(obj.staleRect, rect, obj.staleRect);
+                dirty.push(obj.staleRect);
+                return;
+            } else {
+              dirty.push(obj.staleRect);
+            }
+        }
+
+        // We use the intermediate "currentRect" so it can be modified without messing with obj
+        obj.currentRect._x = rect._x;
+        obj.currentRect._y = rect._y;
+        obj.currentRect._w = rect._w;
+        obj.currentRect._h = rect._h;
+        dirty.push(obj.currentRect);
+
+    },
+
+
+    // Resize the canvas element to the current viewport
+    _resize: function() {
+        var c = this._canvas;
+        c.width = Crafty.viewport.width;
+        c.height = Crafty.viewport.height;
+
+    },
+
+    _setPixelart: function(enabled) {
+        var context = this.context;
+        context.imageSmoothingEnabled = !enabled;
+        context.mozImageSmoothingEnabled = !enabled;
+        context.webkitImageSmoothingEnabled = !enabled;
+        context.oImageSmoothingEnabled = !enabled;
+        context.msImageSmoothingEnabled = !enabled;
     }
-});
+
+};
 },{"../core/core.js":8}],22:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
@@ -6532,7 +6532,7 @@ var Crafty = require('../core/core.js');
  *
  * When this component is added to an entity it will be drawn to the global canvas element. The canvas element (and hence all Canvas entities) is always rendered below any DOM entities.
  *
- * Crafty.canvasLayer.init() will be automatically called if it is not called already to initialize the canvas element.
+ * The canvas layer will be automatically initialized if it has not been created yet.
  *
  * Create a canvas entity like this
  * ~~~
@@ -6544,10 +6544,8 @@ var Crafty = require('../core/core.js');
 Crafty.c("Canvas", {
 
     init: function () {
-        var canvasLayer = Crafty.canvasLayer;
-        if (!canvasLayer.context) {
-            canvasLayer.init();
-        }
+        var canvasLayer = Crafty.s("CanvasLayer");
+
         this._drawLayer = canvasLayer;
         this._drawContext = canvasLayer.context;
 
@@ -7040,135 +7038,142 @@ var Crafty = require('../core/core.js'),
 
 
 /**@
- * #Crafty.domLayer
+ * #DomLayer
  * @category Graphics
  *
  * Collection of mostly private methods to represent entities using the DOM.
  */
-Crafty.extend({
-    domLayer: {
-        _changedObjs: [],
-        _dirtyViewport: false,
-        _div: null,
+Crafty.domLayerObject = {
+    _changedObjs: [],
+    _dirtyViewport: false,
 
-        init: function () {
-            // Set properties to initial values -- necessary on a restart
-            this._changedObjs = [];
-            this._dirtyViewport = false;
+    /**@
+     * #._div
+     * @comp DomLayer
+     * A div inside the `#cr-stage` div that holds all DOM entities.
+     */
+    _div: null,
 
-            // Create the div that will contain DOM elements
-            var div = this._div = document.createElement("div");
+    init: function () {
+        // Avoid shared state between systems
+        this._changedObjs = [];
 
-            Crafty.stage.elem.appendChild(div);
-            div.style.position = "absolute";
-            div.style.zIndex = "1";
-            div.style.transformStyle = "preserve-3d"; // Seems necessary for Firefox to preserve zIndexes?
+        // Create the div that will contain DOM elements
+        var div = this._div = document.createElement("div");
 
-            // Bind scene rendering (see drawing.js)
-            Crafty.uniqueBind("RenderScene", this._render);
+        Crafty.stage.elem.appendChild(div);
+        div.style.position = "absolute";
+        div.style.zIndex = "1";
+        div.style.transformStyle = "preserve-3d"; // Seems necessary for Firefox to preserve zIndexes?
 
-            // Layers should generally listen for resize events, but the DOM layers automatically inherit the stage's dimensions
+        // Bind scene rendering (see drawing.js)
+        this.uniqueBind("RenderScene", this._render);
 
-            // Listen for changes in pixel art settings
-            // Since window is inited before stage, can't set right away, but shouldn't need to!
-            Crafty.uniqueBind("PixelartSet", this._setPixelArt);
+        // Layers should generally listen for resize events, but the DOM layers automatically inherit the stage's dimensions
 
-            Crafty.uniqueBind("InvalidateViewport", function() {
-                Crafty.domLayer._dirtyViewport = true;
-            });
-        },
+        // Listen for changes in pixel art settings
+        // Since window is inited before stage, can't set right away, but shouldn't need to!
+        this.uniqueBind("PixelartSet", this._setPixelArt);
 
-        // Handle whether images should be smoothed or not
-        _setPixelArt: function(enabled) {
-            var style = Crafty.domLayer._div.style;
-            var camelize = Crafty.domHelper.camelize;
-            if (enabled) {
-                style[camelize("image-rendering")] = "optimizeSpeed";   /* legacy */
-                style[camelize("image-rendering")] = "-moz-crisp-edges";    /* Firefox */
-                style[camelize("image-rendering")] = "-o-crisp-edges";  /* Opera */
-                style[camelize("image-rendering")] = "-webkit-optimize-contrast";   /* Webkit (Chrome & Safari) */
-                style[camelize("-ms-interpolation-mode")] = "nearest-neighbor";  /* IE */
-                style[camelize("image-rendering")] = "optimize-contrast";   /* CSS3 proposed */
-                style[camelize("image-rendering")] = "pixelated";   /* CSS4 proposed */
-                style[camelize("image-rendering")] = "crisp-edges"; /* CSS4 proposed */
-            } else {
-                style[camelize("image-rendering")] = "optimizeQuality";   /* legacy */
-                style[camelize("-ms-interpolation-mode")] = "bicubic";   /* IE */
-                style[camelize("image-rendering")] = "auto";   /* CSS3 */
-            }
-        },
+        this.uniqueBind("InvalidateViewport", function() {
+            this._dirtyViewport = true;
+        });
+    },
 
-        /**@
-         * #Crafty.domLayer.debug
-         * @comp Crafty.domLayer
-         * @sign public Crafty.domLayer.debug()
-         */
-        debug: function () {
-            Crafty.log(this._changedObjs);
-        },
+    // Cleanup the DOM when the layer is destroyed
+    remove: function() {
+        this._div.parentNode.removeChild(this._div);
+    },
 
+    // Handle whether images should be smoothed or not
+    _setPixelArt: function(enabled) {
+        var style = this._div.style;
+        var camelize = Crafty.domHelper.camelize;
+        if (enabled) {
+            style[camelize("image-rendering")] = "optimizeSpeed";   /* legacy */
+            style[camelize("image-rendering")] = "-moz-crisp-edges";    /* Firefox */
+            style[camelize("image-rendering")] = "-o-crisp-edges";  /* Opera */
+            style[camelize("image-rendering")] = "-webkit-optimize-contrast";   /* Webkit (Chrome & Safari) */
+            style[camelize("-ms-interpolation-mode")] = "nearest-neighbor";  /* IE */
+            style[camelize("image-rendering")] = "optimize-contrast";   /* CSS3 proposed */
+            style[camelize("image-rendering")] = "pixelated";   /* CSS4 proposed */
+            style[camelize("image-rendering")] = "crisp-edges"; /* CSS4 proposed */
+        } else {
+            style[camelize("image-rendering")] = "optimizeQuality";   /* legacy */
+            style[camelize("-ms-interpolation-mode")] = "bicubic";   /* IE */
+            style[camelize("image-rendering")] = "auto";   /* CSS3 */
+        }
+    },
 
-        /**@
-         * #Crafty.domLayer._render
-         * @comp Crafty.domLayer
-         * @sign public Crafty.domLayer.render()
-         *
-         * When "RenderScene" is triggered, draws all DOM entities that have been flagged
-         *
-         * @see DOM#.draw
-         */
-        _render: function () {
-            var layer = Crafty.domLayer;
-            var changed = layer._changedObjs;
-            // Adjust the viewport
-            if (layer._dirtyViewport) {
-               layer._setViewport();
-               layer._dirtyViewport = false;
-            }
-
-            //if no objects have been changed, stop
-            if (!changed.length) return;
-
-            var i = 0,
-                k = changed.length;
-            //loop over all DOM elements needing updating
-            for (; i < k; ++i) {
-                changed[i].draw()._changed = false;
-            }
-
-            //reset DOM array
-            changed.length = 0;
-
-        },
-
-        /**@
-         * #Crafty.domLayer.add
-         * @comp Crafty.domLayer
-         * @sign public Crafty.domLayer.add(ent)
-         * @param ent - The entity to add
-         *
-         * Add an entity to the list of DOM object to draw
-         */
-        add: function add(ent) {
-            this._changedObjs.push(ent);
-        },
-
-        // Sets the viewport position and scale
-        // Called by render when the dirtyViewport flag is set
-        _setViewport: function() {
-            var style = Crafty.domLayer._div.style,
-                view = Crafty.viewport;
-
-            style.transform = style[Crafty.support.prefix + "Transform"] = "scale(" + view._scale + ", " + view._scale + ")";
-            style.left = Math.round(view._x * view._scale) + "px";
-            style.top = Math.round(view._y * view._scale) + "px";
-            style.zIndex = 10;
+    /**@
+     * #.debug
+     * @comp DomLayer
+     * @sign public .debug()
+     */
+    debug: function () {
+        Crafty.log(this._changedObjs);
+    },
 
 
+    /**@
+     * #._render
+     * @comp DomLayer
+     * @sign public .render()
+     *
+     * When "RenderScene" is triggered, draws all DOM entities that have been flagged
+     *
+     * @see DOM#.draw
+     */
+    _render: function () {
+        var changed = this._changedObjs;
+        // Adjust the viewport
+        if (this._dirtyViewport) {
+           this._setViewport();
+           this._dirtyViewport = false;
         }
 
+        //if no objects have been changed, stop
+        if (!changed.length) return;
+
+        var i = 0,
+            k = changed.length;
+        //loop over all DOM elements needing updating
+        for (; i < k; ++i) {
+            changed[i].draw()._changed = false;
+        }
+
+        //reset DOM array
+        changed.length = 0;
+
+    },
+
+    /**@
+     * #.add
+     * @comp DomLayer
+     * @sign public .add(ent)
+     * @param ent - The entity to add
+     *
+     * Add an entity to the list of DOM object to draw
+     */
+    add: function add(ent) {
+        this._changedObjs.push(ent);
+    },
+
+    // Sets the viewport position and scale
+    // Called by render when the dirtyViewport flag is set
+    _setViewport: function() {
+        var style = this._div.style,
+            view = Crafty.viewport;
+
+        style.transform = style[Crafty.support.prefix + "Transform"] = "scale(" + view._scale + ", " + view._scale + ")";
+        style.left = Math.round(view._x * view._scale) + "px";
+        style.top = Math.round(view._y * view._scale) + "px";
+        style.zIndex = 10;
+
+
     }
-});
+
+};
 },{"../core/core.js":8}],26:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
@@ -7197,7 +7202,7 @@ Crafty.c("DOM", {
     avoidCss3dTransforms: false,
 
     init: function () {
-        var domLayer = Crafty.domLayer;
+        var domLayer = Crafty.s("DomLayer");
         if (!domLayer._div) {
             domLayer.init();
         }
@@ -7497,7 +7502,6 @@ Crafty.extend({
      * @example
      * This is the preferred way to draw pixel art with the best cross-browser compatibility.
      * ~~~
-     * Crafty.canvasLayer.init();
      * Crafty.pixelart(true);
      * 
      * Crafty.sprite(imgWidth, imgHeight, "spriteMap.png", {sprite1:[0,0]});
@@ -9952,20 +9956,6 @@ Crafty.extend({
              * The `#cr-stage` div element.
              */
 
-            /**@
-             * #Crafty.domLayer._div
-             * @comp Crafty.domLayer
-             * `Crafty.domLayer._div` is a div inside the `#cr-stage` div that holds all DOM entities.
-             * If you use canvas, a `canvas` element is created at the same level in the dom
-             * as the the `Crafty.domLayer._div` div. So the hierarchy in the DOM is
-             *  
-             * ~~~
-             * Crafty.stage.elem
-             *  - Crafty.domLayer._div (a div HTMLElement)
-             *  - Crafty.canvasLayer._canvas (a canvas HTMLElement)
-             * ~~~
-             */
-
             //create stage div to contain everything
             Crafty.stage = {
                 x: 0,
@@ -10180,18 +10170,19 @@ var Crafty = require('../core/core.js'),
     document = window.document;
 
 // Object for abstracting out all the gl calls to handle rendering entities with a particular program
-RenderProgramWrapper = function(context, shader){
+RenderProgramWrapper = function(layer, shader){
     this.shader = shader;
-    this.context = context;
+    this.layer = layer;
+    this.context = layer.context;
 
     this.array_size = 16;
     this.max_size = 1024;
     this._indexArray = new Uint16Array(6 * this.array_size);
-    this._indexBuffer = context.createBuffer();
+    this._indexBuffer = layer.context.createBuffer();
 };
 
 RenderProgramWrapper.prototype = {
-    // Takes an array of attributes; see Crafty.webgl.getProgramWrapper
+    // Takes an array of attributes; see WebGLLayer's getProgramWrapper method
     initAttributes: function(attributes){
         this.attributes = attributes;
         this._attribute_table = {};
@@ -10287,7 +10278,7 @@ RenderProgramWrapper.prototype = {
         // For now, special case the need for texture objects
         var t = this.texture_obj;
         if (t && t.unit === null){
-            Crafty.webgl.texture_manager.bindTexture(t);
+            this.layer.texture_manager.bindTexture(t);
         }
 
         this.index_pointer = 0;
@@ -10349,6 +10340,251 @@ RenderProgramWrapper.prototype = {
         }
 };
 
+/**@
+ * #WebGLLayer
+ * @category Graphics
+ *
+ * A collection of methods to handle webgl contexts.
+ */
+Crafty.webglLayerObject = {
+    /**@
+     * #.context
+     * @comp WebGLLayer
+     *
+     * This will return the context of the webgl canvas element.
+     */
+    context: null,
+    changed_objects: [],
+
+   // Create a vertex or fragment shader, given the source and type
+   _compileShader: function (src, type){
+        var gl = this.context;
+        var shader = gl.createShader(type);
+        gl.shaderSource(shader, src);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          throw(gl.getShaderInfoLog(shader));
+        }
+        return shader;
+    },
+
+    // Create and return a complete, linked shader program, given the source for the fragment and vertex shaders.
+    // Will compile the two shaders and then link them together
+    _makeProgram: function (fragment_src, vertex_src){
+        var gl = this.context;
+        var fragment_shader = this._compileShader(fragment_src, gl.FRAGMENT_SHADER);
+        var vertex_shader = this._compileShader(vertex_src, gl.VERTEX_SHADER);
+
+        var shaderProgram = gl.createProgram();
+        gl.attachShader(shaderProgram, vertex_shader);
+        gl.attachShader(shaderProgram, fragment_shader);
+        gl.linkProgram(shaderProgram);
+
+        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+          throw("Could not initialise shaders");
+        }
+        
+        shaderProgram.viewport = gl.getUniformLocation(shaderProgram, "uViewport");
+        return shaderProgram;
+    },
+
+    programs: {},
+
+    // Will create and return a RenderProgramWrapper for a shader program.
+    // name is a unique id, attributes an array of attribute names with their metadata.
+    // Each attribute needs at least a `name`  and `width` property:
+    // ~~~
+    //   [
+    //      {name:"aPosition", width: 2},
+    //      {name:"aOrientation", width: 3},
+    //      {name:"aLayer", width:2},
+    //      {name:"aColor",  width: 4}
+    //   ]
+    // ~~~
+    // The "aPositon", "aOrientation", and "aLayer" attributes should be the same for any webgl entity,
+    // since they support the basic 2D properties
+    getProgramWrapper: function(name, fragment_src, vertex_src, attributes){
+        if (this.programs[name] === undefined){
+            var shader = this._makeProgram(fragment_src, vertex_src);
+            var program = new RenderProgramWrapper(this, shader);
+            program.name = name;
+            program.initAttributes(attributes);
+            program.setViewportUniforms(Crafty.viewport);
+            this.programs[name] = program;
+        }
+        return this.programs[name];
+    },
+
+    // Make a texture out of the given image element
+    // The url is just used as a unique ID
+    makeTexture: function(url, image, repeating){
+        return this.texture_manager.makeTexture(url, image, repeating);
+    },
+
+    init: function () {
+
+        //check if we support webgl is supported
+        if (!Crafty.support.webgl) {
+            Crafty.trigger("NoWebGL");
+            Crafty.stop();
+            return;
+        }
+
+        // Avoid shared state between systems
+        this.changed_objects = [];
+
+        //create an empty canvas element
+        var c;
+        c = document.createElement("canvas");
+        c.width = Crafty.viewport.width;
+        c.height = Crafty.viewport.height;
+        c.style.position = 'absolute';
+        c.style.left = "0px";
+        c.style.top = "0px";
+
+        Crafty.stage.elem.appendChild(c);
+
+        // Try to get a webgl context
+        var gl;
+        try {
+            gl = c.getContext("webgl", { premultipliedalpha: true }) || c.getContext("experimental-webgl", { premultipliedalpha: true });
+            gl.viewportWidth = c.width;
+            gl.viewportHeight = c.height;
+        } catch(e) {
+            Crafty.trigger("NoWebGL");
+            Crafty.stop();
+            return;
+        }
+
+        // assign to this renderer
+        this.context = gl;
+        this._canvas = c;
+
+        gl.clearColor(0.0, 0.0, 0.0, 0.0);
+        
+        // These commands allow partial transparency, but require drawing in z-order
+        gl.disable(gl.DEPTH_TEST);
+        // This particular blend function requires the shader programs to output pre-multiplied alpha
+        // This is necessary to match the blending of canvas/dom entities against the background color
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        gl.enable(gl.BLEND);
+        
+
+        //Bind rendering of canvas context (see drawing.js)
+        this.uniqueBind("RenderScene", this.render);
+        this.uniqueBind("ViewportResize", this._resize);
+        this.uniqueBind("InvalidateViewport", function(){ this.dirtyViewport = true; });
+        this.uniqueBind("PixelartSet", this._setPixelart);
+        this._setPixelart(Crafty._pixelartEnabled);
+        this.dirtyViewport = true;
+
+        this.texture_manager = new Crafty.TextureManager(gl, this);
+
+
+    },
+
+    // Cleanup the DOM when the system is destroyed
+    remove: function() {
+        this._canvas.parentNode.removeChild(this._canvas);
+    },
+
+    // Called when the viewport resizes
+    _resize: function(){
+        var c = this._canvas;
+        c.width = Crafty.viewport.width;
+        c.height = Crafty.viewport.height;
+
+        var gl = this.context;
+        gl.viewportWidth = c.width;
+        gl.viewportHeight = c.height;
+    },
+
+    // TODO consider shifting to texturemanager
+    _setPixelart: function(enabled) {
+        var gl = this.context;
+        if (enabled){
+            this.texture_filter = gl.NEAREST;
+        } else {
+            this.texture_filter = gl.LINEAR;
+        }
+    },
+
+    // convenicne to sort array by global Z
+    zsort: function(a, b) {
+            return a._globalZ - b._globalZ;
+    },
+
+    // Hold an array ref to avoid garbage
+    visible_gl: [],
+
+    // Render any entities associated with this context; called in response to a draw event
+    render: function(rect){
+        rect = rect || Crafty.viewport.rect();
+        var gl = this.context;
+
+        // Set viewport and clear it
+        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        //Set the viewport uniform variables used by each registered program
+        var programs = this.programs;
+        if (this.dirtyViewport){
+          for (var comp in programs) {
+              programs[comp].setViewportUniforms(Crafty.viewport);
+          }
+          this.dirtyViewport = false;
+        }
+
+        // Search for any entities in the given area (viewport unless otherwise specified)
+        var q = Crafty.map.search(rect),
+            i = 0,
+            l = q.length,
+            current;
+        //From all potential candidates, build a list of visible entities, then sort by zorder
+        var visible_gl = this.visible_gl;
+        visible_gl.length = 0;
+        for (i=0; i < l; i++) {
+            current = q[i];
+            if (current._visible && current.__c.WebGL && current.program) {
+                visible_gl.push(current);
+            }
+        }
+        visible_gl.sort(this.zsort);
+        l = visible_gl.length;
+
+
+        // Now iterate through the z-sorted entities to be rendered
+        // Each entity writes it's data into a typed array
+        // The entities are rendered in batches, where the entire array is copied to a buffer in one operation
+        // A batch is rendered whenever the next element needs to use a different type of program
+        // Therefore, you get better performance by grouping programs by z-order if possible.
+        // (Each sprite sheet will use a different program, but multiple sprites on the same sheet can be rendered in one batch)
+        var batchCount = 0;
+        var shaderProgram = null;
+        for (i=0; i < l; i++) {
+            current = visible_gl[i];
+            if (shaderProgram !== current.program){
+              if (shaderProgram !== null){
+                shaderProgram.renderBatch();
+              }
+
+              shaderProgram = current.program;
+              shaderProgram.index_pointer = 0;
+              shaderProgram.switchTo();
+            }
+            current.draw();
+            current._changed = false;
+        }
+
+        if (shaderProgram !== null){
+          shaderProgram.renderBatch();
+        }
+        
+    }
+
+};
+},{"../core/core.js":8}],37:[function(require,module,exports){
+var Crafty = require('../core/core.js');
 
 /**@
  * #WebGL
@@ -10360,7 +10596,7 @@ RenderProgramWrapper.prototype = {
  *
  * Sprite, Image, SpriteAnimation, and Color all support WebGL rendering.  Text entities will need to use DOM or Canvas for now.
  * 
- * If a webgl context does not yet exist, a WebGL entity will automatically create one by calling `Crafty.webgl.init()` before rendering.
+ * If a webgl context does not yet exist, a WebGL entity will automatically create one.
  *
  * @note For better performance, minimize the number of spritesheets used, and try to arrange it so that entities with different spritesheets are on different z-levels.  This is because entities are rendered in z order, and only entities sharing the same texture can be efficiently batched.
  *
@@ -10380,10 +10616,7 @@ Crafty.c("WebGL", {
      * The webgl context this entity will be rendered to.
      */
     init: function () {
-        if (!Crafty.webgl.context) {
-            Crafty.webgl.init();
-        }
-        var webgl = this.webgl = Crafty.webgl;
+        var webgl = this.webgl = Crafty.s("WebGLLayer");
         var gl = webgl.context;
 
         //increment the amount of canvas objs
@@ -10516,263 +10749,7 @@ Crafty.c("WebGL", {
         this.ready = true;
     }
 });
-
-/**@
- * #Crafty.webgl
- * @category Graphics
- *
- * A collection of methods to handle webgl contexts.
- */
-Crafty.extend({
-
-    webgl: {
-        /**@
-         * #Crafty.webgl.context
-         * @comp Crafty.webgl
-         *
-         * This will return the context of the webgl canvas element.
-         */
-        context: null,
-        changed_objects: [],
-   
-       // Create a vertex or fragment shader, given the source and type
-       _compileShader: function (src, type){
-            var gl = this.context;
-            var shader = gl.createShader(type);
-            gl.shaderSource(shader, src);
-            gl.compileShader(shader);
-            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-              throw(gl.getShaderInfoLog(shader));
-            }
-            return shader;
-        },
-
-        // Create and return a complete, linked shader program, given the source for the fragment and vertex shaders.
-        // Will compile the two shaders and then link them together
-        _makeProgram: function (fragment_src, vertex_src){
-            var gl = this.context;
-            var fragment_shader = this._compileShader(fragment_src, gl.FRAGMENT_SHADER);
-            var vertex_shader = this._compileShader(vertex_src, gl.VERTEX_SHADER);
-
-            var shaderProgram = gl.createProgram();
-            gl.attachShader(shaderProgram, vertex_shader);
-            gl.attachShader(shaderProgram, fragment_shader);
-            gl.linkProgram(shaderProgram);
-
-            if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-              throw("Could not initialise shaders");
-            }
-            
-            shaderProgram.viewport = gl.getUniformLocation(shaderProgram, "uViewport");
-            return shaderProgram;
-        },
-
-        programs: {},
-
-        // Will create and return a RenderProgramWrapper for a shader program.
-        // name is a unique id, attributes an array of attribute names with their metadata.
-        // Each attribute needs at least a `name`  and `width` property:
-        // ~~~
-        //   [
-        //      {name:"aPosition", width: 2},
-        //      {name:"aOrientation", width: 3},
-        //      {name:"aLayer", width:2},
-        //      {name:"aColor",  width: 4}
-        //   ]
-        // ~~~
-        // The "aPositon", "aOrientation", and "aLayer" attributes should be the same for any webgl entity,
-        // since they support the basic 2D properties
-        getProgramWrapper: function(name, fragment_src, vertex_src, attributes){
-            if (this.programs[name] === undefined){
-                var shader = this._makeProgram(fragment_src, vertex_src);
-                var program = new RenderProgramWrapper(this.context, shader);
-                program.name = name;
-                program.initAttributes(attributes);
-                program.setViewportUniforms(Crafty.viewport);
-                this.programs[name] = program;
-            }
-            return this.programs[name];
-        },
-
-        // Make a texture out of the given image element
-        // The url is just used as a unique ID
-        makeTexture: function(url, image, repeating){
-            var webgl = this;
-            return webgl.texture_manager.makeTexture(url, image, repeating);
-        },
-
-        /**@
-         * #Crafty.webgl.init
-         * @comp Crafty.webgl
-         * @sign public void Crafty.webgl.init(void)
-         * @trigger NoWebGL - triggered if `Crafty.support.webgl` is false
-         *
-         * This will create a `canvas` element inside `Crafty.stage.elem`, used for displaying "WebGL" components.
-         *
-         * This method will automatically be called by any "WebGL" component if no `Crafty.webgl.context` is
-         * found, so it is not neccessary to call this manually.
-         */
-        init: function () {
-
-            //check if we support webgl is supported
-            if (!Crafty.support.webgl) {
-                Crafty.trigger("NoWebGL");
-                Crafty.stop();
-                return;
-            }
-
-            // necessary on restart
-            this.changed_objects = [];
-
-            //create an empty canvas element
-            var c;
-            c = document.createElement("canvas");
-            c.width = Crafty.viewport.width;
-            c.height = Crafty.viewport.height;
-            c.style.position = 'absolute';
-            c.style.left = "0px";
-            c.style.top = "0px";
-
-            Crafty.stage.elem.appendChild(c);
-
-            // Try to get a webgl context
-            var gl;
-            try {
-                gl = c.getContext("webgl", { premultipliedalpha: true }) || c.getContext("experimental-webgl", { premultipliedalpha: true });
-                gl.viewportWidth = c.width;
-                gl.viewportHeight = c.height;
-            } catch(e) {
-                Crafty.trigger("NoWebGL");
-                Crafty.stop();
-                return;
-            }
-
-            // assign to this renderer
-            this.context = gl;
-            this._canvas = c;
-
-            gl.clearColor(0.0, 0.0, 0.0, 0.0);
-            
-            // These commands allow partial transparency, but require drawing in z-order
-            gl.disable(gl.DEPTH_TEST);
-            // This particular blend function requires the shader programs to output pre-multiplied alpha
-            // This is necessary to match the blending of canvas/dom entities against the background color
-            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-            gl.enable(gl.BLEND);
-            
-
-            //Bind rendering of canvas context (see drawing.js)
-            var webgl = this;
-            Crafty.uniqueBind("RenderScene", webgl.render);
-            Crafty.uniqueBind("ViewportResize", webgl._resize);
-            Crafty.uniqueBind("InvalidateViewport", function(){webgl.dirtyViewport = true;});
-            Crafty.uniqueBind("PixelartSet", webgl._setPixelart);
-            webgl._setPixelart(Crafty._pixelartEnabled);
-            this.dirtyViewport = true;
-
-            this.texture_manager = new Crafty.TextureManager(gl, this);
-
-
-        },
-
-        // Called when the viewport resizes
-        _resize: function(){
-            var c = Crafty.webgl._canvas;
-            c.width = Crafty.viewport.width;
-            c.height = Crafty.viewport.height;
-
-            var gl = Crafty.webgl.context;
-            gl.viewportWidth = c.width;
-            gl.viewportHeight = c.height;
-        },
-
-        // TODO consider shifting to texturemanager
-        _setPixelart: function(enabled) {
-            var gl = Crafty.webgl.context;
-            if (enabled){
-                Crafty.webgl.texture_filter = gl.NEAREST;
-            } else {
-                Crafty.webgl.texture_filter = gl.LINEAR;
-            }
-        },
-
-        // convenicne to sort array by global Z
-        zsort: function(a, b) {
-                return a._globalZ - b._globalZ;
-        },
-
-        // Hold an array ref to avoid garbage
-        visible_gl: [],
-
-        // Render any entities associated with this context; called in response to a draw event
-        render: function(rect){
-            rect = rect || Crafty.viewport.rect();
-            var webgl = Crafty.webgl,
-                gl = webgl.context;
-
-            // Set viewport and clear it
-            gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-            //Set the viewport uniform variables used by each registered program
-            var programs = webgl.programs;
-            if (webgl.dirtyViewport){
-              for (var comp in programs) {
-                  programs[comp].setViewportUniforms(Crafty.viewport);
-              }
-              webgl.dirtyViewport = false;
-            }
-
-            // Search for any entities in the given area (viewport unless otherwise specified)
-            var q = Crafty.map.search(rect),
-                i = 0,
-                l = q.length,
-                current;
-            //From all potential candidates, build a list of visible entities, then sort by zorder
-            var visible_gl = webgl.visible_gl;
-            visible_gl.length = 0;
-            for (i=0; i < l; i++) {
-                current = q[i];
-                if (current._visible && current.__c.WebGL && current.program) {
-                    visible_gl.push(current);
-                }
-            }
-            visible_gl.sort(webgl.zsort);
-            l = visible_gl.length;
-
-
-            // Now iterate through the z-sorted entities to be rendered
-            // Each entity writes it's data into a typed array
-            // The entities are rendered in batches, where the entire array is copied to a buffer in one operation
-            // A batch is rendered whenever the next element needs to use a different type of program
-            // Therefore, you get better performance by grouping programs by z-order if possible.
-            // (Each sprite sheet will use a different program, but multiple sprites on the same sheet can be rendered in one batch)
-            var batchCount = 0;
-            var shaderProgram = null;
-            for (i=0; i < l; i++) {
-                current = visible_gl[i];
-                if (shaderProgram !== current.program){
-                  if (shaderProgram !== null){
-                    shaderProgram.renderBatch();
-                  }
-
-                  shaderProgram = current.program;
-                  shaderProgram.index_pointer = 0;
-                  shaderProgram.switchTo();
-                }
-                current.draw();
-                current._changed = false;
-            }
-
-            if (shaderProgram !== null){
-              shaderProgram.renderBatch();
-            }
-            
-        }
-
-    }
-});
-},{"../core/core.js":8}],37:[function(require,module,exports){
+},{"../core/core.js":8}],38:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -10981,7 +10958,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":8}],38:[function(require,module,exports){
+},{"../core/core.js":8}],39:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -11172,7 +11149,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":8}],39:[function(require,module,exports){
+},{"../core/core.js":8}],40:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -11726,7 +11703,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":8}],40:[function(require,module,exports){
+},{"../core/core.js":8}],41:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     HashMap = require('./spatial-grid.js');
 
@@ -13734,7 +13711,7 @@ Crafty.matrix.prototype = {
     }
 };
 
-},{"../core/core.js":8,"./spatial-grid.js":44}],41:[function(require,module,exports){
+},{"../core/core.js":8,"./spatial-grid.js":45}],42:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     DEG_TO_RAD = Math.PI / 180;
 
@@ -14455,7 +14432,7 @@ Crafty.c("Collision", {
     }
 });
 
-},{"../core/core.js":8}],42:[function(require,module,exports){
+},{"../core/core.js":8}],43:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -15553,7 +15530,7 @@ Crafty.math.Matrix2D = (function () {
 
     return Matrix2D;
 })();
-},{"../core/core.js":8}],43:[function(require,module,exports){
+},{"../core/core.js":8}],44:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -15713,7 +15690,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":8}],44:[function(require,module,exports){
+},{"../core/core.js":8}],45:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
