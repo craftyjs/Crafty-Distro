@@ -5736,6 +5736,7 @@ require('./graphics/dom-helper');
 require('./graphics/dom-layer');
 require('./graphics/drawing');
 require('./graphics/gl-textures');
+require('./graphics/renderable');
 require('./graphics/html');
 require('./graphics/image');
 require('./graphics/particles');
@@ -5763,7 +5764,7 @@ if(window) window.Crafty = Crafty;
 
 module.exports = Crafty;
 
-},{"./controls/controls":2,"./controls/device":3,"./controls/inputs":4,"./controls/keycodes":5,"./core/animation":6,"./core/core":7,"./core/extensions":8,"./core/loader":9,"./core/model":10,"./core/scenes":11,"./core/storage":12,"./core/systems":13,"./core/time":14,"./core/tween":15,"./debug/debug-layer":18,"./debug/logging":19,"./graphics/canvas":21,"./graphics/canvas-layer":20,"./graphics/color":22,"./graphics/dom":25,"./graphics/dom-helper":23,"./graphics/dom-layer":24,"./graphics/drawing":26,"./graphics/gl-textures":27,"./graphics/html":28,"./graphics/image":29,"./graphics/particles":30,"./graphics/sprite":32,"./graphics/sprite-animation":31,"./graphics/text":33,"./graphics/viewport":34,"./graphics/webgl":36,"./graphics/webgl-layer":35,"./isometric/diamond-iso":37,"./isometric/isometric":38,"./sound/sound":39,"./spatial/2d":40,"./spatial/collision":41,"./spatial/math":42,"./spatial/rect-manager":43,"./spatial/spatial-grid":44}],18:[function(require,module,exports){
+},{"./controls/controls":2,"./controls/device":3,"./controls/inputs":4,"./controls/keycodes":5,"./core/animation":6,"./core/core":7,"./core/extensions":8,"./core/loader":9,"./core/model":10,"./core/scenes":11,"./core/storage":12,"./core/systems":13,"./core/time":14,"./core/tween":15,"./debug/debug-layer":18,"./debug/logging":19,"./graphics/canvas":21,"./graphics/canvas-layer":20,"./graphics/color":22,"./graphics/dom":25,"./graphics/dom-helper":23,"./graphics/dom-layer":24,"./graphics/drawing":26,"./graphics/gl-textures":27,"./graphics/html":28,"./graphics/image":29,"./graphics/particles":30,"./graphics/renderable":31,"./graphics/sprite":33,"./graphics/sprite-animation":32,"./graphics/text":34,"./graphics/viewport":35,"./graphics/webgl":37,"./graphics/webgl-layer":36,"./isometric/diamond-iso":38,"./isometric/isometric":39,"./sound/sound":40,"./spatial/2d":41,"./spatial/collision":42,"./spatial/math":43,"./spatial/rect-manager":44,"./spatial/spatial-grid":45}],18:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6583,6 +6584,7 @@ var Crafty = require('../core/core.js');
 Crafty.c("Canvas", {
 
     init: function () {
+        this.requires("Renderable");
         var canvasLayer = Crafty.s("CanvasLayer");
 
         this._drawLayer = canvasLayer;
@@ -7241,6 +7243,7 @@ Crafty.c("DOM", {
     avoidCss3dTransforms: false,
 
     init: function () {
+        this.requires("Renderable");
         var domLayer = Crafty.s("DomLayer");
         if (!domLayer._div) {
             domLayer.init();
@@ -8355,6 +8358,135 @@ var Crafty = require('../core/core.js');
 
 
 /**@
+ * #Renderable
+ * @category Graphics
+ * Component for any entity that has a position on the stage.
+ * @trigger Invalidate - when the entity needs to be redrawn
+ */
+Crafty.c("Renderable", {
+
+
+    /**@
+     * #.alpha
+     * @comp Renderable
+     * Transparency of an entity. Must be a decimal value between 0.0 being fully transparent to 1.0 being fully opaque.
+     */
+    _alpha: 1.0,
+
+    /**@
+     * #.visible
+     * @comp Renderable
+     * If the entity is visible or not. Accepts a true or false value.
+     * Can be used for optimization by setting an entities visibility to false when not needed to be drawn.
+     *
+     * The entity will still exist and can be collided with but just won't be drawn.
+     */
+    _visible: true,
+
+
+    
+    _setterRenderable: function(name, value) {
+        if (this[name] === value) {
+            return;
+        }
+
+        //everything will assume the value
+        this[name] = value;
+
+        // flag for redraw
+        this.trigger("Invalidate");
+    },
+
+    // Setup all the properties that we need to define
+    _graphics_property_definitions: {
+        alpha: {
+            set: function (v) {
+                this._setterRenderable('_alpha', v);
+            },
+            get: function () {
+                return this._alpha;
+            },
+            configurable: true,
+            enumerable: true
+        },
+        _alpha: {enumerable:false},
+
+        visible: {
+            set: function (v) {
+                this._setterRenderable('_visible', v);
+            },
+            get: function () {
+                return this._visible;
+            },
+            configurable: true,
+            enumerable: true
+        },
+        _visible: {enumerable:false}
+
+    },
+
+    _defineRenderableProperites: function () {
+        for (var prop in this._graphics_property_definitions){
+            Object.defineProperty(this, prop, this._graphics_property_definitions[prop]);
+        }
+    },
+
+    init: function () {
+        // create setters and getters that associate properties such as alpha/_alpha
+        this._defineRenderableProperites();
+    },
+
+    /**@
+     * #.flip
+     * @comp Renderable
+     * @trigger Invalidate - when the entity has flipped
+     * @sign public this .flip(String dir)
+     * @param dir - Flip direction
+     *
+     * Flip entity on passed direction
+     *
+     * @example
+     * ~~~
+     * this.flip("X")
+     * ~~~
+     */
+    flip: function (dir) {
+        dir = dir || "X";
+        if (!this["_flip" + dir]) {
+            this["_flip" + dir] = true;
+            this.trigger("Invalidate");
+        }
+        return this;
+    },
+
+    /**@
+     * #.unflip
+     * @comp Renderable
+     * @trigger Invalidate - when the entity has unflipped
+     * @sign public this .unflip(String dir)
+     * @param dir - Unflip direction
+     *
+     * Unflip entity on passed direction (if it's flipped)
+     *
+     * @example
+     * ~~~
+     * this.unflip("X")
+     * ~~~
+     */
+    unflip: function (dir) {
+        dir = dir || "X";
+        if (this["_flip" + dir]) {
+            this["_flip" + dir] = false;
+            this.trigger("Invalidate");
+        }
+        return this;
+    }
+});
+},{"../core/core.js":7}],32:[function(require,module,exports){
+var Crafty = require('../core/core.js');
+
+
+/**@
 * #SpriteAnimation
 * @category Animation
 * @trigger StartAnimation - When an animation starts playing, or is resumed from the paused state - {Reel}
@@ -8828,7 +8960,7 @@ Crafty.c("SpriteAnimation", {
 	}
 });
 
-},{"../core/core.js":7}],32:[function(require,module,exports){
+},{"../core/core.js":7}],33:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -9159,7 +9291,7 @@ Crafty.c("Sprite", {
     }
 });
 
-},{"../core/core.js":7}],33:[function(require,module,exports){
+},{"../core/core.js":7}],34:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -9429,7 +9561,7 @@ Crafty.c("Text", {
     }
 
 });
-},{"../core/core.js":7}],34:[function(require,module,exports){
+},{"../core/core.js":7}],35:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -10204,7 +10336,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],35:[function(require,module,exports){
+},{"../core/core.js":7}],36:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -10622,7 +10754,7 @@ Crafty.webglLayerObject = {
     }
 
 };
-},{"../core/core.js":7}],36:[function(require,module,exports){
+},{"../core/core.js":7}],37:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 /**@
@@ -10655,6 +10787,7 @@ Crafty.c("WebGL", {
      * The webgl context this entity will be rendered to.
      */
     init: function () {
+        this.requires("Renderable");
         var webgl = this.webgl = Crafty.s("WebGLLayer");
         var gl = webgl.context;
 
@@ -10788,7 +10921,7 @@ Crafty.c("WebGL", {
         this.ready = true;
     }
 });
-},{"../core/core.js":7}],37:[function(require,module,exports){
+},{"../core/core.js":7}],38:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -10997,7 +11130,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":7}],38:[function(require,module,exports){
+},{"../core/core.js":7}],39:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -11188,7 +11321,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],39:[function(require,module,exports){
+},{"../core/core.js":7}],40:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -11742,7 +11875,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],40:[function(require,module,exports){
+},{"../core/core.js":7}],41:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     HashMap = require('./spatial-grid.js');
 
@@ -11777,7 +11910,7 @@ Crafty.c("2D", {
      * The `x` position on the stage. When modified, will automatically be redrawn.
      * Is actually a getter/setter so when using this value for calculations and not modifying it,
      * use the `._x` property.
-     * @see ._attr
+     * @see ._setter2d
      */
     _x: 0,
     /**@
@@ -11786,7 +11919,7 @@ Crafty.c("2D", {
      * The `y` position on the stage. When modified, will automatically be redrawn.
      * Is actually a getter/setter so when using this value for calculations and not modifying it,
      * use the `._y` property.
-     * @see ._attr
+     * @see ._setter2d
      */
     _y: 0,
     /**@
@@ -11797,7 +11930,7 @@ Crafty.c("2D", {
      * use the `._w` property.
      *
      * Changing this value is not recommended as canvas has terrible resize quality and DOM will just clip the image.
-     * @see ._attr
+     * @see ._setter2d
      */
     _w: 0,
     /**@
@@ -11808,9 +11941,10 @@ Crafty.c("2D", {
      * use the `._h` property.
      *
      * Changing this value is not recommended as canvas has terrible resize quality and DOM will just clip the image.
-     * @see ._attr
+     * @see ._setter2d
      */
     _h: 0,
+
     /**@
      * #.z
      * @comp 2D
@@ -11826,6 +11960,14 @@ Crafty.c("2D", {
      * @see ._attr
      */
     _z: 0,
+
+    /**@
+     * #._globalZ
+     * @comp 2D
+     * When two entities overlap, the one with the larger `_globalZ` will be on top of the other.
+     */
+    _globalZ: null,
+
     /**@
      * #.rotation
      * @comp 2D
@@ -11846,31 +11988,9 @@ Crafty.c("2D", {
      * The default is to rotate the entity around its (initial) top-left corner; use
      * `.origin()` to change that.
      *
-     * @see ._attr, .origin
+     * @see ._setter2d, .origin
      */
     _rotation: 0,
-    /**@
-     * #.alpha
-     * @comp 2D
-     * Transparency of an entity. Must be a decimal value between 0.0 being fully transparent to 1.0 being fully opaque.
-     */
-    _alpha: 1.0,
-    /**@
-     * #.visible
-     * @comp 2D
-     * If the entity is visible or not. Accepts a true or false value.
-     * Can be used for optimization by setting an entities visibility to false when not needed to be drawn.
-     *
-     * The entity will still exist and can be collided with but just won't be drawn.
-     */
-    _visible: true,
-
-    /**@
-     * #._globalZ
-     * @comp 2D
-     * When two entities overlap, the one with the larger `_globalZ` will be on top of the other.
-     */
-    _globalZ: null,
 
     _origin: null,
     _mbr: null,
@@ -11884,7 +12004,7 @@ Crafty.c("2D", {
     _2D_property_definitions: {
         x: {
             set: function (v) {
-                this._attr('_x', v);
+                this._setter2d('_x', v);
             },
             get: function () {
                 return this._x;
@@ -11896,7 +12016,7 @@ Crafty.c("2D", {
 
         y: {
             set: function (v) {
-                this._attr('_y', v);
+                this._setter2d('_y', v);
             },
             get: function () {
                 return this._y;
@@ -11908,7 +12028,7 @@ Crafty.c("2D", {
 
         w: {
             set: function (v) {
-                this._attr('_w', v);
+                this._setter2d('_w', v);
             },
             get: function () {
                 return this._w;
@@ -11920,7 +12040,7 @@ Crafty.c("2D", {
 
         h: {
             set: function (v) {
-                this._attr('_h', v);
+                this._setter2d('_h', v);
             },
             get: function () {
                 return this._h;
@@ -11932,7 +12052,7 @@ Crafty.c("2D", {
 
         z: {
             set: function (v) {
-                this._attr('_z', v);
+                this._setter2d('_z', v);
             },
             get: function () {
                 return this._z;
@@ -11944,7 +12064,7 @@ Crafty.c("2D", {
 
         rotation: {
             set: function (v) {
-                this._attr('_rotation', v);
+                this._setter2d('_rotation', v);
             },
             get: function () {
                 return this._rotation;
@@ -11952,32 +12072,7 @@ Crafty.c("2D", {
             configurable: true,
             enumerable: true
         },
-        _rotation: {enumerable:false},
-
-        alpha: {
-            set: function (v) {
-                this._attr('_alpha', v);
-            },
-            get: function () {
-                return this._alpha;
-            },
-            configurable: true,
-            enumerable: true
-        },
-        _alpha: {enumerable:false},
-
-        visible: {
-            set: function (v) {
-                this._attr('_visible', v);
-            },
-            get: function () {
-                return this._visible;
-            },
-            configurable: true,
-            enumerable: true
-        },
-        _visible: {enumerable:false}
-
+        _rotation: {enumerable:false}
     },
 
     _define2DProperties: function () {
@@ -12554,52 +12649,6 @@ Crafty.c("2D", {
         return this;
     },
 
-    /**@
-     * #.flip
-     * @comp 2D
-     * @trigger Invalidate - when the entity has flipped
-     * @sign public this .flip(String dir)
-     * @param dir - Flip direction
-     *
-     * Flip entity on passed direction
-     *
-     * @example
-     * ~~~
-     * this.flip("X")
-     * ~~~
-     */
-    flip: function (dir) {
-        dir = dir || "X";
-        if (!this["_flip" + dir]) {
-            this["_flip" + dir] = true;
-            this.trigger("Invalidate");
-        }
-        return this;
-    },
-
-    /**@
-     * #.unflip
-     * @comp 2D
-     * @trigger Invalidate - when the entity has unflipped
-     * @sign public this .unflip(String dir)
-     * @param dir - Unflip direction
-     *
-     * Unflip entity on passed direction (if it's flipped)
-     *
-     * @example
-     * ~~~
-     * this.unflip("X")
-     * ~~~
-     */
-    unflip: function (dir) {
-        dir = dir || "X";
-        if (this["_flip" + dir]) {
-            this["_flip" + dir] = false;
-            this.trigger("Invalidate");
-        }
-        return this;
-    },
-
     /**
      * Method for rotation rather than through a setter
      */
@@ -12607,18 +12656,14 @@ Crafty.c("2D", {
         var x2, y2;
         x2 =  (this._x + this._origin.x - e.o.x) * e.cos + (this._y + this._origin.y - e.o.y) * e.sin + (e.o.x - this._origin.x);
         y2 =  (this._y + this._origin.y - e.o.y) * e.cos - (this._x + this._origin.x - e.o.x) * e.sin + (e.o.y - this._origin.y);
-        this._attr('_rotation', this._rotation - e.deg);
-        this._attr('_x', x2 );
-        this._attr('_y', y2 );
+        this._setter2d('_rotation', this._rotation - e.deg);
+        this._setter2d('_x', x2 );
+        this._setter2d('_y', y2 );
     },
 
-    /**@
-     * #._attr
-     * @comp 2D
-     * Setter method for all 2D properties including
-     * x, y, w, h, alpha, rotation and visible.
-     */
-    _attr: function (name, value) {
+    // This is a setter method for all 2D properties including
+    // x, y, w, h, and rotation.
+    _setter2d: function (name, value) {
         // Return if there is no change
         if (this[name] === value) {
             return;
@@ -12631,13 +12676,6 @@ Crafty.c("2D", {
         if (name === '_rotation') {
             this._rotate(value); // _rotate triggers "Rotate"
             //set the global Z and trigger reorder just in case
-        } else if (name === '_z') {
-            var intValue = value <<0;
-            value = value==intValue ? intValue : intValue+1;
-            this._globalZ = value*100000+this[0]; //magic number 10^5 is the max num of entities
-            this[name] = value;
-            this.trigger("Reorder");
-            //if the rect bounds change, update the MBR and trigger move
         } else if (name === '_x' || name === '_y') {
             // mbr is the minimal bounding rectangle of the entity
             mbr = this._mbr;
@@ -12674,6 +12712,12 @@ Crafty.c("2D", {
             }
             this.trigger("Move", old);
 
+        } else if (name === '_z') {
+            var intValue = value <<0;
+            value = value==intValue ? intValue : intValue+1;
+            this._globalZ = value*100000+this[0]; //magic number 10^5 is the max num of entities
+            this[name] = value;
+            this.trigger("Reorder");
         }
 
         //everything will assume the value
@@ -13750,7 +13794,7 @@ Crafty.matrix.prototype = {
     }
 };
 
-},{"../core/core.js":7,"./spatial-grid.js":44}],41:[function(require,module,exports){
+},{"../core/core.js":7,"./spatial-grid.js":45}],42:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     DEG_TO_RAD = Math.PI / 180;
 
@@ -14471,7 +14515,7 @@ Crafty.c("Collision", {
     }
 });
 
-},{"../core/core.js":7}],42:[function(require,module,exports){
+},{"../core/core.js":7}],43:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -15569,7 +15613,7 @@ Crafty.math.Matrix2D = (function () {
 
     return Matrix2D;
 })();
-},{"../core/core.js":7}],43:[function(require,module,exports){
+},{"../core/core.js":7}],44:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -15729,7 +15773,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":7}],44:[function(require,module,exports){
+},{"../core/core.js":7}],45:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
