@@ -5442,7 +5442,9 @@ Crafty.CraftySystem.prototype = {
 module.exports = {
     init: function () {
         this._delays = [];
+        this._delaysPaused = false;
         this.bind("EnterFrame", function (frameData) {
+            if (this._delaysPaused) return;
             var index = this._delays.length;
             while (--index >= 0) {
                 var item = this._delays[index];
@@ -5550,6 +5552,58 @@ module.exports = {
             }
         }
         return this;
+    },
+    /**@
+     * #.pauseDelays
+     * @comp Delay
+     * @sign public this.pauseDelays()
+     *
+     * The pauseDelays method will pause all delays of this
+     * entity until resumed.
+     *
+     * @example
+     * ~~~
+     * var doSomething = function(){
+     *   Crafty.log("doing something");
+     * };
+     *
+     * // execute doSomething each 100 miliseconds indefinetely
+     * var ent = Crafty.e("Delay").delay(doSomething, 100, -1);
+     *
+     * // and some time later, the gameplay is paused
+     * ent.pauseDelays();
+     * ~~~
+     */
+    pauseDelays: function() {
+        this._delaysPaused = true;
+    },
+    /**@
+     * #.resumeDelays
+     * @comp Delay
+     * @sign public this.resumeDelays()
+     *
+     * The resumeDelays method will resume earlier paused delays for this
+     * entity
+     *
+     * @example
+     * ~~~
+     * var doSomething = function(){
+     *   Crafty.log("doing something");
+     * };
+     *
+     * // execute doSomething each 100 miliseconds indefinetely
+     * var ent = Crafty.e("Delay").delay(doSomething, 100, -1);
+     *
+     * // and some time later, the gameplay is paused (or only
+     * // a part of it is frozen)
+     * ent.pauseDelays();
+     *
+     * // the player resumes gameplay
+     * ent.resumeDelays();
+     * ~~~
+     */
+    resumeDelays: function() {
+        this._delaysPaused = false;
     }
 };
 
@@ -7987,6 +8041,7 @@ Crafty.c("Particles", {
         //We need to clone it
         this._Particles = Crafty.clone(this._Particles);
         this._Particles.parentEntity = this;
+        this._particlesPaused = false;
     },
 
     /**@
@@ -8073,6 +8128,7 @@ Crafty.c("Particles", {
         };
 
         this.bind('EnterFrame', function () {
+            if (this._particlesPaused) return;
             relativeX = this.x + Crafty.viewport.x;
             relativeY = this.y + Crafty.viewport.y;
             this._Particles.viewportDelta = {
@@ -8350,6 +8406,49 @@ Crafty.c("Particles", {
                 return vector1;
             }
         }
+    },
+    /**@
+     * #.pauseParticles
+     * @comp Particles
+     * @sign public this.pauseParticles()
+     *
+     * The pauseParticles will freeze these particles in execution.
+     *
+     * @example
+     * ~~~
+     * // start particle animation
+     * var ent = Crafty.e("Particles").particles(someParticleConfig);
+     *
+     * // and some time later, the gameplay is paused (or only
+     * // a part of it is frozen)
+     * ent.pauseParticles();
+     * ~~~
+     */
+    pauseParticles: function() {
+        this._particlesPaused = true;
+    },
+    /**@
+     * #.resumeParticles
+     * @comp Particles
+     * @sign public this.resumeParticles()
+     *
+     * The resumeParticles will resume earlier paused particles
+     *
+     * @example
+     * ~~~
+     * // start particle animation
+     * var ent = Crafty.e("Particles").particles(someParticleConfig);
+     *
+     * // and some time later, the gameplay is paused (or only
+     * // a part of it is frozen)
+     * ent.pauseParticles();
+     *
+     * // and we resume the particles again
+     * ent.resumeParticles();
+     * ~~~
+     */
+    resumeParticles: function() {
+        this._particlesPaused = false;
     }
 });
 
