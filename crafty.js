@@ -214,6 +214,7 @@ Crafty.c("Draggable", {
         this._oldY = this._y;
     },
 
+    //Note: the code is not tested with zoom, etc., that may distort the direction between the viewport and the coordinate on the canvas.
     _drag: function(e) {
         if (this._dir) {
             if (this._dir.x !== 0 || this._dir.y !== 0) {
@@ -231,10 +232,15 @@ Crafty.c("Draggable", {
 /**@
  * #Multiway
  * @category Controls
- * @trigger NewDirection - When entity has changed direction due to velocity on either x or y axis a NewDirection event is triggered. The event is triggered once, if direction is different from last frame. - { x: -1 | 0 | 1, y: -1 | 0 | 1 } - New direction
- * @trigger Moved - When entity has moved due to velocity/acceleration on either x or y axis a Moved event is triggered. If the entity has moved on both axes for diagonal movement the event is triggered twice. - { axis: 'x' | 'y', oldValue: Number } - Old position
  *
  * Used to bind keys to directions and have the entity move accordingly.
+ *
+ * Multiway acts by adding a velocity on key press and removing the same velocity when the respective key is released.
+ * This works well in most cases, but can cause undesired behavior if you manipulate velocities by yourself while this component is in effect.
+ * If you need to resolve collisions, it's advised to correct the position directly rather than to manipulate the velocity.
+ * If you still need to reset the velocity once a collision happens, make sure to re-add the previous velocity once the collision is resolved.
+ *
+ * Additionally, this component provides the entity with `Motion` and `Keyboard` methods & events.
  *
  * @see Motion, Keyboard
  */
@@ -291,12 +297,9 @@ Crafty.c("Multiway", {
      * @param speed - A speed in pixels per second
      * @param keyBindings - What keys should make the entity go in which direction. Direction is specified in degrees
      *
-     * Constructor to initialize the speed and keyBindings. Component will listen to key events and move the entity appropriately.
+     * Constructor to initialize the speed and keyBindings.
+     * Component will listen to key events and move the entity appropriately.
      * Can be called while a key is pressed to change direction & speed on the fly.
-     *
-     * Multiway acts by adding a velocity on key press and removing the same velocity when the respective key is released.
-     * This works well in most cases, but can cause undesired behavior if you manipulate velocities by yourself while this component is in effect.
-     * If you need to resolve collisions, it's advised to correct the position directly rather than to manipulate the velocity. If you still need to reset the velocity once a collision happens, make sure to re-add the previous velocity once the collision is resolved.
      *
      * @example
      * ~~~
@@ -305,7 +308,7 @@ Crafty.c("Multiway", {
      * this.multiway({W: -90, S: 90, D: 0, A: 180});
      * ~~~
      *
-     * @see Motion, Keyboard
+     * @see Crafty.keys
      */
     multiway: function (speed, keys) {
         if (keys) {
@@ -342,7 +345,6 @@ Crafty.c("Multiway", {
      * @param speed - New speed the entity has, for x and y axis.
      *
      * Change the speed that the entity moves with, in units of pixels per second.
-     *
      * Can be called while a key is pressed to change speed on the fly.
      *
      * @example
@@ -459,11 +461,12 @@ Crafty.c("Multiway", {
 /**@
  * #Jumper
  * @category Controls
- * @trigger NewDirection - When entity has changed direction due to velocity on either x or y axis a NewDirection event is triggered. The event is triggered once, if direction is different from last frame. - { x: -1 | 0 | 1, y: -1 | 0 | 1 } - New direction
- * @trigger Moved - When entity has moved due to velocity/acceleration on either x or y axis a Moved event is triggered. If the entity has moved on both axes for diagonal movement the event is triggered twice. - { axis: 'x' | 'y', oldValue: Number } - Old position
  * @trigger CheckJumping - When entity is about to jump. This event is triggered with the object the entity is about to jump from (if it exists). Third parties can respond to this event and enable the entity to jump.
  *
- * Make an entity jump in response to key events.
+ * Make the entity jump in response to key events.
+ * Simulates jumping and falling when used with the `Gravity` component.
+ *
+ * Additionally, this component provides the entity with `Supportable`, `Motion` and `Keyboard` methods & events.
  *
  * @see Supportable, Motion, Keyboard, Gravity
  */
@@ -552,9 +555,8 @@ Crafty.c("Jumper", {
      * @param jumpSpeed - Vertical jump speed in pixels per second
      * @param jumpKeys - Keys to listen for and make entity jump in response
      *
-     * Constructor to initialize the power of jump and keys to listen to. Component will
-     * listen for key events and move the entity appropriately. Used with the
-     * `gravity` component will simulate jumping.
+     * Constructor to initialize the power of jump and keys to listen to.
+     * Component will listen for key events and make the entity jump appropriately.
      *
      * @example
      * ~~~
@@ -562,7 +564,7 @@ Crafty.c("Jumper", {
      * this.jumper(['UP_ARROW', 'W']);
      * ~~~
      *
-     * @see Supportable, Motion, Keyboard, Gravity
+     * @see Crafty.keys
      */
     jumper: function (jumpSpeed, jumpKeys) {
         if (jumpKeys) {
@@ -605,11 +607,12 @@ Crafty.c("Jumper", {
 /**@
  * #Fourway
  * @category Controls
- * @trigger NewDirection - When entity has changed direction due to velocity on either x or y axis a NewDirection event is triggered. The event is triggered once, if direction is different from last frame. - { x: -1 | 0 | 1, y: -1 | 0 | 1 } - New direction
- * @trigger Moved - When entity has moved due to velocity/acceleration on either x or y axis a Moved event is triggered. If the entity has moved on both axes for diagonal movement the event is triggered twice. - { axis: 'x' | 'y', oldValue: Number } - Old position
  *
  * Move an entity in four directions by using the
- * arrow keys or `W`, `A`, `S`, `D`.
+ * `Up Arrow`, `Left Arrow`, `Down Arrow`, `Right Arrow` keys or `W`, `A`, `S`, `D`.
+ *
+ * This component is a thin wrapper around the `Multiway` component and sets the appropriate key bindings.
+ * It is a well suited for games with a top-down (birds-eye) perspective.
  *
  * @see Multiway
  */
@@ -625,12 +628,9 @@ Crafty.c("Fourway", {
      * @sign public this .fourway([Number speed])
      * @param speed - The speed of motion in pixels per second.
      *
-     * Constructor to initialize the speed. Component will listen for key events and move the entity appropriately.
-     * This includes `Up Arrow`, `Right Arrow`, `Down Arrow`, `Left Arrow` as well as `W`, `A`, `S`, `D`.
-     *
-     * The key presses will move the entity in that direction by the speed passed in the argument.
-     *
-     * @see Multiway
+     * Constructor to initialize the speed.
+     * Component will listen for key events and move the entity
+     * in the respective direction by the speed passed in the argument.
      */
     fourway: function (speed) {
         this.multiway(speed || this._speed, {
@@ -653,11 +653,13 @@ Crafty.c("Fourway", {
 /**@
  * #Twoway
  * @category Controls
- * @trigger NewDirection - When entity has changed direction due to velocity on either x or y axis a NewDirection event is triggered. The event is triggered once, if direction is different from last frame. - { x: -1 | 0 | 1, y: -1 | 0 | 1 } - New direction
- * @trigger Moved - When entity has moved due to velocity/acceleration on either x or y axis a Moved event is triggered. If the entity has moved on both axes for diagonal movement the event is triggered twice. - { axis: 'x' | 'y', oldValue: Number } - Old position
- * @trigger CheckJumping - When entity is about to jump. This event is triggered with the object the entity is about to jump from (if it exists). Third parties can respond to this event and enable the entity to jump.
  *
- * Move an entity left or right using the arrow keys or `D` and `A` and jump using up arrow or `W`.
+ * Move an entity left or right using the `Left Arrow`, `Right Arrow` keys or `D` and `A`
+ * and make it jump using `Up Arrow` or `W`.
+ * Simulates jumping and falling when used with the `Gravity` component.
+ *
+ * This component is a thin wrapper around the `Multiway` and `Jumper` components and sets the appropriate key bindings.
+ * It is a well suited for side-scrolling platformer type games.
  *
  * @see Multiway, Jumper
  */
@@ -674,15 +676,10 @@ Crafty.c("Twoway", {
      * @param speed - A speed in pixels per second
      * @param jumpSpeed - Vertical jump speed in pixels per second
      *
-     * Constructor to initialize the speed and power of jump. Component will
-     * listen for key events and move the entity appropriately. This includes
-     * `Up Arrow`, `Right Arrow`, `Left Arrow` as well as `W`, `A`, `D`. Used with the
-     * `gravity` component to simulate jumping.
-     *
-     * The key presses will move the entity in that direction by the speed passed in
-     * the argument. Pressing the `Up Arrow` or `W` will cause the entity to jump.
-     *
-     * @see Multiway, Jumper
+     * Constructor to initialize the speed and power of jump.
+     * Component will listen for key events and move the entity
+     * in the respective direction by the speed passed in the argument.
+     * Pressing the jump key will cause the entity to jump with the supplied power.
      */
     twoway: function (speed, jumpSpeed) {
 
@@ -873,29 +870,60 @@ Crafty.extend({
     over: null, //object mouseover, waiting for out
     mouseObjs: 0,
     mousePos: {},
-    lastEvent: null,
     touchObjs: 0,
-    selected: false,
+
+    /**@
+     * #Crafty.lastEvent
+     * @category Input
+     * Check which mouse event occured most recently (useful for determining mouse position in every frame).
+     *
+     * The native [`MouseEvent`](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent) is augmented with additional properties.
+     * @example
+     * ~~~
+     * // (x,y) coordinates of newest mouse event in web-browser (screen) space
+     * Crafty.lastEvent.clientX
+     * Crafty.lastEvent.clientY
+     *
+     * //(x,y) coordinates of newest mouse event in world (default viewport) space
+     * Crafty.lastEvent.realX
+     * Crafty.lastEvent.realY
+     *
+     * // Normalized mouse button according to Crafty.mouseButtons:
+     * // Crafty.mouseButtons.LEFT, Crafty.mouseButtons.RIGHT or Crafty.mouseButtons.MIDDLE
+     * Crafty.lastEvent.mouseButton
+     * ~~~
+     * @see Mouse, Crafty.mouseButtons, Crafty.mouseDispatch
+     */
+    lastEvent: null,
 
     /**@
      * #Crafty.keydown
      * @category Input
-     * Check which keys (referred by Unicode values) are currently down.
+     * Check which keys (referred by `Crafty.keys` key codes) are currently down.
      *
      * @example
      * ~~~
-     * Crafty.c("Keyboard", {
-     *   isDown: function (key) {
-     *     if (typeof key === "string") {
-     *       key = Crafty.keys[key];
-     *     }
-     *     return !!Crafty.keydown[key];
-     *   }
-     * });
+     * // is "Shift" currently pressed?
+     * var shiftDown = !!Crafty.keydown[Crafty.keys.SHIFT];
      * ~~~
-     * @see Keyboard, Crafty.keys
+     * @see Keyboard, Crafty.keys, Crafty.keyboardDispatch
      */
-     keydown: {},
+    keydown: {},
+
+    /**@
+     * #Crafty.selected
+     * @category Input
+     * @trigger CraftyFocus - is triggered when Crafty's stage gets selected
+     * @trigger CraftyBlur - is triggered when Crafty's stage is no longer selected
+     *
+     * Check whether Crafty's stage (`Crafty.stage.elem`) is currently selected.
+     *
+     * After a click occurs inside Crafty's stage, this property is set to `true`.
+     * After a click occurs outside Crafty's stage, this property is set to `false`.
+     *
+     * @see Crafty.stage#Crafty.stage.elem
+     */
+    selected: false,
 
     detectBlur: function (e) {
         var selected = ((e.clientX > Crafty.stage.x && e.clientX < Crafty.stage.x + Crafty.viewport.width) &&
@@ -946,6 +974,7 @@ Crafty.extend({
      * Crafty.log("multitouch is "+Crafty.multitouch());
      * ~~~
      * @see Crafty.touchDispatch
+     * @see Touch
      */
     multitouch: function (bool) {
         if (typeof bool !== "boolean") return this._touchHandler.multitouch;
@@ -969,33 +998,15 @@ Crafty.extend({
      * #Crafty.mouseDispatch
      * @category Input
      *
-     * Internal method which dispatches mouse events received by Crafty (crafty.stage.elem).
-     * The mouse events get dispatched to the closest entity to the source of the event (if available).
+     * Internal method which dispatches mouse events received by Crafty.
      *
-     * You can read more about the MouseEvent, which is the parameter passed to the callback.
-     * https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent
+     * This method processes a native [`MouseEvent`](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent) received by `Crafty.stage.elem`,
+     * augments it with additional properties and
+     * dispatches it to the closest (visible & `Mouse`-enhanced) entity to the source of the event (if available).
      *
-     * This method also sets a global property Crafty.lastEvent, which holds the most recent event that
-     * occured (useful for determining mouse position in every frame).
-     * 
-     * ~~~
-     * @example
-     * ~~~
-     * var newestX = Crafty.lastEvent.realX,
-     *     newestY = Crafty.lastEvent.realY;
-     * ~~~
-     * 
-     * Notable properties of a MouseEvent e:
-     * ~~~
-     * //(x,y) coordinates of mouse event in web browser screen space
-     * e.clientX, e.clientY
-     * //(x,y) coordinates of mouse event in world/viewport space
-     * e.realX, e.realY
-     * // Normalized mouse button according to Crafty.mouseButtons
-     * e.mouseButton
-     * ~~~
-     * @see Crafty.touchDispatch
-     * @see Crafty.multitouch
+     * This method also updates `Crafty.lastEvent`.
+     *
+     * @see Crafty.mouseButtons, Crafty.lastEvent, Mouse
      */
     mouseDispatch: function (e) {
         if (!Crafty.mouseObjs) return;
@@ -1009,7 +1020,6 @@ Crafty.extend({
             l,
             pos = Crafty.domHelper.translate(e.clientX, e.clientY),
             x, y,
-            dupes = {},
             type = e.type;     
 
         //Normalize button according to http://unixpapa.com/js/mouse.html
@@ -1091,7 +1101,7 @@ Crafty.extend({
      * http://www.w3.org/TR/touch-events/#dfn-active-touch-point
      * 
      * @see Crafty.multitouch
-     * @see Crafty.mouseDispatch
+     * @see Touch
      */
     touchDispatch: function (e) {
         if (!Crafty.touchObjs && !Crafty.mouseObjs) return;
@@ -1223,7 +1233,7 @@ Crafty.extend({
         },
 
         mimicMouse: function (e) {
-            var type,
+            var type, first,
                 lastEvent = Crafty.lastEvent;
             if (e.type === "touchstart") type = "mousedown";
             else if (e.type === "touchmove") type = "mousemove";
@@ -1290,8 +1300,8 @@ Crafty.extend({
      */
     findClosestEntityByComponent: function (comp, x, y, target) { 
         var tar = target ? target : Crafty.stage.elem,
-            closest, q, l, i = 0, maxz = -1, dupes = {};
-            
+            closest, current, q, l, i, maxz = -Infinity;
+
         //if it's a DOM element with component we are done
         if (tar.nodeName != "CANVAS") {
             while (typeof (tar.id) != 'string' && tar.id.indexOf('ent') == -1) {
@@ -1302,7 +1312,8 @@ Crafty.extend({
                 closest = ent;
             }
         }
-            //else we search for an entity with component
+
+        //else we search for an entity with component
         if (!closest) {
             q = Crafty.map.search({
                 _x: x,
@@ -1311,54 +1322,35 @@ Crafty.extend({
                 _h: 1
             }, false);
 
-            for (l = q.length; i < l; ++i) {
-                
-                if (!q[i].__c[comp] || !q[i]._visible){ continue; }
+            for (i = 0, l = q.length; i < l; ++i) {
+                current = q[i];
 
-                    var current = q[i],
-                        flag = false;
+                if (current._visible && current._globalZ > maxz &&
+                    current.__c[comp] && current.isAt(x, y)) {
 
-                    //weed out duplicates
-                    if (dupes[current[0]]){  continue; }
-                    else dupes[current[0]] = true;
-
-                    if (current.mapArea) {
-                        if (current.mapArea.containsPoint(x, y)) {
-                            flag = true;
-                        }
-                    } else if (current.isAt(x, y)) flag = true;
-
-                    if (flag && (current._z >= maxz || maxz === -1)) {
-                        //if the Z is the same, select the closest GUID
-                        if (current._z === maxz && current[0] < closest[0]) {
-                            continue; 
-                    }
-                    maxz = current._z;
+                    maxz = current._globalZ;
                     closest = current;
                 }
             }
         }
-            
+
         return closest;
     },
 
     /**@
      * #Crafty.mouseWheelDispatch
      * @category Input
-     * Mouse wheel event triggered by Crafty.
      *
+     * Internal method which dispatches mouse wheel events received by Crafty.
      * @trigger MouseWheelScroll - is triggered when mouse is scrolled on stage - { direction: +1 | -1} - Scroll direction (up | down)
      *
-     * Internal method which dispatches mouse wheel events received by Crafty (crafty.stage.elem).
-     * The mouse wheel events get dispatched to Crafty, as well as all entities.
-     *
-     * The native event parameter is passed to the callback.
-     * You can read more about the native `mousewheel` event (all browsers except Firefox) https://developer.mozilla.org/en-US/docs/Web/Events/mousewheel
-     * or the native `DOMMouseScroll` event (Firefox only) https://developer.mozilla.org/en-US/docs/Web/Events/DOMMouseScroll .
+     * This method processes a native [`mousewheel` event](https://developer.mozilla.org/en-US/docs/Web/Events/mousewheel) (all browsers except Firefox)
+     * or a native [`DOMMouseScroll` event](https://developer.mozilla.org/en-US/docs/Web/Events/DOMMouseScroll) (Firefox only) received by `Crafty.stage.elem`,
+     * augments it with the additional `.direction` property (see below) and dispatches it to the global Crafty object and thus to every entity.
      *
      * Note that the wheel delta properties of the event vary in magnitude across browsers, thus it is recommended to check for `.direction` instead.
-     * The `.direction` equals `+1` if wheel was scrolled up, `-1` if wheel was scrolled down.
-     * See http://stackoverflow.com/questions/5527601/normalizing-mousewheel-speed-across-browsers .
+     * The `.direction` equals `+1` if wheel was scrolled up, `-1` if wheel was scrolled down
+     * (see [details](http://stackoverflow.com/questions/5527601/normalizing-mousewheel-speed-across-browsers)).
      *
      * @example
      * ~~~
@@ -1373,45 +1365,34 @@ Crafty.extend({
      },
 
     /**@
-     * #KeyboardEvent
+     * #Crafty.keyboardDispatch
      * @category Input
-     * Keyboard Event triggered by Crafty Core
-     * @trigger KeyDown - is triggered for each entity when the DOM 'keydown' event is triggered.
-     * @trigger KeyUp - is triggered for each entity when the DOM 'keyup' event is triggered.
+     *
+     * Internal method which dispatches keyboard events received by Crafty.
+     * @trigger KeyDown - is triggered for each entity when the DOM 'keydown' event is triggered. - { key: `Crafty.keys` keyCode (Number), originalEvent: original KeyboardEvent } - Crafty's KeyboardEvent
+     * @trigger KeyUp - is triggered for each entity when the DOM 'keyup' event is triggered. - { key: `Crafty.keys` keyCode (Number), originalEvent: original KeyboardEvent } - Crafty's KeyboardEvent
+     *
+     * This method processes a native [`KeyboardEvent`](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent) received by `window.document`,
+     * wraps it in a custom event object (for cross-browser compatibility) and dispatches it to the global Crafty object and thus to every entity.
+     *
+     * This method also updates `Crafty.keydown`.
      *
      * @example
      * ~~~
-     * Crafty.e("2D, DOM, Color")
-     *   .attr({x: 100, y: 100, w: 50, h: 50})
-     *   .color("red")
-     *   .bind('KeyDown', function(e) {
-     *     if(e.key == Crafty.keys.LEFT_ARROW) {
-     *       this.x = this.x-1;
+     * Crafty.bind('KeyDown', function(e) {
+     *     if (e.key == Crafty.keys.LEFT_ARROW) {
+     *       Crafty.viewport.x++;
      *     } else if (e.key == Crafty.keys.RIGHT_ARROW) {
-     *       this.x = this.x+1;
+     *       Crafty.viewport.x--;
      *     } else if (e.key == Crafty.keys.UP_ARROW) {
-     *       this.y = this.y-1;
+     *       Crafty.viewport.y++;
      *     } else if (e.key == Crafty.keys.DOWN_ARROW) {
-     *       this.y = this.y+1;
+     *       Crafty.viewport.y--;
      *     }
      *   });
      * ~~~
      *
-     * @see Crafty.keys
-     */
-
-    /**@
-     * #Crafty.eventObject
-     * @category Input
-     *
-     * Event Object used in Crafty for cross browser compatibility
-     */
-
-    /**@
-     * #.key
-     * @comp Crafty.eventObject
-     *
-     * Unicode of the key pressed
+     * @see Crafty.keys, Crafty.keydown, Keyboard
      */
     keyboardDispatch: function (e) {
         // Use a Crafty-standard event object to avoid cross-browser issues
@@ -1514,7 +1495,9 @@ Crafty._preBind("CraftyStop", function () {
  * #Mouse
  * @category Input
  *
- * Provides the entity with mouse related events
+ * Provides the entity with mouse related events.
+ *
+ * If you do not add this component, mouse events will not be triggered on the entity.
  *
  * @trigger MouseOver - when the mouse enters - MouseEvent
  * @trigger MouseOut - when the mouse leaves - MouseEvent
@@ -1524,16 +1507,21 @@ Crafty._preBind("CraftyStop", function () {
  * @trigger DoubleClick - when the user double clicks - MouseEvent
  * @trigger MouseMove - when the mouse is over and moves - MouseEvent
  *
- * If you do not add this component, mouse events will not be triggered on an entity.
+ * The event callbacks are triggered with a native [`MouseEvent`](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent) parameter,
+ * which is further augmented with additional properties:
+ * ~~~
+ * //(x,y) coordinates of mouse event in web-browser (screen) space
+ * e.clientX
+ * e.clientY
  *
- * You can read more about the MouseEvent, which is the parameter passed to the callback.
- * https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent
+ * //(x,y) coordinates of mouse event in world (default viewport) space
+ * e.realX
+ * e.realY
  *
- * Crafty will add the mouseButton property to MouseEvents that match one of
- *
- * - Crafty.mouseButtons.LEFT
- * - Crafty.mouseButtons.RIGHT
- * - Crafty.mouseButtons.MIDDLE
+ * // Normalized mouse button according to Crafty.mouseButtons:
+ * // Crafty.mouseButtons.LEFT, Crafty.mouseButtons.RIGHT or Crafty.mouseButtons.MIDDLE
+ * e.mouseButton
+ * ~~~
  *
  * @note If you're targeting mobile, you should know that by default Crafty turns touch events into mouse events, 
  * making mouse dependent components work with touch. However, if you need multitouch, you'll have 
@@ -1553,10 +1541,10 @@ Crafty._preBind("CraftyStop", function () {
  *        Crafty.log("Clicked right button");
  * })
  * ~~~
+ * @see Crafty.mouseButtons
  * @see Crafty.mouseDispatch
  * @see Crafty.multitouch
  * @see Crafty.touchDispatch
- * @see Crafty.mouseButtons
  */
 Crafty.c("Mouse", {
     init: function () {
@@ -1603,8 +1591,6 @@ Crafty.c("Mouse", {
  * ~~~
  * @see Crafty.multitouch
  * @see Crafty.touchDispatch
- * @see Crafty.mouseDispatch
- * @see Crafty.mouseButtons
  */
 Crafty.c("Touch", {
     init: function () {
@@ -1622,9 +1608,7 @@ Crafty.c("Touch", {
  * Component used by Mouse and Touch.
  * Can be added to other entities for use with the Crafty.findClosestEntityByComponent method.
  * 
- * @see Crafty.mouseDispatch
- * @see Crafty.touchDispatch
- * @see Crafty.mouseButtons
+ * @see Button
  * @see Crafty.polygon
  */
 Crafty.c("AreaMap", {
@@ -1692,7 +1676,9 @@ Crafty.c("AreaMap", {
  * @category Input
  * Provides the entity with touch or mouse functionality, depending on whether this is a pc 
  * or mobile device, and also on multitouch configuration.
- * 
+ *
+ * @see Mouse
+ * @see Touch
  * @see Crafty.multitouch
  */
 Crafty.c("Button", {
@@ -1715,7 +1701,6 @@ Crafty.c("Button", {
 Crafty.c("MouseDrag", {
     _dragging: false,
 
-    //Note: the code is not tested with zoom, etc., that may distort the direction between the viewport and the coordinate on the canvas.
     init: function () {
         this.requires("Mouse");
         this.bind("MouseDown", this._ondown);
@@ -1791,16 +1776,33 @@ Crafty.c("MouseDrag", {
  * #Keyboard
  * @category Input
  *
- * Give entities keyboard events (`Keydown` and `Keyup`).
+ * Provides entity with keyboard events.
+ * @trigger KeyDown - is triggered for each entity when the DOM 'keydown' event is triggered. - { key: `Crafty.keys` keyCode (Number), originalEvent: original KeyboardEvent } - Crafty's KeyboardEvent
+ * @trigger KeyUp - is triggered for each entity when the DOM 'keyup' event is triggered. - { key: `Crafty.keys` keyCode (Number), originalEvent: original KeyboardEvent } - Crafty's KeyboardEvent
  *
- * In particular, changes to the key state are broadcasted by `KeyboardEvent`s; interested entities can bind to these events.
+ * In addition to binding to these events, the current state (pressed/released) of a key can also be queried using the `.isDown` method.
  *
- * The current state (pressed/released) of a key can also be queried using the `.isDown` method.
+ * @example
+ * ~~~
+ * Crafty.e("2D, DOM, Color, Keyboard")
+ *   .attr({x: 100, y: 100, w: 50, h: 50})
+ *   .color("red")
+ *   .bind('KeyDown', function(e) {
+ *     if (e.key == Crafty.keys.LEFT_ARROW) {
+ *       this.x = this.x-1;
+ *     } else if (e.key == Crafty.keys.RIGHT_ARROW) {
+ *       this.x = this.x+1;
+ *     } else if (e.key == Crafty.keys.UP_ARROW) {
+ *       this.y = this.y-1;
+ *     } else if (e.key == Crafty.keys.DOWN_ARROW) {
+ *       this.y = this.y+1;
+ *     }
+ *   });
+ * ~~~
  *
- * All available key codes are described in `Crafty.keys`.
- *
- * @see KeyboardEvent
  * @see Crafty.keys
+ * @see Crafty.keydown
+ * @see Crafty.keyboardDispatch
  */
 Crafty.c("Keyboard", {
     /**@
@@ -1815,7 +1817,11 @@ Crafty.c("Keyboard", {
      *
      * @example
      * ~~~
-     * entity.requires('Keyboard').bind('KeyDown', function () { if (this.isDown('SPACE')) jump(); });
+     * ent.requires('Keyboard')
+     *    .bind('EnterFrame', function() {
+     *       if (this.isDown('SPACE'))
+     *          this.y--;
+     *    });
      * ~~~
      *
      * @see Crafty.keys
@@ -1837,7 +1843,7 @@ Crafty.extend({
     /**@
      * #Crafty.keys
      * @category Input
-     * Object of key names and the corresponding key code.
+     * Object of key names and the corresponding Unicode key code.
      *
      * ~~~
      * BACKSPACE: 8,
@@ -6363,7 +6369,7 @@ Crafty.canvasLayerObject = {
         //Set any existing transformations
         var zoom = Crafty.viewport._scale;
         if (zoom != 1)
-            c.scale(zoom, zoom);
+            this.context.scale(zoom, zoom);
 
         // Set pixelart to current status, and listen for changes
         this._setPixelart(Crafty._pixelartEnabled);
@@ -6995,7 +7001,7 @@ Crafty.c("Color", {
      * c.color("#FF0000");
      * c.color("red");
      * c.color(255, 0, 0);
-     * c.color("rgb(255, 0, 0")
+     * c.color("rgb(255, 0, 0)");
      * ```
      * Three different ways of assign the color red.
      * ```
@@ -10192,18 +10198,20 @@ Crafty.extend({
 
         /**@
          * #Crafty.viewport.init
-         * @comp Crafty.viewport
+         * @comp Crafty.stage
          * @sign public void Crafty.viewport.init([Number width, Number height, String stage_elem])
          * @sign public void Crafty.viewport.init([Number width, Number height, HTMLElement stage_elem])
          * @param Number width - Width of the viewport
          * @param Number height - Height of the viewport
          * @param String or HTMLElement stage_elem - the element to use as the stage (either its id or the actual element).
          *
-         * Initialize the viewport. If the arguments 'width' or 'height' are missing, use `window.innerWidth` and `window.innerHeight` (full screen model).
-         *
+         * Initialize the viewport.
+         * If the arguments 'width' or 'height' are missing, use `window.innerWidth` and `window.innerHeight` (full screen model).
          * The argument 'stage_elem' is used to specify a stage element other than the default, and can be either a string or an HTMLElement.  If a string is provided, it will look for an element with that id and, if none exists, create a div.  If an HTMLElement is provided, that is used directly.  Omitting this argument is the same as passing an id of 'cr-stage'.
          *
-         * @see Crafty.device, Crafty.domHelper, Crafty.stage
+         * Usually you don't have to initialize the viewport by yourself, it's automatically initialized by calling `Crafty.init()`. Multiple `init`s will create redundant stage elements. Use `Crafty.viewport.width`, `Crafty.viewport.height` or `Crafty.viewport.reload` to adjust the current viewport's dimensions.
+         *
+         * @see Crafty.device, Crafty.domHelper, Crafty.stage, Crafty.viewport.reload
          */
         init: function (w, h, stage_elem) {
             // setters+getters for the viewport
@@ -11451,10 +11459,9 @@ Crafty.extend({
         place: function (x, y, z, obj) {
             var pos = this.pos2px(x, y);
             pos.top -= z * (this._tile.height / 2);
-            obj.attr({
-                x: pos.left + Crafty.viewport._x,
-                y: pos.top + Crafty.viewport._y
-            }).z += z;
+            obj.x = pos.left + Crafty.viewport._x;
+            obj.y = pos.top + Crafty.viewport._y;
+            obj.z += z;
             return this;
         },
         /**@
@@ -12675,7 +12682,7 @@ Crafty.c("2D", {
      * @note The keys have an underscore prefix. This is due to the x, y, w, h properties
      * being setters and getters that wrap the underlying properties with an underscore (_x, _y, _w, _h).
      *
-     * @see 2D.pos
+     * @see .pos
      */
     mbr: function (mbr) {
         mbr = mbr || {};
@@ -13078,7 +13085,7 @@ Crafty.c("Supportable", {
         return this;
     },
 
-    /*@
+    /**@
      * #.preventGroundTunneling
      * @comp Supportable
      * @sign this .preventGroundTunneling([Boolean enable])
@@ -13088,7 +13095,7 @@ Crafty.c("Supportable", {
      * This is performed by approximating continous collision detection, which may impact performance negatively.
      * For further details, refer to [FAQ#Tunneling](https://github.com/craftyjs/Crafty/wiki/Crafty-FAQ-%28draft%29#why-are-my-bullets-passing-through-other-entities-without-registering-hits).
      *
-     * @see Motion.ccdbr
+     * @see Motion#.ccdbr
      */
     preventGroundTunneling: function(enable) {
         if (typeof enable === 'undefined')
@@ -13124,7 +13131,7 @@ Crafty.c("Supportable", {
         // check if we lift-off
         if (ground) {
             var garea = ground._cbr || ground._mbr || ground;
-            if (!(ground.__c[groundComp] && overlap(garea, area))) {
+            if (!(ground.__c[groundComp] && Crafty(ground[0]) === ground && overlap(garea, area))) {
                 this._ground = null;
                 this.trigger("LiftedOffGround", ground); // no collision with ground was detected for first time
                 ground = null;
@@ -13168,16 +13175,18 @@ Crafty.c("Supportable", {
  * #GroundAttacher
  * @category 2D
  *
- * Component that attaches the entity to the ground when it lands. Useful for platformers with moving platforms.
+ * Attach the entity to the ground when it lands. Useful for platformers with moving platforms.
  * Remove the component to disable the functionality.
  *
- * @see Supportable, Gravity
+ * Additionally, this component provides the entity with `Supportable` methods & events.
  *
  * @example
  * ~~~
  * Crafty.e("2D, Gravity, GroundAttacher")
  *     .gravity("Platform"); // entity will land on and move with entites that have the "Platform" component
  * ~~~
+ *
+ * @see Supportable, Gravity
  */
 Crafty.c("GroundAttacher", {
     _groundAttach: function(ground) {
@@ -13203,10 +13212,10 @@ Crafty.c("GroundAttacher", {
 /**@
  * #Gravity
  * @category 2D
- * @trigger Moved - When entity has moved due to velocity/acceleration on either x or y axis a Moved event is triggered. If the entity has moved on both axes for diagonal movement the event is triggered twice. - { axis: 'x' | 'y', oldValue: Number } - Old position
- * @trigger NewDirection - When entity has changed direction due to velocity on either x or y axis a NewDirection event is triggered. The event is triggered once, if direction is different from last frame. - { x: -1 | 0 | 1, y: -1 | 0 | 1 } - New direction
- * 
+ *
  * Adds gravitational pull to the entity.
+ *
+ * Additionally, this component provides the entity with `Supportable` and `Motion` methods & events.
  *
  * @see Supportable, Motion
  */
@@ -13240,7 +13249,6 @@ Crafty.c("Gravity", {
      * If comp parameter is specified all entities with that component will stop this entity from falling.
      * For a player entity in a platform game this would be a component that is added to all entities
      * that the player should be able to walk on.
-     * See the Supportable component documentation for additional methods & events that are available.
      *
      * @example
      * ~~~
@@ -13249,8 +13257,6 @@ Crafty.c("Gravity", {
      *   .attr({ w: 100, h: 100 })
      *   .gravity("platform");
      * ~~~
-     *
-     * @see Supportable, Motion
      */
     gravity: function (comp) {
         this.uniqueBind("CheckLanding", this._gravityCheckLanding);
@@ -13736,7 +13742,7 @@ Crafty.c("Motion", {
      * @note The keys have an underscore prefix. This is due to the x, y, w, h properties
      * being setters and getters that wrap the underlying properties with an underscore (_x, _y, _w, _h).
      *
-     * @see Collision.cbr, Motion.motionDelta
+     * @see .motionDelta, Collision#.cbr
      */
     ccdbr: function (ccdbr) {
         var pos = this._cbr || this._mbr || this,
@@ -14190,7 +14196,7 @@ Crafty.c("Collision", {
      * @note The keys have an underscore prefix. This is due to the x, y, w, h properties
      * being setters and getters that wrap the underlying properties with an underscore (_x, _y, _w, _h).
      *
-     * @see 2D.mbr
+     * @see 2D#.mbr
      */
     cbr: function (cbr) {
         cbr = cbr || {};
