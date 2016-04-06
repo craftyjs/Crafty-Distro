@@ -5802,6 +5802,7 @@ require('./graphics/gl-textures');
 require('./graphics/renderable');
 require('./graphics/html');
 require('./graphics/image');
+require('./graphics/layers');
 require('./graphics/particles');
 require('./graphics/sprite-animation');
 require('./graphics/sprite');
@@ -5825,7 +5826,7 @@ if(window) window.Crafty = Crafty;
 
 module.exports = Crafty;
 
-},{"./controls/controls":2,"./controls/device":3,"./controls/inputs":4,"./controls/keycodes":5,"./core/animation":6,"./core/core":7,"./core/extensions":8,"./core/loader":9,"./core/model":10,"./core/scenes":11,"./core/storage":12,"./core/systems":13,"./core/time":14,"./core/tween":15,"./debug/debug-layer":18,"./debug/logging":19,"./graphics/canvas":21,"./graphics/canvas-layer":20,"./graphics/color":22,"./graphics/dom":25,"./graphics/dom-helper":23,"./graphics/dom-layer":24,"./graphics/drawing":26,"./graphics/gl-textures":27,"./graphics/html":28,"./graphics/image":29,"./graphics/particles":30,"./graphics/renderable":31,"./graphics/sprite":33,"./graphics/sprite-animation":32,"./graphics/text":34,"./graphics/viewport":35,"./graphics/webgl":37,"./graphics/webgl-layer":36,"./isometric/diamond-iso":38,"./isometric/isometric":39,"./sound/sound":40,"./spatial/2d":41,"./spatial/collision":42,"./spatial/math":43,"./spatial/rect-manager":44,"./spatial/spatial-grid":45}],18:[function(require,module,exports){
+},{"./controls/controls":2,"./controls/device":3,"./controls/inputs":4,"./controls/keycodes":5,"./core/animation":6,"./core/core":7,"./core/extensions":8,"./core/loader":9,"./core/model":10,"./core/scenes":11,"./core/storage":12,"./core/systems":13,"./core/time":14,"./core/tween":15,"./debug/debug-layer":18,"./debug/logging":19,"./graphics/canvas":21,"./graphics/canvas-layer":20,"./graphics/color":22,"./graphics/dom":25,"./graphics/dom-helper":23,"./graphics/dom-layer":24,"./graphics/drawing":26,"./graphics/gl-textures":27,"./graphics/html":28,"./graphics/image":29,"./graphics/layers":30,"./graphics/particles":31,"./graphics/renderable":32,"./graphics/sprite":34,"./graphics/sprite-animation":33,"./graphics/text":35,"./graphics/viewport":36,"./graphics/webgl":38,"./graphics/webgl-layer":37,"./isometric/diamond-iso":39,"./isometric/isometric":40,"./sound/sound":41,"./spatial/2d":42,"./spatial/collision":43,"./spatial/math":44,"./spatial/rect-manager":45,"./spatial/spatial-grid":46}],18:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6299,6 +6300,7 @@ var Crafty = require('../core/core.js');
  * Mostly contains private methods to draw entities on a canvas element.
  */
 Crafty.canvasLayerObject = {
+    type: "Canvas",
     _dirtyRects: [],
     _changedObjs: [],
     layerCount: 0,
@@ -6310,16 +6312,46 @@ Crafty.canvasLayerObject = {
     },
 
     /**@
-     * #.add
+     * #.dirty
      * @comp CanvasLayer
-     * @sign public .add(ent)
+     * @sign public .dirty(ent)
      * @param ent - The entity to add
      *
-     * Add an entity to the list of Canvas objects to draw
+     * Add an entity to the list of Canvas objects that need redrawing
      */
-    add: function add(ent) {
+    dirty: function dirty(ent) {
         this._changedObjs.push(ent);
     },
+    
+    /**@
+     * #.attach
+     * @comp CanvasLayer
+     * @sign public .attach(ent)
+     * @param ent - The entity to add
+     *
+     * Sets the entity's draw context to this layer
+     */
+    attach: function attach(ent) {
+        ent._drawContext = this.context;
+        //increment the number of canvas objs
+        this.layerCount++;
+    },
+    
+    /**@
+     * #.detach
+     * @comp CanvasLayer
+     * @sign public .detach(ent)
+     * @param ent - The entity to add
+     *
+     * Removes an entity to the list of Canvas objects to draw
+     */
+    detach: function detach(ent) {
+        this.dirty(ent);
+        ent._drawContext = null;
+        //decrement the number of canvas objs
+        this.layerCount--;
+    },
+    
 
     /**@
      * #.context
@@ -6359,8 +6391,6 @@ Crafty.canvasLayerObject = {
         c.style.position = 'absolute';
         c.style.left = "0px";
         c.style.top = "0px";
-
-        var canvas = Crafty.s("Canvas");
 
         Crafty.stage.elem.appendChild(c);
         this.context = c.getContext('2d');
@@ -6430,7 +6460,7 @@ Crafty.canvasLayerObject = {
      */
     _drawDirty: function () {
 
-        var i, j, q, rect,len, obj, ent,
+        var i, j, q, rect,len, obj,
             changed = this._changedObjs,
             l = changed.length,
             dirty = this._dirtyRects,
@@ -6482,7 +6512,7 @@ Crafty.canvasLayerObject = {
             for (j = 0, len = q.length; j < len; ++j) {
                 obj = q[j];
 
-                if (dupes[obj[0]] || !obj._visible || !obj.__c.Canvas)
+                if (dupes[obj[0]] || !obj._visible || (obj._drawLayer !== this) )
                     continue;
                 dupes[obj[0]] = true;
                 objs.push(obj);
@@ -6538,10 +6568,12 @@ Crafty.canvasLayerObject = {
 
         //sort the objects by the global Z
         q.sort(this._sort);
+        //console.log("\n--\n" + q.length + " to draw for layer " + this.name);
         for (; i < l; i++) {
             current = q[i];
-            if (current._visible && current.__c.Canvas) {
-                current.draw();
+            if (current._visible && current._drawContext === this.context) {
+                //console.log(i + " drawn");
+                current.draw(this.context);
                 current._changed = false;
             }
         }
@@ -6646,33 +6678,19 @@ Crafty.c("Canvas", {
 
     init: function () {
         this.requires("Renderable");
-        var canvasLayer = Crafty.s("CanvasLayer");
-
-        this._drawLayer = canvasLayer;
-        this._drawContext = canvasLayer.context;
-
-        //increment the amount of canvas objs
-        canvasLayer.layerCount++;
+        
         //Allocate an object to hold this components current region
         this.currentRect = {};
-        this._changed = true;
-        canvasLayer.add(this);
+        
+        // Add the default canvas layer if we aren't attached to a custom one
+        if (!this._customLayer){
+            this._attachToLayer( Crafty.s("CanvasLayer"));
+        }
+        
+    },
 
-        this.bind("Invalidate", function (e) {
-            //flag if changed
-            if (this._changed === false) {
-                this._changed = true;
-                canvasLayer.add(this);
-            }
-
-        });
-
-
-        this.bind("Remove", function () {
-            this._drawLayer.layerCount--;
-            this._changed = true;
-            this._drawLayer.add(this);
-        });
+    remove: function() {
+        this._detachFromLayer();
     },
 
     /**@
@@ -6700,8 +6718,6 @@ Crafty.c("Canvas", {
             w: 0,
             h: 0
         }
-
-
     },
 
     draw: function (ctx, x, y, w, h) {
@@ -6721,8 +6737,8 @@ Crafty.c("Canvas", {
         pos._h = (h || this._h);
 
 
-        context = ctx || this._drawContext;
-        coord = this.__coord || [0, 0, 0, 0];
+        var context = ctx || this._drawContext;
+        var coord = this.__coord || [0, 0, 0, 0];
         var co = this.drawVars.co;
         co.x = coord[0] + (x || 0);
         co.y = coord[1] + (y || 0);
@@ -6948,10 +6964,14 @@ Crafty.c("Color", {
 
     init: function () {
         this.bind("Draw", this._drawColor);
-        if (this.has("WebGL")){
-            this._establishShader("Color", Crafty.defaultShader("Color"));
+        if (this._drawLayer) {
+            this._setupColor(this._drawLayer);
         }
         this.trigger("Invalidate");
+    },
+    
+    events: {
+        "LayerAttached": "_setupColor"
     },
 
     remove: function(){
@@ -6960,6 +6980,12 @@ Crafty.c("Color", {
             this._element.style.backgroundColor = "transparent";
         }
         this.trigger("Invalidate");
+    },
+
+    _setupColor: function(layer) {
+        if (layer.type === "WebGL") {
+            this._establishShader("Color", Crafty.defaultShader("Color"));
+        }
     },
 
     // draw function for "Color"
@@ -7150,6 +7176,7 @@ var Crafty = require('../core/core.js'),
  * Collection of mostly private methods to represent entities using the DOM.
  */
 Crafty.domLayerObject = {
+    type: "DOM",
     _changedObjs: [],
     _dirtyViewport: false,
 
@@ -7254,15 +7281,44 @@ Crafty.domLayerObject = {
     },
 
     /**@
-     * #.add
+     * #.dirty
      * @comp DomLayer
-     * @sign public .add(ent)
-     * @param ent - The entity to add
+     * @sign public .dirty(ent)
+     * @param ent - The entity to mark as dirty
      *
      * Add an entity to the list of DOM object to draw
      */
-    add: function add(ent) {
+    dirty: function add(ent) {
         this._changedObjs.push(ent);
+    },
+
+    /**@
+     * #.attach
+     * @comp DomLayer
+     * @sign public .attach(ent)
+     * @param ent - The entity to add
+     *
+     * Add an entity to the layer
+     */
+    attach: function attach(ent) {
+        ent._drawContext = this.context;
+        // attach the entity's div element to the dom layer
+        this._div.appendChild(ent._element);
+        // set position style and entity id
+        ent._element.style.position = "absolute";
+        ent._element.id = "ent" + ent[0];
+    },
+    
+    /**@
+     * #.detach
+     * @comp DomLayer
+     * @sign public .detach(ent)
+     * @param ent - The entity to remove
+     *
+     * Removes an entity from the layer
+     */
+    detach: function detach(ent) {
+        this._div.removeChild(ent._element);
     },
 
     // Sets the viewport position and scale
@@ -7309,12 +7365,7 @@ Crafty.c("DOM", {
 
     init: function () {
         this.requires("Renderable");
-        var domLayer = Crafty.s("DomLayer");
-        if (!domLayer._div) {
-            domLayer.init();
-        }
-        this._drawLayer = domLayer;
-
+        
         this._cssStyles = {
             visibility: '',
             left: '',
@@ -7327,23 +7378,20 @@ Crafty.c("DOM", {
             transform: ''
         };
         this._element = document.createElement("div");
-        domLayer._div.appendChild(this._element);
-        this._element.style.position = "absolute";
-        this._element.id = "ent" + this[0];
 
-        this.bind("Invalidate", this._invalidateDOM);
+        // Attach the entity to the dom layer
+        if (!this._customLayer){
+            this._attachToLayer( Crafty.s("DomLayer") );
+        }
+
         this.bind("NewComponent", this._updateClass);
         this.bind("RemoveComponent", this._removeClass);
-
-        this._invalidateDOM();
-
     },
 
     remove: function(){
-        this.undraw();
+        this._detachFromLayer();
         this.unbind("NewComponent", this._updateClass);
         this.unbind("RemoveComponent", this._removeClass);
-        this.unbind("Invalidate", this._invalidateDOM);
     },
 
     /**@
@@ -7359,12 +7407,12 @@ Crafty.c("DOM", {
 
     // removes a component on RemoveComponent events
     _removeClass: function(removedComponent) {
-        var i = 0,
+        var comp,
             c = this.__c,
             str = "";
-        for (i in c) {
-          if(i != removedComponent) {
-            str += ' ' + i;
+        for (comp in c) {
+          if(comp != removedComponent) {
+            str += ' ' + comp;
           }
         }
         str = str.substr(1);
@@ -7373,21 +7421,14 @@ Crafty.c("DOM", {
 
     // adds a class on NewComponent events
     _updateClass: function() {
-        var i = 0,
+        var comp,
             c = this.__c,
             str = "";
-        for (i in c) {
-            str += ' ' + i;
+        for (comp in c) {
+            str += ' ' + comp;
         }
         str = str.substr(1);
         this._element.className = str;
-    },
-
-    _invalidateDOM: function(){
-        if (!this._changed) {
-                this._changed = true;
-                this._drawLayer.add(this);
-            }
     },
 
     /**@
@@ -7398,12 +7439,15 @@ Crafty.c("DOM", {
      * @param elem - HTML element that will replace the dynamically created one
      *
      * Pass a DOM element to use rather than one created. Will set `._element` to this value. Removes the old element.
+     * 
+     * Will reattach the entity to the current draw layer
      */
     DOM: function (elem) {
         if (elem && elem.nodeType) {
-            this.undraw();
+            var layer = this._drawLayer;
+            this._detachFromLayer();
             this._element = elem;
-            this._element.style.position = 'absolute';
+            this._attachToLayer(layer);
         }
         return this;
     },
@@ -7497,21 +7541,6 @@ Crafty.c("DOM", {
             co: co
         });
 
-        return this;
-    },
-
-    /**@
-     * #.undraw
-     * @comp DOM
-     * @sign public this .undraw(void)
-     *
-     * Removes the element from the stage.
-     */
-    undraw: function () {
-        var el = this._element;
-        if (el && el.parentNode !== null) {
-            el.parentNode.removeChild(el);
-        }
         return this;
     },
 
@@ -7930,9 +7959,11 @@ Crafty.c("Image", {
 
     init: function () {
         this.bind("Draw", this._drawImage);
+        this.bind("LayerAttached", this._setupImage);
     },
 
     remove: function() {
+        this.unbind("LayerAttached", this._setupImage);
         this.unbind("Draw", this._drawImage);
     },
 
@@ -7981,33 +8012,32 @@ Crafty.c("Image", {
             var self = this;
 
             this.img.onload = function () {
-                self._onImageLoad();
+                self._setupImage(self._drawLayer);
             };
         } else {
-            this._onImageLoad();
+            this._setupImage(this._drawLayer);
         }
-
 
         this.trigger("Invalidate");
 
         return this;
     },
 
-    _onImageLoad: function(){
-
-        if (this.has("Canvas")) {
+    // called on image change or layer attachment
+    _setupImage: function(layer){
+        if (!this.img || !layer) return;
+        
+        if (layer.type === "Canvas") {
             this._pattern = this._drawContext.createPattern(this.img, this._repeat);
-        } else if (this.has("WebGL")) {
+        } else if (layer.type === "WebGL") {
             this._establishShader("image:" + this.__image, Crafty.defaultShader("Image"));
-            this.program.setTexture( this.webgl.makeTexture(this.__image, this.img, (this._repeat!=="no-repeat")));
+            this.program.setTexture( this._drawLayer.makeTexture(this.__image, this.img, (this._repeat!=="no-repeat")));
         }
 
         if (this._repeat === "no-repeat") {
             this.w = this.w || this.img.width;
             this.h = this.h || this.img.height;
         }
-
-
 
         this.ready = true;
         this.trigger("Invalidate");
@@ -8039,6 +8069,45 @@ Crafty.c("Image", {
 });
 
 },{"../core/core.js":7}],30:[function(require,module,exports){
+var Crafty = require('../core/core.js');
+
+Crafty.extend({
+    /**@
+     * #Crafty.createLayer
+     * @category Graphics
+     *
+     * @sign public void Crafty.createLayer(string name, object layerTemplate)
+     * @param name - the name that will refer to the layer
+     * @param layerTemplate - an object that implements the necessary methods for a draw layer
+     * 
+     * Creates a new instance of the specified type of layer.
+     * 
+     * @example
+     * ```
+     * Crafty.s("MyCanvasLayer", Crafty.canvasLayerObject)
+     * Crafty.e("2D, MyCanvasLayer, Color");
+     * ```
+     * Define a custom canvas layer, then create an entity that uses the custom layer to render.
+     */
+    createLayer: function createLayer(name, layerTemplate) {
+        Crafty.s(name, layerTemplate);
+        Crafty.c(name, {
+            init: function() {
+                this.requires("Renderable");
+                
+                // Flag to indicate that the base component doesn't need to attach a layer
+                this._customLayer = true;
+                this.requires(layerTemplate.type);
+                this._attachToLayer(Crafty.s(name));
+            },
+            
+            remove: function() {
+                this._detachFromLayer();
+            }
+        });
+    }
+});
+},{"../core/core.js":7}],31:[function(require,module,exports){
 var Crafty = require('../core/core.js'),    
     document = window.document;
 
@@ -8469,7 +8538,7 @@ Crafty.c("Particles", {
     }
 });
 
-},{"../core/core.js":7}],31:[function(require,module,exports){
+},{"../core/core.js":7}],32:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -8481,7 +8550,9 @@ var Crafty = require('../core/core.js');
  */
 Crafty.c("Renderable", {
 
-
+    // Flag for tracking whether the entity is dirty or not
+    _changed: false,
+    
     /**@
      * #.alpha
      * @comp Renderable
@@ -8499,8 +8570,6 @@ Crafty.c("Renderable", {
      */
     _visible: true,
 
-
-    
     _setterRenderable: function(name, value) {
         if (this[name] === value) {
             return;
@@ -8538,7 +8607,6 @@ Crafty.c("Renderable", {
             enumerable: true
         },
         _visible: {enumerable:false}
-
     },
 
     _defineRenderableProperites: function () {
@@ -8550,6 +8618,40 @@ Crafty.c("Renderable", {
     init: function () {
         // create setters and getters that associate properties such as alpha/_alpha
         this._defineRenderableProperites();
+    },
+
+    // Renderable assumes that a draw layer has 3 important methods: attach, detach, and dirty
+
+    // Dirty the entity when it's invalidated
+    _invalidateRenderable: function() {
+        //flag if changed
+        if (this._changed === false) {
+            this._changed = true;
+            this._drawLayer.dirty(this);
+        }
+    },
+
+    // Attach the entity to a layer to be rendered
+    _attachToLayer: function(layer) {
+        if (this._drawLayer) {
+            this._detachFromLayer();
+        }
+        this._drawLayer = layer;
+        layer.attach(this);
+        this.bind("Invalidate", this._invalidateRenderable);
+        this.trigger("LayerAttached", layer);
+        this.trigger("Invalidate");
+    },
+
+    // Detach the entity from a layer
+    _detachFromLayer: function() {
+        if (!this._drawLayer) {
+            return;
+        }
+        this._drawLayer.detach(this);
+        this.unbind("Invalidate", this._invalidateRenderable);
+        this.trigger("LayerDetached", this._drawLayer);
+        delete this._drawLayer;
     },
 
     /**@
@@ -8598,7 +8700,7 @@ Crafty.c("Renderable", {
         return this;
     }
 });
-},{"../core/core.js":7}],32:[function(require,module,exports){
+},{"../core/core.js":7}],33:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -9076,7 +9178,7 @@ Crafty.c("SpriteAnimation", {
 	}
 });
 
-},{"../core/core.js":7}],33:[function(require,module,exports){
+},{"../core/core.js":7}],34:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 // Define some variables required for webgl
@@ -9223,11 +9325,7 @@ Crafty.extend({
             //set the width and height to the sprite size
             this.w = this.__coord[2];
             this.h = this.__coord[3];
-
-            if (this.has("WebGL")){
-                this._establishShader(this.__image, Crafty.defaultShader("Sprite"));
-                this.program.setTexture( this.webgl.makeTexture(this.__image, this.img, false) );
-            }
+            this._setupSpriteImage(this._drawLayer);
         };
 
         for (spriteName in map) {
@@ -9285,10 +9383,20 @@ Crafty.c("Sprite", {
     init: function () {
         this.__trim = [0, 0, 0, 0];
         this.bind("Draw", this._drawSprite);
+        this.bind("LayerAttached", this._setupSpriteImage);
     },
 
     remove: function(){
         this.unbind("Draw", this._drawSprite);
+        this.unbind("LayerAttached", this._setupSpriteImage);
+    },
+    
+    _setupSpriteImage: function(layer) {
+        if (!this.__image || !this.img || !layer) return;
+        if (layer.type === "WebGL"){
+            this._establishShader(this.__image, Crafty.defaultShader("Sprite"));
+            this.program.setTexture( layer.makeTexture(this.__image, this.img, false) );
+        }
     },
 
     _drawSprite: function(e){
@@ -9435,7 +9543,7 @@ Crafty.c("Sprite", {
     }
 });
 
-},{"../core/core.js":7}],34:[function(require,module,exports){
+},{"../core/core.js":7}],35:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -9705,7 +9813,7 @@ Crafty.c("Text", {
     }
 
 });
-},{"../core/core.js":7}],35:[function(require,module,exports){
+},{"../core/core.js":7}],36:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -10482,7 +10590,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],36:[function(require,module,exports){
+},{"../core/core.js":7}],37:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -10665,6 +10773,7 @@ RenderProgramWrapper.prototype = {
  * A collection of methods to handle webgl contexts.
  */
 Crafty.webglLayerObject = {
+    type: "WebGL",
     /**@
      * #.context
      * @comp WebGLLayer
@@ -10787,7 +10896,6 @@ Crafty.webglLayerObject = {
         // This is necessary to match the blending of canvas/dom entities against the background color
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
         gl.enable(gl.BLEND);
-        
 
         //Bind rendering of canvas context (see drawing.js)
         this.uniqueBind("RenderScene", this.render);
@@ -10798,8 +10906,6 @@ Crafty.webglLayerObject = {
         this.dirtyViewport = true;
 
         this.texture_manager = new Crafty.TextureManager(gl, this);
-
-
     },
 
     // Cleanup the DOM when the system is destroyed
@@ -10830,7 +10936,7 @@ Crafty.webglLayerObject = {
 
     // convenicne to sort array by global Z
     zsort: function(a, b) {
-            return a._globalZ - b._globalZ;
+        return a._globalZ - b._globalZ;
     },
 
     // Hold an array ref to avoid garbage
@@ -10864,7 +10970,7 @@ Crafty.webglLayerObject = {
         visible_gl.length = 0;
         for (i=0; i < l; i++) {
             current = q[i];
-            if (current._visible && current.__c.WebGL && current.program) {
+            if (current._visible && current.program && (current._drawLayer === this)) {
                 visible_gl.push(current);
             }
         }
@@ -10878,7 +10984,6 @@ Crafty.webglLayerObject = {
         // A batch is rendered whenever the next element needs to use a different type of program
         // Therefore, you get better performance by grouping programs by z-order if possible.
         // (Each sprite sheet will use a different program, but multiple sprites on the same sheet can be rendered in one batch)
-        var batchCount = 0;
         var shaderProgram = null;
         for (i=0; i < l; i++) {
             current = visible_gl[i];
@@ -10899,10 +11004,51 @@ Crafty.webglLayerObject = {
           shaderProgram.renderBatch();
         }
         
-    }
+    },
+    
+    /**@
+     * #.dirty
+     * @comp WebGLLayer
+     * @sign public .dirty(ent)
+     * @param ent - The entity to mark as dirty
+     *
+     * Add an entity to the list of DOM object to draw
+     */
+    dirty: function add(ent) {
+        // WebGL doens't need to do any special tracking of changed objects
+    },
+
+    /**@
+     * #.attach
+     * @comp WebGLLayer
+     * @sign public .attach(ent)
+     * @param ent - The entity to add
+     *
+     * Add an entity to the layer
+     */
+    attach: function attach(ent) {
+        // WebGL entities really need to be added to a specific program, which is handled in the LayerAttached event by components
+        ent._drawContext = this.context;
+    },
+
+    /**@
+     * #.detach
+     * @comp WebGLLayer
+     * @sign public .detach(ent)
+     * @param ent - The entity to remove
+     *
+     * Removes an entity from the layer
+     */
+    detach: function detach(ent) {
+        // This could, like attach, be handled by components
+        // We instead handle it in a central place for now
+        if (ent.program) {
+            ent.program.unregisterEntity(this);
+        }
+    },
 
 };
-},{"../core/core.js":7}],37:[function(require,module,exports){
+},{"../core/core.js":7}],38:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 /**@
@@ -11070,28 +11216,14 @@ Crafty.c("WebGL", {
      */
     init: function () {
         this.requires("Renderable");
-        var webgl = this.webgl = Crafty.s("WebGLLayer");
-        var gl = webgl.context;
-
-        //increment the amount of canvas objs
-        this._changed = true;
-        this.bind("Change", this._glChange);
+        // Attach to webgl layer
+        if (!this._customLayer){
+            this._attachToLayer( Crafty.s("WebGLLayer") );
+        }
     },
-
+ 
     remove: function(){
-        this._changed = true;
-        this.unbind(this._glChange);
-        // Webgl components need to be removed from their gl program
-        if (this.program) {
-            this.program.unregisterEntity(this);
-        }
-    },
-
-    _glChange: function(){
-        //flag if changed
-        if (this._changed === false) {
-            this._changed = true;
-        }
+        this._detachFromLayer();
     },
 
     // Cache the various objects and arrays used in draw
@@ -11129,7 +11261,7 @@ Crafty.c("WebGL", {
             w = y;
             y = x;
             x = ctx;
-            ctx = this.webgl.context;
+            ctx = this._drawLayer.context;
         }
 
         var pos = this.drawVars.pos;
@@ -11157,12 +11289,13 @@ Crafty.c("WebGL", {
         }
 
         //Draw entity
-        var gl = this.webgl.context;
+        var gl = this._drawContext;
         this.drawVars.gl = gl;
         var prog = this.drawVars.program = this.program;
 
         // The program might need to refer to the current element's index
         prog.setCurrentEntity(this);
+
         // Write position; x, y, w, h
         prog.writeVector("aPosition",
             this._x, this._y,
@@ -11195,7 +11328,7 @@ Crafty.c("WebGL", {
 
     // v_src is optional, there's a default vertex shader that works for regular rectangular entities
     _establishShader: function(compName, shader){
-        this.program = this.webgl.getProgramWrapper(compName, shader);
+        this.program = this._drawLayer.getProgramWrapper(compName, shader);
 
         // Needs to know where in the big array we are!
         this.program.registerEntity(this);
@@ -11204,7 +11337,7 @@ Crafty.c("WebGL", {
     }
 });
 
-},{"../core/core.js":7}],38:[function(require,module,exports){
+},{"../core/core.js":7}],39:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -11413,7 +11546,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":7}],39:[function(require,module,exports){
+},{"../core/core.js":7}],40:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -11603,7 +11736,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],40:[function(require,module,exports){
+},{"../core/core.js":7}],41:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -12157,7 +12290,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],41:[function(require,module,exports){
+},{"../core/core.js":7}],42:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     HashMap = require('./spatial-grid.js');
 
@@ -12279,9 +12412,7 @@ Crafty.c("2D", {
     _entry: null,
     _children: null,
     _parent: null,
-    _changed: false,
 
-    
     // Setup   all the properties that we need to define
     _2D_property_definitions: {
         x: {
@@ -14075,7 +14206,7 @@ Crafty.matrix.prototype = {
     }
 };
 
-},{"../core/core.js":7,"./spatial-grid.js":45}],42:[function(require,module,exports){
+},{"../core/core.js":7,"./spatial-grid.js":46}],43:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     DEG_TO_RAD = Math.PI / 180;
 
@@ -14796,7 +14927,7 @@ Crafty.c("Collision", {
     }
 });
 
-},{"../core/core.js":7}],43:[function(require,module,exports){
+},{"../core/core.js":7}],44:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -15894,7 +16025,7 @@ Crafty.math.Matrix2D = (function () {
 
     return Matrix2D;
 })();
-},{"../core/core.js":7}],44:[function(require,module,exports){
+},{"../core/core.js":7}],45:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -16054,7 +16185,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":7}],45:[function(require,module,exports){
+},{"../core/core.js":7}],46:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
