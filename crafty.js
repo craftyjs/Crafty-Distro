@@ -11,6 +11,31 @@
 // shim for using process in browser
 
 var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+(function () {
+  try {
+    cachedSetTimeout = setTimeout;
+  } catch (e) {
+    cachedSetTimeout = function () {
+      throw new Error('setTimeout is not defined');
+    }
+  }
+  try {
+    cachedClearTimeout = clearTimeout;
+  } catch (e) {
+    cachedClearTimeout = function () {
+      throw new Error('clearTimeout is not defined');
+    }
+  }
+} ())
 var queue = [];
 var draining = false;
 var currentQueue;
@@ -35,7 +60,7 @@ function drainQueue() {
     if (draining) {
         return;
     }
-    var timeout = setTimeout(cleanUpNextTick);
+    var timeout = cachedSetTimeout.call(null, cleanUpNextTick);
     draining = true;
 
     var len = queue.length;
@@ -52,7 +77,7 @@ function drainQueue() {
     }
     currentQueue = null;
     draining = false;
-    clearTimeout(timeout);
+    cachedClearTimeout.call(null, timeout);
 }
 
 process.nextTick = function (fun) {
@@ -64,7 +89,7 @@ process.nextTick = function (fun) {
     }
     queue.push(new Item(fun, args));
     if (queue.length === 1 && !draining) {
-        setTimeout(drainQueue, 0);
+        cachedSetTimeout.call(null, drainQueue, 0);
     }
 };
 
@@ -1352,9 +1377,59 @@ Crafty.extend({
      * (see [details](http://stackoverflow.com/questions/5527601/normalizing-mousewheel-speed-across-browsers)).
      *
      * @example
+     * Zoom the viewport (camera) in response to mouse scroll events.
      * ~~~
      * Crafty.bind("MouseWheelScroll", function(evt) {
      *     Crafty.viewport.scale(Crafty.viewport._scale * (1 + evt.direction * 0.1));
+     * });
+     * ~~~
+     *
+     * @example
+     * Interactive, map-like zooming of the viewport (camera) in response to mouse scroll events.
+     * ~~~
+     * // sign public void zoomTowards(Number amt, Number posX, Number posY, Number time[, String|function easingFn])
+     * // param Number amt - amount to zoom in on the target by (eg. `2`, `4`, `0.5`)
+     * // param Number posX - the x coordinate to zoom towards
+     * // param Number posY - the y coordinate to zoom towards
+     * // param Number time - the duration in ms of the entire zoom operation
+     * // param easingFn - A string or custom function specifying an easing.
+     * //                   (Defaults to linear behavior.)
+     * //                   See `Crafty.easing` for more information.
+     * //
+     * // Zooms the camera towards a given point, preserving the current center.
+     * // `amt > 1` will bring the camera closer to the subject,
+     * // `amt < 1` will bring it farther away,
+     * // `amt = 0` will reset to the default zoom level.
+     * // Zooming is multiplicative. To reset the zoom amount, pass `0`.
+     * //
+     * // <example>
+     * // // Make the entities appear twice as large by zooming in towards (100,100) over the duration of 3 seconds using linear easing behavior
+     * // zoomTowards(2, 100, 100, 3000);
+     * // </example>
+     * //
+     * function zoomTowards (amt, posX, posY, time, easingFn) {
+     *     var scale = Crafty.viewport._scale,
+     *         // current viewport center
+     *         centX = -Crafty.viewport._x + Crafty.viewport._width / 2 / scale,
+     *         centY = -Crafty.viewport._y + Crafty.viewport._height / 2 / scale,
+     *         // direction vector from viewport center to position
+     *         deltaX = posX - centX,
+     *         deltaY = posY - centY;
+     *     var f = amt - 1;
+     *
+     *     Crafty.viewport.zoom(amt, centX + deltaX * f, centY + deltaY * f, time, easingFn);
+     * }
+     *
+     * // don't restrict panning of viewport in any way
+     * Crafty.viewport.clampToEntities = false;
+     *
+     * // enable panning of viewport by dragging the mouse
+     * Crafty.viewport.mouselook(true);
+     *
+     * // enable interactive map-like zooming by scrolling the mouse
+     * Crafty.bind("MouseWheelScroll", function (evt) {
+     *     var pos = Crafty.domHelper.translate(evt.clientX, evt.clientY);
+     *     zoomTowards(1 + evt.direction/10, pos.x, pos.y, 5);
      * });
      * ~~~
      */
@@ -10631,7 +10706,7 @@ Crafty.extend({
         onScreen: function (rect) {
             return Crafty.viewport._x + rect._x + rect._w > 0 && Crafty.viewport._y + rect._y + rect._h > 0 &&
                 Crafty.viewport._x + rect._x < Crafty.viewport.width && Crafty.viewport._y + rect._y < Crafty.viewport.height;
-        },
+        }
     }
 });
 
@@ -10934,7 +11009,7 @@ Crafty.webglLayerObject = {
         this._canvas = c;
 
         gl.clearColor(0.0, 0.0, 0.0, 0.0);
-        
+
         // These commands allow partial transparency, but require drawing in z-order
         gl.disable(gl.DEPTH_TEST);
         // This particular blend function requires the shader programs to output pre-multiplied alpha
@@ -11048,9 +11123,9 @@ Crafty.webglLayerObject = {
         if (shaderProgram !== null){
           shaderProgram.renderBatch();
         }
-        
+
     },
-    
+
     /**@
      * #.dirty
      * @comp WebGLLayer
@@ -11059,7 +11134,7 @@ Crafty.webglLayerObject = {
      *
      * Add an entity to the list of DOM object to draw
      */
-    dirty: function add(ent) {
+    dirty: function dirty(ent) {
         // WebGL doens't need to do any special tracking of changed objects
     },
 
@@ -11088,11 +11163,12 @@ Crafty.webglLayerObject = {
         // This could, like attach, be handled by components
         // We instead handle it in a central place for now
         if (ent.program) {
-            ent.program.unregisterEntity(this);
+            ent.program.unregisterEntity(ent);
         }
     },
 
 };
+
 },{"../core/core.js":7}],38:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
