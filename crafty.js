@@ -9,7 +9,6 @@
 
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 // shim for using process in browser
-
 var process = module.exports = {};
 
 // cached from whatever global is present so that test runners that stub it
@@ -20,22 +19,84 @@ var process = module.exports = {};
 var cachedSetTimeout;
 var cachedClearTimeout;
 
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
 (function () {
-  try {
-    cachedSetTimeout = setTimeout;
-  } catch (e) {
-    cachedSetTimeout = function () {
-      throw new Error('setTimeout is not defined');
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
     }
-  }
-  try {
-    cachedClearTimeout = clearTimeout;
-  } catch (e) {
-    cachedClearTimeout = function () {
-      throw new Error('clearTimeout is not defined');
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
     }
-  }
 } ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
 var queue = [];
 var draining = false;
 var currentQueue;
@@ -60,7 +121,7 @@ function drainQueue() {
     if (draining) {
         return;
     }
-    var timeout = cachedSetTimeout.call(null, cleanUpNextTick);
+    var timeout = runTimeout(cleanUpNextTick);
     draining = true;
 
     var len = queue.length;
@@ -77,7 +138,7 @@ function drainQueue() {
     }
     currentQueue = null;
     draining = false;
-    cachedClearTimeout.call(null, timeout);
+    runClearTimeout(timeout);
 }
 
 process.nextTick = function (fun) {
@@ -89,7 +150,7 @@ process.nextTick = function (fun) {
     }
     queue.push(new Item(fun, args));
     if (queue.length === 1 && !draining) {
-        cachedSetTimeout.call(null, drainQueue, 0);
+        runTimeout(drainQueue);
     }
 };
 
@@ -935,8 +996,8 @@ Crafty.extend({
      * ~~~
      * @see Mouse, Crafty.mouseButtons, Crafty.mouseDispatch
      */
-    lastEvent: null,
 
+    lastEvent: null,
     /**@
      * #Crafty.keydown
      * @category Input
@@ -973,11 +1034,11 @@ Crafty.extend({
         if (!Crafty.selected && selected) {
             Crafty.trigger("CraftyFocus");
         }
-        
+
         if (Crafty.selected && !selected) {
             Crafty.trigger("CraftyBlur");
         }
-        
+
         Crafty.selected = selected;
     },
 
@@ -1021,20 +1082,20 @@ Crafty.extend({
         if (typeof bool !== "boolean") return this._touchHandler.multitouch;
         this._touchHandler.multitouch = bool;
     },
-    
-    resetKeyDown: function() {
+
+    resetKeyDown: function () {
         // Tell all the keys they're no longer held down
         for (var k in Crafty.keys) {
-             if (Crafty.keydown[Crafty.keys[k]]) {
-                 this.trigger("KeyUp", {
-                     key: Crafty.keys[k]
-                 });
-             }
+            if (Crafty.keydown[Crafty.keys[k]]) {
+                this.trigger("KeyUp", {
+                    key: Crafty.keys[k]
+                });
+            }
         }
-		
+
         Crafty.keydown = {};
     },
-    
+
     /**@
      * #Crafty.mouseDispatch
      * @category Input
@@ -1056,8 +1117,7 @@ Crafty.extend({
         var tar = e.target ? e.target : e.srcElement,
             closest,
             pos = Crafty.domHelper.translate(e.clientX, e.clientY),
-            x, y,
-            type = e.type;     
+            type = e.type;
 
         //Normalize button according to http://unixpapa.com/js/mouse.html
         if (typeof e.which === 'undefined') {
@@ -1066,11 +1126,10 @@ Crafty.extend({
             e.mouseButton = (e.which < 2) ? Crafty.mouseButtons.LEFT : ((e.which === 2) ? Crafty.mouseButtons.MIDDLE : Crafty.mouseButtons.RIGHT);
         }
 
-        e.realX = x = Crafty.mousePos.x = pos.x;
-        e.realY = y = Crafty.mousePos.y = pos.y;
+        Crafty.mousePos.x = pos.x;
+        Crafty.mousePos.y = pos.y;
 
-        closest = Crafty.findClosestEntityByComponent("Mouse", x, y, tar);
-
+        closest = Crafty.findPointerEventTargetByComponent("Mouse", e, tar);
         //found closest object to mouse
         if (closest) {
             //click must mousedown and out on tile
@@ -1142,7 +1201,7 @@ Crafty.extend({
      */
     touchDispatch: function (e) {
         if (!Crafty.touchObjs && !Crafty.mouseObjs) return;
-        
+
         if (this._touchHandler.multitouch)
             switch (e.type) {
                 case "touchstart":
@@ -1168,22 +1227,19 @@ Crafty.extend({
                 e.returnValue = false;
             }
     },
-    
+
     _touchHandler: {
         fingers: [], // keeps track of touching fingers
         multitouch: false,
-        
+
         handleStart: function (e) {
             var touches = e.changedTouches;
             for (var i = 0, l = touches.length; i < l; i++) {
                 var idx = false,
-                  pos = Crafty.domHelper.translate(touches[i].clientX, touches[i].clientY),
-                  tar = e.target ? e.target : e.srcElement,
-                  x, y, closest;
-                touches[i].realX = x = pos.x;
-                touches[i].realY = y = pos.y;
-                closest = this.findClosestTouchEntity(x, y, tar);
-                
+                    tar = e.target ? e.target : e.srcElement,
+                    closest;
+                closest = this.findClosestTouchEntity(touches[i], tar);
+
                 if (closest) {
                     closest.trigger("TouchStart", touches[i]);
                     // In case the entity was already being pressed, get the finger index
@@ -1198,39 +1254,36 @@ Crafty.extend({
                 }
             }
         },
-            
+
         handleMove: function (e) {
             var touches = e.changedTouches;
             for (var i = 0, l = touches.length; i < l; i++) {
                 var idx = this.fingerDownIndexById(touches[i].identifier),
-                  pos = Crafty.domHelper.translate(touches[i].clientX, touches[i].clientY),
-                  tar = e.target ? e.target : e.srcElement,
-                  x, y, closest;
-                touches[i].realX = x = pos.x;
-                touches[i].realY = y = pos.y;
-                closest = this.findClosestTouchEntity(x, y, tar);
-            
+                    tar = e.target ? e.target : e.srcElement;
+                var closest = this.findClosestTouchEntity(touches[i], tar);
+
                 if (idx >= 0) {
-                    if(typeof this.fingers[idx].entity !== "undefined")
-                        if (this.fingers[idx].entity === closest) {
-                            this.fingers[idx].entity.trigger("TouchMove", touches[i]);
+                    var finger = this.fingers[idx];
+                    if(typeof finger.entity !== "undefined")
+                        if (finger.entity === closest) {
+                            finger.entity.trigger("TouchMove", touches[i]);
                         } else {
                             if (typeof closest === "object") closest.trigger("TouchStart", touches[i]);
-                            this.fingers[idx].entity.trigger("TouchEnd");
+                            finger.entity.trigger("TouchEnd");
                         }
-                    this.fingers[idx].entity = closest;
-                    this.fingers[idx].realX = x;
-                    this.fingers[idx].realY = y;
+                    finger.entity = closest;
+                    finger.realX = touches[i].realX;
+                    finger.realY = touches[i].realY;
                 }
             }
         },
-        
+
         handleEnd: function (e) {
             var touches = e.changedTouches, 
                 eventName = e.type === "touchcancel" ? "TouchCancel" : "TouchEnd";
             for (var i = 0, l = touches.length; i < l; i++) {
                 var idx = this.fingerDownIndexById(touches[i].identifier);
-            
+
                 if (idx >= 0) {
                     if (this.fingers[idx].entity)
                         this.fingers[idx].entity.trigger(eventName);
@@ -1238,30 +1291,29 @@ Crafty.extend({
                 }
             }
         },
-            
+
         setTouch: function (touch, entity) {
             return { identifier: touch.identifier, realX: touch.realX, realY: touch.realY, entity: entity };
         },
-            
-        findClosestTouchEntity: function (x, y, tar) {
-            return Crafty.findClosestEntityByComponent("Touch", x, y, tar);
+
+        findClosestTouchEntity: function (touchEvent, tar) {
+            return Crafty.findPointerEventTargetByComponent("Touch", touchEvent, tar);
         },
-           
-        fingerDownIndexById: function(idToFind) {
+
+        fingerDownIndexById: function (idToFind) {
             for (var i = 0, l = this.fingers.length; i < l; i++) {
                 var id = this.fingers[i].identifier;
-                
                 if (id === idToFind) {
                     return i;
                 }
             }
             return -1;
         },
-            
-        fingerDownIndexByEntity: function(entityToFind) {
+
+        fingerDownIndexByEntity: function (entityToFind) {
             for (var i = 0, l = this.fingers.length; i < l; i++) {
                 var ent = this.fingers[i].entity;
-                
+
                 if (ent === entityToFind) {
                     return i;
                 }
@@ -1284,11 +1336,11 @@ Crafty.extend({
             }
             var simulatedEvent = document.createEvent("MouseEvent");
             simulatedEvent.initMouseEvent(type, true, true, window, 1,
-              first.screenX,
-              first.screenY,
-              first.clientX,
-              first.clientY,
-              false, false, false, false, 0, e.relatedTarget
+                first.screenX,
+                first.screenY,
+                first.clientX,
+                first.clientY,
+                false, false, false, false, 0, e.relatedTarget
             );
             first.target.dispatchEvent(simulatedEvent);
             // trigger click when it should be triggered
@@ -1296,48 +1348,45 @@ Crafty.extend({
                 type = 'click';
                 simulatedEvent = document.createEvent("MouseEvent");
                 simulatedEvent.initMouseEvent(type, true, true, window, 1,
-                  first.screenX,
-                  first.screenY,
-                  first.clientX,
-                  first.clientY,
-                  false, false, false, false, 0, e.relatedTarget
+                    first.screenX,
+                    first.screenY,
+                    first.clientX,
+                    first.clientY,
+                    false, false, false, false, 0, e.relatedTarget
                 );
                 first.target.dispatchEvent(simulatedEvent);
             }
         },
     },
-    
+
     /**@
-     * #Crafty.findClosestEntityByComponent
+     * #Crafty.findPointerEventTargetByComponent
      * @category Input
      * 
-     * @sign public this .findClosestEntityByComponent(String comp, Number x, Number y[, Object target])
-     * Finds closest entity with certain component at given coordinates.
+     * @sign public this .findPointerEventTargetByComponent(String comp, Event e[, Object target])
+     * Finds closest entity with certain component at a given event.
      * @param comp - Component name
-     * @param x - `x` position where to look for entities
-     * @param y - `y` position where to look for entities
+     * @param e - The pointer event, which will be modifed to add `realX` and `realY` properties 
      * @param target - Target element wherein to look for entities 
      * 
      * This method is used internally by the .mouseDispatch and .touchDispatch methods, but can be used otherwise for 
      * Canvas entities.
      * 
-     * Finds the top most entity (with the highest z) with a given component at a given point (x, y).
+     * Finds the top most entity (with the highest z) with a given component at a given point (x, y) associated with the event.
      * For having a detection area specified for the enity, add the AreaMap component to the entity expected to be found.
      * 
      * The 'target' argument is only meant to be used by .mouseDispatch and touchDispatch; defaults to Crafty.stage.elem, 
      * thus using this function directly is only worth anything for canvas entities.
      * 
-     * Returns the found entity, or undefined if no entity was found.
+     * Returns the found entity, or undefined if no entity was found.  
+     * Updates the event object to have two additional properties, `realX` and `realY`, which correspond to the point in the Crafty layer that the event targeted.
      * 
-     * @example
-     * ~~~
-     * var coords = { x: 455, y: 267 },
-     *     closestText = Crafty.findClosestEntityByComponent("Text", coords.x, coords.y);
-     * ~~~
      */
-    findClosestEntityByComponent: function (comp, x, y, target) { 
+    findPointerEventTargetByComponent: function (comp, e, target) {
         var tar = target ? target : Crafty.stage.elem,
-            closest, current, q, l, i, maxz = -Infinity;
+            closest, current, q, l, i, pos, layerPos, maxz = -Infinity;
+        var x = e.clientX;
+        var y = e.clientY;
 
         //if it's a DOM element with component we are done
         if (tar.nodeName !== "CANVAS") {
@@ -1345,32 +1394,54 @@ Crafty.extend({
                 tar = tar.parentNode;
             }
             var ent = Crafty(parseInt(tar.id.replace('ent', ''), 10));
-            if (ent.__c[comp] && ent.isAt(x, y)){
+            pos = Crafty.domHelper.translate(x, y, ent._drawLayer);
+            if (ent.__c[comp] && ent.isAt(pos.x, pos.y)) {
                 closest = ent;
+                layerPos = pos;
             }
         }
 
         //else we search for an entity with component
         if (!closest) {
-            q = Crafty.map.search({
-                _x: x,
-                _y: y,
-                _w: 1,
-                _h: 1
-            }, false);
 
-            for (i = 0, l = q.length; i < l; ++i) {
-                current = q[i];
+            // Loop through each layer
+            for (var layerIndex in Crafty._drawLayers) {
+                var layer = Crafty._drawLayers[layerIndex];
 
-                if (current._visible && current._globalZ > maxz &&
-                    current.__c[comp] && current.isAt(x, y)) {
+                // Skip a layer if it has no entities listening for pointer events
+                if (layer._pointerEntities <= 0) continue;
 
-                    maxz = current._globalZ;
-                    closest = current;
+                // Get the position in this layer
+                pos = Crafty.domHelper.translate(x, y, layer);
+                q = Crafty.map.search({
+                    _x: pos.x,
+                    _y: pos.y,
+                    _w: 1,
+                    _h: 1
+                }, false);
+
+                for (i = 0, l = q.length; i < l; ++i) {
+                    current = q[i];
+                    if (current._visible && current._drawLayer === layer && current._globalZ > maxz &&
+                        current.__c[comp] && current.isAt(pos.x, pos.y)) {
+                        maxz = current._globalZ;
+                        closest = current;
+                        layerPos = pos;
+                    }
                 }
             }
         }
+        
+        // If the pointer event isn't related to a specific layer, 
+        // find the Crafty position in the default coordinate set
+        if (!layerPos) {
+            layerPos = Crafty.domHelper.translate(x, y);
+        }
 
+        // Update the event coordinates and return the event target
+        e.realX = layerPos.x;
+        e.realY = layerPos.y;
+            
         return closest;
     },
 
@@ -1446,10 +1517,10 @@ Crafty.extend({
      * });
      * ~~~
      */
-     mouseWheelDispatch: function(e) {
+    mouseWheelDispatch: function (e) {
         e.direction = (e.detail < 0 || e.wheelDelta > 0) ? 1 : -1;
         Crafty.trigger("MouseWheelScroll", e);
-     },
+    },
 
     /**@
      * #Crafty.keyboardDispatch
@@ -1700,6 +1771,24 @@ Crafty.c("Touch", {
  */
 Crafty.c("AreaMap", {
     init: function () {
+        if (this.has("Renderable") && this._drawLayer) {
+            this._drawLayer._pointerEntities++;
+        }
+    },
+
+    remove: function () {
+        if (this.has("Renderable") && this._drawLayer) {
+            this._drawLayer._pointerEntities--;
+        }
+    },
+
+    events: {
+        "LayerAttached": function (layer) {
+            layer._pointerEntities++;
+        },
+        "LayerDetached": function (layer) {
+            layer._pointerEntities--;
+        }
     },
 
     /**@
@@ -1793,7 +1882,7 @@ Crafty.c("MouseDrag", {
         this.bind("MouseDown", this._ondown);
     },
 
-    remove: function() {
+    remove: function () {
         this.unbind("MouseDown", this._ondown);
     },
 
@@ -1920,8 +2009,6 @@ Crafty.c("Keyboard", {
         return !!Crafty.keydown[key];
     }
 });
-
-
 },{"../core/core.js":7}],5:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
@@ -3448,11 +3535,7 @@ Crafty.extend({
             }
         }
 
-        // Define default graphics layers
-        Crafty.s("CanvasLayer", Crafty.canvasLayerObject);
-        Crafty.s("DomLayer", Crafty.domLayerObject);
-        Crafty.s("WebGLLayer", Crafty.webglLayerObject);
-
+        // The viewport will init things like the default graphics layers as well
         Crafty.viewport.init(w, h, stage_elem);
 
         //call all arbitrary functions attached to onload
@@ -5397,10 +5480,11 @@ Crafty._systems = {};
  * @trigger SystemLoaded - When the system has initialized itself - obj - system object
  * @trigger SystemDestroyed - Right before the system is destroyed - obj - system object
  *
- * @sign void Crafty.s(String name, Obj template[, Boolean lazy])
+ * @sign void Crafty.s(String name, Obj template[, Obj options][, Boolean lazy])
  * Register a system
  * @param name - The name of the system
  * @param template - an object whose methods and properties will be copied to the new system
+ * @param options - an object whose properties will be deep copied to the new system's options property
  * @param lazy - a flag that indicates whether the system should be initialized right away or the first time it is referenced
  *
  * @sign System Crafty.s(String name)
@@ -5408,128 +5492,149 @@ Crafty._systems = {};
  * @param name - The system to return
  * @returns The referenced system.  If the system has not been initialized, it will be before it is returned.
  *
- * Objects which handle entities might want to subscribe to the event system without being entities themselves.  
+ * Objects which handle entities might want to subscribe to the event system without being entities themselves.
  * When you declare a system with a template object, all the methods and properties of that template are copied to a new object.
  * This new system will automatically have the following event related methods, which function like those of components: `.bind()`, `unbind()`, `trigger()`, `one()`, `uniqueBind()`, `destroy()`.
  * Much like components, you can also provide `init()` and `remove()` methods, as well as an `events` parameter for automatically binding to events.
  *
- * *Note*: The `init()` method is for setting up the internal state of the system -- if you create entities in it that then reference the system, that'll create an infinite loop.
+ * @note The `init()` method is for setting up the internal state of the system -- if you create entities in it that then reference the system, that'll create an infinite loop.
  */
-Crafty.s = function(name, obj, lazy) {
-	if (obj) {
-		if (lazy === false ) {
-			Crafty._systems[name] = new Crafty.CraftySystem(name, obj);
-			Crafty.trigger("SystemLoaded", name);
-		} else {
-			Crafty._registerLazySystem(name, obj);
-		}
-	} else {
-		return Crafty._systems[name];
-	}
+Crafty.s = function(name, obj, options, lazy) {
+    if (obj) {
+        if (typeof options === "boolean") {
+            lazy = options;
+            options = null;
+        }
+        if (lazy === false) {
+            Crafty._systems[name] = new Crafty.CraftySystem(name, obj, options);
+            Crafty.trigger("SystemLoaded", name);
+        } else {
+            Crafty._registerLazySystem(name, obj, options);
+        }
+    } else {
+        return Crafty._systems[name];
+    }
 };
 
+function optionMerge(defaults, specific){
+    var options = {};
+    // Copy all the specified keys, then all the default keys that aren't specified
+    for (var key in specific) {
+        options[key] = specific[key];
+    }
+    for (key in defaults) {
+        if (!(key in specific)) {
+            options[key] = defaults[key];
+        }
+    } 
+    return options;
+}
 
 
-Crafty._registerLazySystem = function(name, obj) {
-	// This is a bit of magic to only init a system if it's requested at least once.
-	// We define a getter for _systems[name] that will first initialize the system, 
-	// and then redefine _systems[name] to remove that getter.
-	Object.defineProperty(Crafty._systems, name, {
-		get: function() {
-			Object.defineProperty(Crafty._systems, name, { 
-				value: new Crafty.CraftySystem(name, obj),
-				writable: true,
-				enumerable: true,
-				configurable: true
-			});
-			Crafty.trigger("SystemLoaded", name);
-			return Crafty._systems[name];
-		},
-		configurable: true
-	});
+Crafty._registerLazySystem = function(name, obj, options) {
+    // This is a bit of magic to only init a system if it's requested at least once.
+    // We define a getter for _systems[name] that will first initialize the system, 
+    // and then redefine _systems[name] to remove that getter.
+    Object.defineProperty(Crafty._systems, name, {
+        get: function() {
+            Object.defineProperty(Crafty._systems, name, {
+                value: new Crafty.CraftySystem(name, obj, options),
+                writable: true,
+                enumerable: true,
+                configurable: true
+            });
+            Crafty.trigger("SystemLoaded", name);
+            return Crafty._systems[name];
+        },
+        configurable: true
+    });
 
 };
 
 // Each system has its properties and methods copied onto an object of this type
-Crafty.CraftySystem = (function(){
-	var systemID = 1;
-	return function(name, template) {
-		this.name = name;
-		if (!template) return this;
-		this._systemTemplate = template;
-		this.extend(template);
+Crafty.CraftySystem = (function() {
+    var systemID = 1;
+    return function(name, template, options) {
+        this.name = name;
+        if (!template) return this;
+        this._systemTemplate = template;
+        this.extend(template);
+        
+        // Overwrite any default options with the passed options object
+        // This does a deep copy on the objects, and treats null as a specified value
+        this.options = optionMerge(this.options, options);
 
-		// Add the "low leveL" callback methods
-		Crafty._addCallbackMethods(this);
+        // Add the "low leveL" callback methods
+        Crafty._addCallbackMethods(this);
 
-		// Give this object a global ID.  Used for event handlers.
-		this[0] = "system" + (systemID++);
-		// Run any instantiation code
-		if (typeof this.init === "function") {
-			this.init(name);
-		}
-		// If an events object is provided, bind the listed event handlers
-		if ("events" in template){
-			var auto = template.events;
-			for (var eventName in auto){
-				var fn = typeof auto[eventName] === "function" ? auto[eventName] : template[auto[eventName]];
-				this.bind(eventName, fn);
-			}
-		}
-	};
+        // Give this object a global ID.  Used for event handlers.
+        this[0] = "system" + (systemID++);
+        // Run any instantiation code
+        if (typeof this.init === "function") {
+            this.init(name);
+        }
+        // If an events object is provided, bind the listed event handlers
+        if ("events" in template) {
+            var auto = template.events;
+            for (var eventName in auto) {
+                var fn = typeof auto[eventName] === "function" ? auto[eventName] : template[auto[eventName]];
+                this.bind(eventName, fn);
+            }
+        }
+    };
 })();
 
 
 
 Crafty.CraftySystem.prototype = {
-	extend: function(obj) {
-		// Copy properties and methods of obj
-		for (var key in obj) {
-			if (typeof this[key] === "undefined") {
-				this[key] = obj[key];
-			}
-		}
-	},
+    extend: function(obj) {
+        // Copy properties and methods of obj
+        for (var key in obj) {
+            if (typeof this[key] === "undefined") {
+                this[key] = obj[key];
+            }
+        }
+    },
 
-	// Event methods
-	bind: function(event, callback) {
-		this._bindCallback(event, callback);
-		return this;
-	},
+    // Event methods
+    bind: function(event, callback) {
+        this._bindCallback(event, callback);
+        return this;
+    },
 
-	trigger: function(event, data) {
-		this._runCallbacks(event, data);
-		return this;
-	},
+    trigger: function(event, data) {
+        this._runCallbacks(event, data);
+        return this;
+    },
 
-	unbind: function(event, callback) {
-		this._unbindCallbacks(event, callback);
-		return this;
-	},
+    unbind: function(event, callback) {
+        this._unbindCallbacks(event, callback);
+        return this;
+    },
 
-	one: function (event, callback) {
-		var self = this;
-		var oneHandler = function (data) {
-			callback.call(self, data);
-			self.unbind(event, oneHandler);
-		};
-		return self.bind(event, oneHandler);
-	},
+    one: function(event, callback) {
+        var self = this;
+        var oneHandler = function(data) {
+            callback.call(self, data);
+            self.unbind(event, oneHandler);
+        };
+        return self.bind(event, oneHandler);
+    },
 
-	uniqueBind: function(event, callback) {
-		this.unbind(event, callback);
-		return this.bind(event, callback);
-	},
+    uniqueBind: function(event, callback) {
+        this.unbind(event, callback);
+        return this.bind(event, callback);
+    },
 
-	destroy: function() {
-		Crafty.trigger("SystemDestroyed", this);
-		// Check the template itself
-		if (typeof this.remove === "function") {
-			this.remove();
-		}
-		this._unbindAll();
-		delete Crafty._systems[this.name];
-	}
+    destroy: function() {
+        Crafty.trigger("SystemDestroyed", this);
+        // Check the template itself
+        if (typeof this.remove === "function") {
+            this.remove();
+        }
+        this._unbindAll();
+        delete Crafty._systems[this.name];
+    }
 
 };
 },{"../core/core.js":7}],14:[function(require,module,exports){
@@ -5887,6 +5992,9 @@ require('./spatial/spatial-grid');
 require('./spatial/rect-manager');
 require('./spatial/math');
 
+// Needs to be required before any specific layers are
+require('./graphics/layers');
+
 require('./graphics/canvas');
 require('./graphics/canvas-layer');
 require('./graphics/webgl');
@@ -5901,7 +6009,6 @@ require('./graphics/gl-textures');
 require('./graphics/renderable');
 require('./graphics/html');
 require('./graphics/image');
-require('./graphics/layers');
 require('./graphics/particles');
 require('./graphics/sprite-animation');
 require('./graphics/sprite');
@@ -6396,8 +6503,16 @@ var Crafty = require('../core/core.js');
  *
  * Mostly contains private methods to draw entities on a canvas element.
  */
-Crafty.canvasLayerObject = {
+Crafty._registerLayerTemplate("Canvas", {
     type: "Canvas",
+    
+    options: {
+        xResponse: 1,
+        yResponse: 1,
+        scaleResponse: 1,
+        z: 0
+    },
+    
     _dirtyRects: [],
     _changedObjs: [],
     layerCount: 0,
@@ -6488,6 +6603,7 @@ Crafty.canvasLayerObject = {
         c.style.position = 'absolute';
         c.style.left = "0px";
         c.style.top = "0px";
+        c.style.zIndex = this.options.z;
 
         Crafty.stage.elem.appendChild(c);
         this.context = c.getContext('2d');
@@ -6510,12 +6626,15 @@ Crafty.canvasLayerObject = {
         this.bind("InvalidateViewport", function () {
             this._dirtyViewport = true;
         });
+        
+        Crafty._addDrawLayerInstance(this);
     },
 
     // When the system is destroyed, remove related resources
     remove: function() {
 
         this._canvas.parentNode.removeChild(this._canvas);
+        Crafty._removeDrawLayerInstance(this);
     },
 
     _render: function() {
@@ -6525,10 +6644,15 @@ Crafty.canvasLayerObject = {
         if (!l && !dirtyViewport) {
             return;
         }
-
-        if (dirtyViewport) {
+        
+        // Set the camera transforms from the combination of the current viewport parameters and this layers 
+        var cameraOptions = this.options;
+        if (dirtyViewport && cameraOptions) {
             var view = Crafty.viewport;
-            ctx.setTransform(view._scale, 0, 0, view._scale, Math.round(view._x*view._scale), Math.round(view._y*view._scale) );
+            var scale = Math.pow(Crafty.viewport._scale, cameraOptions.scaleResponse); 
+            var dx = view._x * scale * cameraOptions.xResponse;
+            var dy = view._y * scale * cameraOptions.yResponse;
+            ctx.setTransform(scale, 0, 0, scale, Math.round(dx), Math.round(dy) );
         }
 
         //if the amount of changed objects is over 60% of the total objects
@@ -6555,8 +6679,8 @@ Crafty.canvasLayerObject = {
      *
      * @see Canvas#.draw
      */
-    _drawDirty: function () {
-
+    _drawDirty: function (view) {
+        view = view || this._viewportRect();
         var i, j, q, rect,len, obj,
             changed = this._changedObjs,
             l = changed.length,
@@ -6566,7 +6690,10 @@ Crafty.canvasLayerObject = {
             ctx = this.context,
             dupes = [],
             objs = [];
-
+        
+        // Canvas works better with integral coordinates where possible
+        view = rectManager.integerBounds(view);
+        
         // Calculate _dirtyRects from all changed objects, then merge some overlapping regions together
         for (i = 0; i < l; i++) {
             this._createDirty(changed[i]);
@@ -6584,14 +6711,10 @@ Crafty.canvasLayerObject = {
             if (!rect) continue;
 
             // Find the smallest rectangle with integer coordinates that encloses rect
-            rect._w = rect._x + rect._w;
-            rect._h = rect._y + rect._h;
-            rect._x = (rect._x > 0) ? (rect._x|0) : (rect._x|0) - 1;
-            rect._y = (rect._y > 0) ? (rect._y|0) : (rect._y|0) - 1;
-            rect._w -= rect._x;
-            rect._h -= rect._y;
-            rect._w = (rect._w === (rect._w|0)) ? rect._w : (rect._w|0) + 1;
-            rect._h = (rect._h === (rect._h|0)) ? rect._h : (rect._h|0) + 1;
+            rect = rectManager.integerBounds(rect);
+
+            // If a dirty rect doesn't overlap with the viewport, skip to the next one
+            if (!overlap(rect, view)) continue;
 
             //search for ents under dirty rect
             q = Crafty.map.search(rect, false);
@@ -6654,7 +6777,8 @@ Crafty.canvasLayerObject = {
      * - If rect is provided, redraw within the rect
      */
     _drawAll: function (rect) {
-        rect = rect || Crafty.viewport.rect();
+        rect = rect || this._viewportRect();
+        rect = Crafty.rectManager.integerBounds(rect);
         var q = Crafty.map.search(rect),
             i = 0,
             l = q.length,
@@ -6665,11 +6789,9 @@ Crafty.canvasLayerObject = {
 
         //sort the objects by the global Z
         q.sort(this._sort);
-        //console.log("\n--\n" + q.length + " to draw for layer " + this.name);
         for (; i < l; i++) {
             current = q[i];
             if (current._visible && current._drawContext === this.context) {
-                //console.log(i + " drawn");
                 current.draw(this.context);
                 current._changed = false;
             }
@@ -6749,7 +6871,8 @@ Crafty.canvasLayerObject = {
         context.msImageSmoothingEnabled = !enabled;
     }
 
-};
+});
+
 },{"../core/core.js":7}],21:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
@@ -6781,7 +6904,7 @@ Crafty.c("Canvas", {
         
         // Add the default canvas layer if we aren't attached to a custom one
         if (!this._customLayer){
-            this._attachToLayer( Crafty.s("CanvasLayer"));
+            this._attachToLayer( Crafty.s("DefaultCanvasLayer"));
         }
         
     },
@@ -7247,24 +7370,39 @@ Crafty.extend({
         /**@
          * #Crafty.domHelper.translate
          * @comp Crafty.domHelper
-         * @sign public Object Crafty.domHelper.translate(Number clientX, Number clientY)
+         * @sign public Object Crafty.domHelper.translate(Number clientX, Number clientY[, DrawLayer layer])
          * @param clientX - clientX position in the browser screen
          * @param clientY - clientY position in the browser screen
+         * @param layer - a Crafty draw layer
          * @return Object `{x: ..., y: ...}` with Crafty coordinates.
          * 
          * The parameters clientX and clientY are pixel coordinates within the visible
          * browser window. This function translates those to Crafty coordinates (i.e.,
          * the coordinates that you might apply to an entity), by taking into account
          * where the stage is within the screen, what the current viewport is, etc.
+         * 
+         * If a draw layer is specified, the returned object will take into account any special scaling rules for that object.
          */
-        translate: function (clientX, clientY) {
+        translate: function (clientX, clientY, layer) {
             var doc = document.documentElement;
             var body = document.body;
-
-            return {
-                x: (clientX - Crafty.stage.x + ( doc && doc.scrollLeft || body && body.scrollLeft || 0 )) / Crafty.viewport._scale - Crafty.viewport._x,
-                y: (clientY - Crafty.stage.y + ( doc && doc.scrollTop  || body && body.scrollTop  || 0 )) / Crafty.viewport._scale - Crafty.viewport._y
-            };
+            var view;
+            // The branch here is to deal with the fact that the viewport position is the distance TO the origin, not from
+            // But the _viewportRect is the opposite -- it uses the same convention as a rectangle that matches the viewport in that layer
+            // At some point this should be simplified, probably by altering the viewport to use the more intuitive coordinates
+            if (layer) {
+                view = layer._viewportRect();
+                return {
+                    x: (clientX - Crafty.stage.x + (doc && doc.scrollLeft || body && body.scrollLeft || 0)) / view._scale + view._x,
+                    y: (clientY - Crafty.stage.y + (doc && doc.scrollTop || body && body.scrollTop || 0)) / view._scale + view._y
+                };
+            } else {
+                view = Crafty.viewport;
+                return {
+                    x: (clientX - Crafty.stage.x + (doc && doc.scrollLeft || body && body.scrollLeft || 0)) / view._scale - view._x,
+                    y: (clientY - Crafty.stage.y + (doc && doc.scrollTop || body && body.scrollTop || 0)) / view._scale - view._y
+                };
+            }
         }
     }
 });
@@ -7279,8 +7417,15 @@ var Crafty = require('../core/core.js'),
  *
  * Collection of mostly private methods to represent entities using the DOM.
  */
-Crafty.domLayerObject = {
+Crafty._registerLayerTemplate("DOM", {
     type: "DOM",
+    options: {
+        xResponse: 1,
+        yResponse: 1,
+        scaleResponse: 1,
+        z: 0
+    },
+
     _changedObjs: [],
     _dirtyViewport: false,
 
@@ -7300,7 +7445,7 @@ Crafty.domLayerObject = {
 
         Crafty.stage.elem.appendChild(div);
         div.style.position = "absolute";
-        div.style.zIndex = "1";
+        div.style.zIndex = this.options.z;
         div.style.transformStyle = "preserve-3d"; // Seems necessary for Firefox to preserve zIndexes?
 
         // Bind scene rendering (see drawing.js)
@@ -7315,11 +7460,13 @@ Crafty.domLayerObject = {
         this.uniqueBind("InvalidateViewport", function() {
             this._dirtyViewport = true;
         });
+        Crafty._addDrawLayerInstance(this);
     },
 
     // Cleanup the DOM when the layer is destroyed
     remove: function() {
         this._div.parentNode.removeChild(this._div);
+        Crafty._removeDrawLayerInstance(this);
     },
 
     // Handle whether images should be smoothed or not
@@ -7430,16 +7577,19 @@ Crafty.domLayerObject = {
     _setViewport: function() {
         var style = this._div.style,
             view = Crafty.viewport;
+        
+        var cameraOptions = this.options;
+        var scale = Math.pow(view._scale, cameraOptions.scaleResponse); 
+        var dx = view._x * scale * cameraOptions.xResponse;
+        var dy = view._y * scale * cameraOptions.yResponse;
 
-        style.transform = style[Crafty.support.prefix + "Transform"] = "scale(" + view._scale + ", " + view._scale + ")";
-        style.left = Math.round(view._x * view._scale) + "px";
-        style.top = Math.round(view._y * view._scale) + "px";
-        style.zIndex = 10;
-
-
+        style.transform = style[Crafty.support.prefix + "Transform"] = "scale(" + scale + ", " + scale + ")";
+        style.left = Math.round(dx) + "px";
+        style.top = Math.round(dy) + "px";
+        style.zIndex = this.options.z;
     }
 
-};
+});
 },{"../core/core.js":7}],25:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
@@ -7485,7 +7635,7 @@ Crafty.c("DOM", {
 
         // Attach the entity to the dom layer
         if (!this._customLayer){
-            this._attachToLayer( Crafty.s("DomLayer") );
+            this._attachToLayer( Crafty.s("DefaultDOMLayer") );
         }
 
         this.bind("NewComponent", this._updateClass);
@@ -8181,36 +8331,100 @@ Crafty.c("Image", {
 var Crafty = require('../core/core.js');
 
 Crafty.extend({
+    _drawLayerTemplates: {},
+    _drawLayers: [],
+    _addDrawLayerInstance: function (layer) {
+        Crafty._drawLayers.push(layer);
+        this._drawLayers.sort(function (a, b) { return a.options.z - b.options.z; });
+    },
+
+    _removeDrawLayerInstance: function (layer) {
+        var i = this._drawLayers.indexOf(layer);
+        if (i >= 0) {
+            this._drawLayers.splice(i, 1);
+        }
+        this._drawLayers.sort(function (a, b) { return a.options.z - b.options.z; });
+    },
+
+    _registerLayerTemplate: function (type, layerTemplate) {
+        this._drawLayerTemplates[type] = layerTemplate;
+        var common = this._commonLayerProperties;
+        for (var key in common) {
+            if (layerTemplate[key]) continue;
+            layerTemplate[key] = common[key];
+        }
+    },
+
+    _commonLayerProperties: {
+        // Based on the camera options, find the Crafty coordinates corresponding to the layer's position in the viewport
+        _viewportRect: function () {
+            var options = this.options;
+            var rect = {};
+            var scale = Math.pow(Crafty.viewport._scale, options.scaleResponse);
+            var viewport = Crafty.viewport;
+            rect._scale = scale;
+            rect._w = viewport._width / scale;
+            rect._h = viewport._height / scale;
+            rect._x = (-viewport._x + rect._w / 2) * options.xResponse - rect._w / 2;
+            rect._y = (-viewport._y + rect._h / 2) * options.yResponse - rect._h / 2;
+            return rect;
+        },
+        // A tracker for whether any elements in this layer need to listen to mouse/touch events
+        _pointerEntities: 0
+    },
+
     /**@
      * #Crafty.createLayer
      * @category Graphics
      *
-     * @sign public void Crafty.createLayer(string name, object layerTemplate)
+     * @sign public void Crafty.createLayer(string name, string type[, object options])
      * @param name - the name that will refer to the layer
-     * @param layerTemplate - an object that implements the necessary methods for a draw layer
-     * 
-     * Creates a new instance of the specified type of layer.
-     * 
+     * @param type - the type of the draw layer to create ('DOM', 'Canvas', or 'WebGL')
+     * @param options - this will override the default values of each layer
+     *
+     * Creates a new instance of the specified type of layer.  The options (and their default values) are
+     *
+     * ```
+     * {
+     *   xResponse: 1,  // How the layer will pan in response to the viewport x position
+     *   yResponse: 1,  // How the layer will pan in response to the viewport y position
+     *   scaleResponse: 1, // How the layer will scale in response to the viewport scale.  (Layer scale will be scale^scaleResponse.)
+     *   z: 0 // The zIndex of the layer relative to other layers
+     * }
+     * ```
+     *
+     * Crafty will automatically define three built-in layers: "DefaultDOMLayer", DefaultCanvasLayer",  and "DefaultWebGLLayer".
+     * They will have `z` values of `30`, `20`, and `10` respectively, and will be initialized if a "DOM", "Canvas" or "WebGL" component
+     * is used with an entity not attached to any user-specified layer.
+     *
      * @example
      * ```
-     * Crafty.s("MyCanvasLayer", Crafty.canvasLayerObject)
+     * Crafty.s("MyCanvasLayer", "Canvas")
      * Crafty.e("2D, MyCanvasLayer, Color");
      * ```
      * Define a custom canvas layer, then create an entity that uses the custom layer to render.
+     *
+     * @example
+     * ```
+     * Crafty.s("UILayer", "DOM", {scaleResponse: 0, xResponse: 0, yResponse: 0})
+     * Crafty.e("2D, UILayer, Text");
+     * ```
+     * Define a custom DOM layer that will not move with the camera.  (Useful for static UI elements!)
      */
-    createLayer: function createLayer(name, layerTemplate) {
-        Crafty.s(name, layerTemplate);
+    createLayer: function createLayer(name, type, options) {
+        var layerTemplate = this._drawLayerTemplates[type];
+        Crafty.s(name, layerTemplate, options);
         Crafty.c(name, {
-            init: function() {
+            init: function () {
                 this.requires("Renderable");
-                
+
                 // Flag to indicate that the base component doesn't need to attach a layer
                 this._customLayer = true;
                 this.requires(layerTemplate.type);
                 this._attachToLayer(Crafty.s(name));
             },
-            
-            remove: function() {
+
+            remove: function () {
                 this._detachFromLayer();
             }
         });
@@ -10529,6 +10743,11 @@ Crafty.extend({
          * @see Crafty.device, Crafty.domHelper, Crafty.stage, Crafty.viewport.reload
          */
         init: function (w, h, stage_elem) {
+            // Define default graphics layers with default z-layers
+            Crafty.createLayer("DefaultCanvasLayer", "Canvas", {z: 20});
+            Crafty.createLayer("DefaultDOMLayer", "DOM", {z: 30});
+            Crafty.createLayer("DefaultWebGLLayer", "WebGL", {z: 10});
+            
             // setters+getters for the viewport
             this._defineViewportProperties();
 
@@ -10784,7 +11003,7 @@ function RenderProgramWrapper(layer, shader){
     this.shader = shader;
     this.layer = layer;
     this.context = layer.context;
-    this.draw = function() {};
+    this.draw = function() { };
 
     this.array_size = 16;
     this.max_size = 1024;
@@ -10794,11 +11013,11 @@ function RenderProgramWrapper(layer, shader){
 
 RenderProgramWrapper.prototype = {
     // Takes an array of attributes; see WebGLLayer's getProgramWrapper method
-    initAttributes: function(attributes){
+    initAttributes: function(attributes) {
         this.attributes = attributes;
         this._attribute_table = {};
         var offset = 0;
-        for (var i=0; i<attributes.length; i++){
+        for (var i = 0; i < attributes.length; i++) {
             var a = attributes[i];
             this._attribute_table[a.name] = a;
 
@@ -10816,7 +11035,7 @@ RenderProgramWrapper.prototype = {
         this.stride = offset;
 
         // Create attribute array of correct size to hold max elements
-        this._attributeArray = new Float32Array(this.array_size*4*this.stride);
+        this._attributeArray = new Float32Array(this.array_size * 4 * this.stride);
         this._attributeBuffer = this.context.createBuffer();
         this._registryHoles = [];
         this._registrySize = 0;
@@ -10824,12 +11043,12 @@ RenderProgramWrapper.prototype = {
 
     // increase the size of the typed arrays
     // does so by creating a new array of that size and copying the existing one into it
-    growArrays: function(size){
-        if(this.array_size >= this.max_size) return;
+    growArrays: function(size) {
+        if (this.array_size >= this.max_size) return;
 
         var newsize = Math.min(size, this.max_size);
 
-        var newAttributeArray = new Float32Array(newsize*4*this.stride);
+        var newAttributeArray = new Float32Array(newsize * 4 * this.stride);
         var newIndexArray = new Uint16Array(6 * newsize);
 
         newAttributeArray.set(this._attributeArray);
@@ -10842,12 +11061,12 @@ RenderProgramWrapper.prototype = {
 
     // Add an entity that needs to be rendered by this program
     // Needs to be assigned an index in the buffer
-    registerEntity: function(e){
+    registerEntity: function(e) {
         if (this._registryHoles.length === 0) {
-            if (this._registrySize >= this.max_size){
-                throw("Number of entities exceeds maximum limit.");
+            if (this._registrySize >= this.max_size) {
+                throw ("Number of entities exceeds maximum limit.");
             } else if (this._registrySize >= this.array_size) {
-                this.growArrays(2*this.array_size);
+                this.growArrays(2 * this.array_size);
             }
             e._glBufferIndex = this._registrySize;
             this._registrySize++;
@@ -10857,38 +11076,38 @@ RenderProgramWrapper.prototype = {
     },
 
     // remove an entity; allow its buffer index to be reused
-    unregisterEntity: function(e){
+    unregisterEntity: function(e) {
         if (typeof e._glBufferIndex === "number")
             this._registryHoles.push(e._glBufferIndex);
         e._glBufferIndex = null;
     },
 
-    resetRegistry: function(){
+    resetRegistry: function() {
         this._maxElement = 0;
         this._registryHoles.length = 0;
     },
 
-    setCurrentEntity: function(ent){
+    setCurrentEntity: function(ent) {
         // offset is 4 * buffer index, because each entity has 4 vertices
-        this.ent_offset = ent._glBufferIndex*4;
+        this.ent_offset = ent._glBufferIndex * 4;
         this.ent = ent;
     },
 
     // Called before a batch of entities is prepped for rendering
-    switchTo: function(){
+    switchTo: function() {
         var gl = this.context;
         gl.useProgram(this.shader);
         gl.bindBuffer(gl.ARRAY_BUFFER, this._attributeBuffer);
         var a, attributes = this.attributes;
         // Process every attribute
-        for (var i=0; i<attributes.length; i++){
+        for (var i = 0; i < attributes.length; i++) {
             a = attributes[i];
-            gl.vertexAttribPointer(a.location, a.width, a.type, false, this.stride*a.bytes, a.offset*a.bytes);
+            gl.vertexAttribPointer(a.location, a.width, a.type, false, this.stride * a.bytes, a.offset * a.bytes);
         }
 
         // For now, special case the need for texture objects
         var t = this.texture_obj;
-        if (t && t.unit === null){
+        if (t && t.unit === null) {
             this.layer.texture_manager.bindTexture(t);
         }
 
@@ -10907,20 +11126,20 @@ RenderProgramWrapper.prototype = {
 
     // adds a set of 6 indices to the index array
     // Corresponds to 2 triangles that make up a rectangle
-    addIndices: function(offset){
+    addIndices: function(offset) {
         var index = this._indexArray, l = this.index_pointer;
-        index[0+l] = 0 + offset;
-        index[1+l] = 1 + offset;
-        index[2+l] = 2 + offset;
-        index[3+l] = 1 + offset;
-        index[4+l] = 2 + offset;
-        index[5+l] = 3 + offset;
-        this.index_pointer+=6;
+        index[0 + l] = 0 + offset;
+        index[1 + l] = 1 + offset;
+        index[2 + l] = 2 + offset;
+        index[3 + l] = 1 + offset;
+        index[4 + l] = 2 + offset;
+        index[5 + l] = 3 + offset;
+        this.index_pointer += 6;
     },
 
 
     // Writes data from the attribute and index arrays to the appropriate buffers, and then calls drawElements.
-    renderBatch: function(){
+    renderBatch: function() {
         var gl = this.context;
         gl.bindBuffer(gl.ARRAY_BUFFER, this._attributeBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, this._attributeArray, gl.STATIC_DRAW);
@@ -10929,26 +11148,26 @@ RenderProgramWrapper.prototype = {
         gl.drawElements(gl.TRIANGLES, this.index_pointer, gl.UNSIGNED_SHORT, 0);
     },
 
-    setViewportUniforms: function(viewport){
+    setViewportUniforms: function(viewport, cameraOptions) {
         var gl = this.context;
         gl.useProgram(this.shader);
-        gl.uniform4f(this.shader.viewport, viewport._x, viewport._y, viewport._width/viewport._scale, viewport._height/viewport._scale);
+        gl.uniform4f(this.shader.viewport, -viewport._x, -viewport._y, viewport._w , viewport._h );
     },
 
-    // Fill in the attribtue with the given arguments, cycling through the data if necessary
+    // Fill in the attribute with the given arguments, cycling through the data if necessary
     // If the arguments provided match the width of the attribute, that means it'll fill the same values for each of the four vertices.
     // TODO determine if this abstraction is a performance hit!
-    writeVector: function (name, x, y){
+    writeVector: function(name, x, y) {
         var a = this._attribute_table[name];
-        var stride = this.stride, offset = a.offset+this.ent_offset*stride, w = a.width;
-        var l = (arguments.length-1);
+        var stride = this.stride, offset = a.offset + this.ent_offset * stride, w = a.width;
+        var l = (arguments.length - 1);
         var data = this._attributeArray;
 
-        for (var r=0; r<4 ; r++)
-            for (var c=0; c<w; c++){
-                data[offset + stride*r + c] = arguments[ (w*r + c) % l + 1];
+        for (var r = 0; r < 4; r++)
+            for (var c = 0; c < w; c++) {
+                data[offset + stride * r + c] = arguments[(w * r + c) % l + 1];
             }
-        }
+    }
 };
 
 /**@
@@ -10957,8 +11176,15 @@ RenderProgramWrapper.prototype = {
  *
  * A collection of methods to handle webgl contexts.
  */
-Crafty.webglLayerObject = {
+Crafty._registerLayerTemplate("WebGL", {
     type: "WebGL",
+    // Layer options
+    options: {
+        xResponse: 1,
+        yResponse: 1,
+        scaleResponse: 1,
+        z: 0
+    },
     /**@
      * #.context
      * @comp WebGLLayer
@@ -10968,21 +11194,21 @@ Crafty.webglLayerObject = {
     context: null,
     changed_objects: [],
 
-   // Create a vertex or fragment shader, given the source and type
-   _compileShader: function (src, type){
+    // Create a vertex or fragment shader, given the source and type
+    _compileShader: function(src, type) {
         var gl = this.context;
         var shader = gl.createShader(type);
         gl.shaderSource(shader, src);
         gl.compileShader(shader);
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-          throw(gl.getShaderInfoLog(shader));
+            throw (gl.getShaderInfoLog(shader));
         }
         return shader;
     },
 
     // Create and return a complete, linked shader program, given the source for the fragment and vertex shaders.
     // Will compile the two shaders and then link them together
-    _makeProgram: function (shader){
+    _makeProgram: function(shader) {
         var gl = this.context;
         var fragmentShader = this._compileShader(shader.fragmentCode, gl.FRAGMENT_SHADER);
         var vertexShader = this._compileShader(shader.vertexCode, gl.VERTEX_SHADER);
@@ -10993,14 +11219,12 @@ Crafty.webglLayerObject = {
         gl.linkProgram(shaderProgram);
 
         if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-          throw("Could not initialise shaders");
+            throw ("Could not initialise shaders");
         }
 
         shaderProgram.viewport = gl.getUniformLocation(shaderProgram, "uViewport");
         return shaderProgram;
     },
-
-    programs: {},
 
     // Will create and return a RenderProgramWrapper for a shader program.
     // name is a unique id, attributes an array of attribute names with their metadata.
@@ -11015,14 +11239,14 @@ Crafty.webglLayerObject = {
     // ~~~
     // The "aPositon", "aOrientation", and "aLayer" attributes should be the same for any webgl entity,
     // since they support the basic 2D properties
-    getProgramWrapper: function(name, shader){
-        if (this.programs[name] === undefined){
+    getProgramWrapper: function(name, shader) {
+        if (this.programs[name] === undefined) {
             var compiledShader = this._makeProgram(shader);
             var program = new RenderProgramWrapper(this, compiledShader);
             program.name = name;
             program.initAttributes(shader.attributeList);
             program.draw = shader.drawCallback;
-            program.setViewportUniforms(Crafty.viewport);
+            program.setViewportUniforms(this._viewportRect(), this.options);
             this.programs[name] = program;
         }
         return this.programs[name];
@@ -11030,11 +11254,11 @@ Crafty.webglLayerObject = {
 
     // Make a texture out of the given image element
     // The url is just used as a unique ID
-    makeTexture: function(url, image, repeating){
+    makeTexture: function(url, image, repeating) {
         return this.texture_manager.makeTexture(url, image, repeating);
     },
 
-    init: function () {
+    init: function() {
 
         //check if we support webgl is supported
         if (!Crafty.support.webgl) {
@@ -11045,6 +11269,7 @@ Crafty.webglLayerObject = {
 
         // Avoid shared state between systems
         this.changed_objects = [];
+        this.programs = {};
 
         //create an empty canvas element
         var c;
@@ -11054,6 +11279,7 @@ Crafty.webglLayerObject = {
         c.style.position = 'absolute';
         c.style.left = "0px";
         c.style.top = "0px";
+        c.style.zIndex = this.options.z;
 
         Crafty.stage.elem.appendChild(c);
 
@@ -11063,7 +11289,7 @@ Crafty.webglLayerObject = {
             gl = c.getContext("webgl", { premultipliedalpha: true }) || c.getContext("experimental-webgl", { premultipliedalpha: true });
             gl.viewportWidth = c.width;
             gl.viewportHeight = c.height;
-        } catch(e) {
+        } catch (e) {
             Crafty.trigger("NoWebGL");
             Crafty.stop();
             return;
@@ -11085,21 +11311,23 @@ Crafty.webglLayerObject = {
         //Bind rendering of canvas context (see drawing.js)
         this.uniqueBind("RenderScene", this.render);
         this.uniqueBind("ViewportResize", this._resize);
-        this.uniqueBind("InvalidateViewport", function(){ this.dirtyViewport = true; });
+        this.uniqueBind("InvalidateViewport", function() { this.dirtyViewport = true; });
         this.uniqueBind("PixelartSet", this._setPixelart);
         this._setPixelart(Crafty._pixelartEnabled);
         this.dirtyViewport = true;
 
         this.texture_manager = new Crafty.TextureManager(gl, this);
+        Crafty._addDrawLayerInstance(this);
     },
 
     // Cleanup the DOM when the system is destroyed
     remove: function() {
         this._canvas.parentNode.removeChild(this._canvas);
+        Crafty._removeDrawLayerInstance(this);
     },
 
     // Called when the viewport resizes
-    _resize: function(){
+    _resize: function() {
         var c = this._canvas;
         c.width = Crafty.viewport.width;
         c.height = Crafty.viewport.height;
@@ -11112,7 +11340,7 @@ Crafty.webglLayerObject = {
     // TODO consider shifting to texturemanager
     _setPixelart: function(enabled) {
         var gl = this.context;
-        if (enabled){
+        if (enabled) {
             this.texture_filter = gl.NEAREST;
         } else {
             this.texture_filter = gl.LINEAR;
@@ -11128,8 +11356,8 @@ Crafty.webglLayerObject = {
     visible_gl: [],
 
     // Render any entities associated with this context; called in response to a draw event
-    render: function(rect){
-        rect = rect || Crafty.viewport.rect();
+    render: function(rect) {
+        rect = rect || this._viewportRect();
         var gl = this.context;
 
         // Set viewport and clear it
@@ -11138,11 +11366,12 @@ Crafty.webglLayerObject = {
 
         //Set the viewport uniform variables used by each registered program
         var programs = this.programs;
-        if (this.dirtyViewport){
-          for (var comp in programs) {
-              programs[comp].setViewportUniforms(Crafty.viewport);
-          }
-          this.dirtyViewport = false;
+        if (this.dirtyViewport) {
+            var view = this._viewportRect();
+            for (var comp in programs) {
+                programs[comp].setViewportUniforms(view, this.options);
+            }
+            this.dirtyViewport = false;
         }
 
         // Search for any entities in the given area (viewport unless otherwise specified)
@@ -11153,7 +11382,7 @@ Crafty.webglLayerObject = {
         //From all potential candidates, build a list of visible entities, then sort by zorder
         var visible_gl = this.visible_gl;
         visible_gl.length = 0;
-        for (i=0; i < l; i++) {
+        for (i = 0; i < l; i++) {
             current = q[i];
             if (current._visible && current.program && (current._drawLayer === this)) {
                 visible_gl.push(current);
@@ -11170,23 +11399,23 @@ Crafty.webglLayerObject = {
         // Therefore, you get better performance by grouping programs by z-order if possible.
         // (Each sprite sheet will use a different program, but multiple sprites on the same sheet can be rendered in one batch)
         var shaderProgram = null;
-        for (i=0; i < l; i++) {
+        for (i = 0; i < l; i++) {
             current = visible_gl[i];
-            if (shaderProgram !== current.program){
-              if (shaderProgram !== null){
-                shaderProgram.renderBatch();
-              }
+            if (shaderProgram !== current.program) {
+                if (shaderProgram !== null) {
+                    shaderProgram.renderBatch();
+                }
 
-              shaderProgram = current.program;
-              shaderProgram.index_pointer = 0;
-              shaderProgram.switchTo();
+                shaderProgram = current.program;
+                shaderProgram.index_pointer = 0;
+                shaderProgram.switchTo();
             }
             current.draw();
             current._changed = false;
         }
 
-        if (shaderProgram !== null){
-          shaderProgram.renderBatch();
+        if (shaderProgram !== null) {
+            shaderProgram.renderBatch();
         }
 
     },
@@ -11230,9 +11459,10 @@ Crafty.webglLayerObject = {
         if (ent.program) {
             ent.program.unregisterEntity(ent);
         }
-    },
+    }
 
-};
+});
+
 
 },{"../core/core.js":7}],38:[function(require,module,exports){
 var Crafty = require('../core/core.js');
@@ -11404,7 +11634,7 @@ Crafty.c("WebGL", {
         this.requires("Renderable");
         // Attach to webgl layer
         if (!this._customLayer){
-            this._attachToLayer( Crafty.s("WebGLLayer") );
+            this._attachToLayer( Crafty.s("DefaultWebGLLayer") );
         }
     },
  
@@ -16598,6 +16828,28 @@ Crafty.extend({
       overlap: function (rectA, rectB) {
         return (rectA._x < rectB._x + rectB._w && rectA._x + rectA._w > rectB._x &&
                 rectA._y < rectB._y + rectB._h && rectA._y + rectA._h > rectB._y);
+      },
+      
+      /**@
+       * #Crafty.rectManager.integerBounds
+       * @comp Crafty.rectManager
+       * @sign public Boolean Crafty.rectManager.integerBounds(Object rect)
+       * @param rect - An object that must have the `_x, _y, _w, _h` values as properties
+       * @return An enclosing rectangle with integer coordinates
+       *
+       * Calculate the smallest rectangle with integer coordinates that encloses the specified rectangle,
+       * modifying the passed object to have those bounds.
+       */
+      integerBounds: function(rect){
+        rect._w = rect._x + rect._w;
+        rect._h = rect._y + rect._h;
+        rect._x = (rect._x > 0) ? (rect._x|0) : (rect._x|0) - 1;
+        rect._y = (rect._y > 0) ? (rect._y|0) : (rect._y|0) - 1;
+        rect._w -= rect._x;
+        rect._h -= rect._y;
+        rect._w = (rect._w === (rect._w|0)) ? rect._w : (rect._w|0) + 1;
+        rect._h = (rect._h === (rect._h|0)) ? rect._h : (rect._h|0) + 1;
+        return rect;
       },
 
       /**@
