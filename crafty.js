@@ -192,6 +192,180 @@ process.umask = function() { return 0; };
 },{}],2:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
+
+function InputButtonGroup(keys) {
+    this.keys = keys;
+}
+
+InputButtonGroup.prototype = {
+    // should always have a value if isActive returns true
+    timeDown: null,
+    isActive: function () {
+        for (var k in this.keys) {
+            if (Crafty.keydown[this.keys[k]]){
+                 if (!this.timeDown) {
+                     this.timeDown = Date.now();
+                 }
+                 return true;
+            }
+        }
+        delete this.timeDown;
+        return false;
+    }
+};
+
+// Allow the creation of custom inputs
+Crafty.s("Controls", {
+    init: function () {
+        // internal object to store definitions
+        this._dpads = {};
+    },
+
+    events: {
+        "EnterFrameInput" : function() {
+            this.runEvents();
+        }
+    },
+
+    runEvents: function () {
+        for (var d in this._dpads) {
+            var dpad = this._dpads[d];
+            dpad.oldX = dpad.x;
+            dpad.oldY = dpad.y;
+            this.updateInput(dpad, dpad.multipleDirectionBehavior);
+            this.updateActiveDirection(dpad, dpad.normalize);
+            dpad.event.x = dpad.x;
+            dpad.event.y = dpad.y;
+            if (dpad.x !== dpad.oldX || dpad.y !== dpad.oldY) {
+                Crafty.trigger("DirectionalInput", dpad.event);
+            }
+        }
+    },
+
+    getDpad: function(name) {
+        return this._dpads[name];
+    },
+
+    defineDpad: function (name, definition, options) {
+        // Store the name/definition pair
+        if (this._dpads[name]) delete this._dpads[name];
+
+        var directionDict = {};
+        for (var k in definition) {
+            var direction = definition[k];
+            var keyCode = Crafty.keys[k] || k;
+
+            // create a mapping of directions to all associated keycodes
+            if (!directionDict[direction]) {
+                directionDict[direction] = [];
+            }
+            directionDict[direction].push(keyCode);
+            
+        }
+
+        // Create a useful definition from the input format that tracks state
+        var parsedDefinition = {};
+        for (var d in directionDict) {
+            parsedDefinition[d] = {
+                input: new InputButtonGroup(directionDict[d]),
+                active: false,
+                n: this.parseDirection(d)
+            };
+        }
+        if (typeof options === 'undefined') {
+            options = {};
+        }
+        if (typeof options.normalize === 'undefined'){
+            options.normalize = false;
+        }
+        if (typeof options.multipleDirectionBehavior === 'undefined') {
+            options.multipleDirectionBehavior = "all";
+        }
+        // Create the fully realized dpad object
+        this._dpads[name] = {
+            name: name,
+            directions: parsedDefinition,
+            x: 0,
+            y: 0,
+            oldX: 0,
+            oldY: 0,
+            event: { x: 0, y: 0, name: name },
+            normalize: options.normalize,
+            multipleDirectionBehavior: options.multipleDirectionBehavior
+        };
+    },
+
+    // Takes an amount in degrees and converts it to an x/y object.
+    // Clamps to avoid rounding issues with sin/cos
+    parseDirection: function (direction) {
+        return {
+            x: Math.round(Math.cos(direction * (Math.PI / 180)) * 1000) / 1000,
+            y: Math.round(Math.sin(direction * (Math.PI / 180)) * 1000) / 1000
+        };
+    },
+
+    // dpad definition is a map of directions to keys array and active flag
+    updateActiveDirection: function (dpad, normalize) {
+        dpad.x = 0;
+        dpad.y = 0;
+        for (var d in dpad.directions) {
+            var dir = dpad.directions[d];
+            if (!dir.active) continue;
+            dpad.x += dir.n.x;
+            dpad.y += dir.n.y;
+        }
+
+        // Normalize
+        if (normalize) {
+            var m = Math.sqrt(dpad.x * dpad.x + dpad.y * dpad.y);
+            if (m > 0) {
+                dpad.x = dpad.x / m;
+                dpad.y = dpad.y / m;
+            }
+        }
+    },
+
+    // Has to handle three cases concerning multiple active input groups:
+    // - "all": all directions are active
+    // - "last": one direction at a time, new directions replace old ones
+    // - "first": one direction at a time, new directions are ignored while old ones are still active 
+    updateInput: function (dpad, multiBehavior) {
+        var d, dir;
+        var winner;
+
+
+        for (d in dpad.directions) {
+            dir = dpad.directions[d];
+            dir.active = false;
+
+            if (dir.input.isActive()) {
+                if (multiBehavior === "all") {
+                    dir.active = true;
+                } else {
+                    if (!winner) {
+                        winner = dir;
+                    } else {
+                        if (multiBehavior === "first") {
+                            if (winner.input.timeDown > dir.input.timeDown) {
+                                winner = dir;
+                            }
+                        }
+                        if (multiBehavior === "last") {
+                            if (winner.input.timeDown < dir.input.timeDown) {
+                                winner = dir;
+                            }
+                        }
+                    }
+                }      
+            }  
+        }
+        // If we picked a winner, set it active
+        if (winner) winner.active = true;
+    }
+});
+},{"../core/core.js":8}],3:[function(require,module,exports){
+var Crafty = require('../core/core.js');
+
 /**@
  * #Draggable
  * @category Controls
@@ -219,7 +393,7 @@ Crafty.c("Draggable", {
 
     /**@
      * #.enableDrag
-     * @comp Draggable
+     * @comp Draggable 
      * @sign public this .enableDrag(void)
      *
      * Reenable dragging of entity. Use if `.disableDrag` has been called.
@@ -318,79 +492,99 @@ Crafty.c("Draggable", {
     }
 });
 
+
+// This is undocumented for now, since the interface here might change quickly
+// It provides a simple helper method to bind to direcctional input events of a particular type
+Crafty.c("DirectionalControl", {
+    init: function () {
+        this._boundFunctions = {};
+    },
+    events: {
+        "DirectionalInput": function (e) {
+            if (this._boundFunctions[e.name]) {
+                this._boundFunctions[e.name].call(this, e);
+            }
+        }
+    },
+    _boundFunctions: null,
+    linkDirectionalInput: function (name, fn) {
+        this._boundFunctions[name] = fn;
+    },
+    unlinkDirectionalInput: function (name) {
+        delete this._boundFunctions[name];
+    }
+});
+
 /**@
  * #Multiway
  * @category Controls
  *
  * Used to bind keys to directions and have the entity move accordingly.
  *
- * Multiway acts by adding a velocity on key press and removing the same velocity when the respective key is released.
- * This works well in most cases, but can cause undesired behavior if you manipulate velocities by yourself while this component is in effect.
+ * Multiway acts by listening to directional events, and then setting the velocity each frame based on the current direction and the current speed.
+ * 
+ * If a speed is not defined for a particular axis (x or y), then the velocity along that axis will not be set.
+ *   
+ * This behavior works in most cases, but can cause undesired behavior if you manipulate velocities by yourself while this component is in effect.
  * If you need to resolve collisions, it's advised to correct the position directly rather than to manipulate the velocity.
  * If you still need to reset the velocity once a collision happens, make sure to re-add the previous velocity once the collision is resolved.
  *
- * Additionally, this component provides the entity with `Motion` and `Keyboard` methods & events.
+ * Additionally, this component provides the entity with `Motion` methods & events.
  *
- * @see Motion, Keyboard
+ * @see Motion
  */
 Crafty.c("Multiway", {
     _speed: null,
     
     init: function () {
-        this.requires("Motion, Keyboard");
-
-        this._keyDirection = {}; // keyCode -> direction
-        this._activeDirections = {}; // direction -> # of keys pressed for that direction
-        this._directionSpeed = {}; // direction -> {x: x_speed, y: y_speed}
+        this.requires("Motion, DirectionalControl");
+        this._dpadName = "MultiwayDpad" + this[0];
         this._speed = { x: 150, y: 150 };
-
-        this.bind("KeyDown", this._keydown)
-            .bind("KeyUp", this._keyup);
+        this._direction = {x:0, y:0};
+        this.disableControls = false;
     },
 
     remove: function() {
-        this.unbind("KeyDown", this._keydown)
-            .unbind("KeyUp", this._keyup);
-
-        // unapply movement of pressed keys
-        this.__unapplyActiveDirections();
+        if (!this.disableControls) this.vx = this.vy = 0;
     },
 
-    _keydown: function (e) {
-        var direction = this._keyDirection[e.key];
-        if (direction !== undefined) { // if this is a key we are interested in
-            if (this._activeDirections[direction] === 0 && !this.disableControls) { // if key is first one pressed for this direction
-                this.vx += this._directionSpeed[direction].x;
-                this.vy += this._directionSpeed[direction].y;
-            }
-            this._activeDirections[direction]++;
-        }
-    },
-
-    _keyup: function (e) {
-        var direction = this._keyDirection[e.key];
-        if (direction !== undefined) { // if this is a key we are interested in
-            this._activeDirections[direction]--;
-            if (this._activeDirections[direction] === 0 && !this.disableControls) { // if key is last one unpressed for this direction
-                this.vx -= this._directionSpeed[direction].x;
-                this.vy -= this._directionSpeed[direction].y;
+    events: {
+        "EnterFrame": function() {
+            if (!this.disableControls) {
+                if (typeof this._speed.x !== 'undefined' && this._speed.x !== null){
+                    this.vx = this._speed.x * this._direction.x;
+                }
+                if (typeof this._speed.y !== 'undefined' && this._speed.y !== null) {
+                    this.vy = this._speed.y * this._direction.y;
+                }
             }
         }
     },
-
+   
+    _updateDirection: function(e) {
+        this._direction.x = e.x;
+        this._direction.y = e.y;
+    },
 
     /**@
      * #.multiway
      * @comp Multiway
-     * @sign public this .multiway([Number speed,] Object keyBindings)
+     * @sign public this .multiway([Number speed,] Object keyBindings[, Object options])
      * @param speed - A speed in pixels per second
      * @param keyBindings - What keys should make the entity go in which direction. Direction is specified in degrees
+     * @param options - An object with options for `normalize` and `multipleDirectionBehavior`.
      *
      * Constructor to initialize the speed and keyBindings.
      * Component will listen to key events and move the entity appropriately.
      * Can be called while a key is pressed to change direction & speed on the fly.
      *
-     * @example
+     * The options parameter controls the behavior of the component, and has the following defaults:
+     * 
+     *  - `"normalize": false`.  When set to true, the directional input always has a magnitude of 1
+     *  - `"multipleDirectionBehavior": "all"` How to resolve multiple active directions.  
+     *     Set to "first" or "last" to allow only one active direction at a time.
+     *
+     *  @example
      * ~~~
      * this.multiway(150, {UP_ARROW: -90, DOWN_ARROW: 90, RIGHT_ARROW: 0, LEFT_ARROW: 180});
      * this.multiway({x:150,y:75}, {UP_ARROW: -90, DOWN_ARROW: 90, RIGHT_ARROW: 0, LEFT_ARROW: 180});
@@ -398,31 +592,17 @@ Crafty.c("Multiway", {
      * ~~~
      *
      * @see Crafty.keys
-     */
-    multiway: function (speed, keys) {
+     */         
+    multiway: function (speed, keys, options) {
+        var inputSystem = Crafty.s("Controls");
+
         if (keys) {
-            if (speed.x !== undefined && speed.y !== undefined) {
-                this._speed.x = speed.x;
-                this._speed.y = speed.y;
-            } else {
-                this._speed.x = speed;
-                this._speed.y = speed;
-            }
+            this.speed(speed);
         } else {
             keys = speed;
         }
-
-
-        if (!this.disableControls) {
-            this.__unapplyActiveDirections();
-        }
-
-        this._updateKeys(keys);
-        this._updateSpeed(this._speed);
-
-        if (!this.disableControls) {
-            this.__applyActiveDirections();
-        }
+        inputSystem.defineDpad(this._dpadName, keys, options);
+        this.linkDirectionalInput(this._dpadName, this._updateDirection);
 
         return this;
     },
@@ -435,6 +615,8 @@ Crafty.c("Multiway", {
      *
      * Change the speed that the entity moves with, in units of pixels per second.
      * Can be called while a key is pressed to change speed on the fly.
+     * 
+     * If the passed object has only an x or y property, only the velocity along that axis will be controlled.
      *
      * @example
      * ~~~
@@ -442,65 +624,14 @@ Crafty.c("Multiway", {
      * ~~~
      */
     speed: function (speed) {
-        if (!this.disableControls) {
-            this.__unapplyActiveDirections();
+        if (typeof speed === 'object') {
+            this._speed.x = speed.x;
+            this._speed.y = speed.y;
+        } else {
+            this._speed.x = speed;
+            this._speed.y = speed;
         }
-
-        this._updateSpeed(speed);
-
-        if (!this.disableControls) {
-            this.__applyActiveDirections();
-        }
-
         return this;
-    },
-
-    _updateKeys: function(keys) {
-        // reset data
-        this._keyDirection = {};
-        this._activeDirections = {};
-
-        for (var k in keys) {
-            var keyCode = Crafty.keys[k] || k;
-            // add new data
-            var direction = this._keyDirection[keyCode] = keys[k];
-            this._activeDirections[direction] = this._activeDirections[direction] || 0;
-            if (this.isDown(keyCode)) // add directions of already pressed keys
-                this._activeDirections[direction]++;
-        }
-    },
-
-    _updateSpeed: function(speed) {
-        // reset data
-        this._directionSpeed = {};
-
-        var direction;
-        for (var keyCode in this._keyDirection) {
-            direction = this._keyDirection[keyCode];
-            // add new data
-            this._directionSpeed[direction] = {
-                x: Math.round(Math.cos(direction * (Math.PI / 180)) * 1000 * speed.x) / 1000,
-                y: Math.round(Math.sin(direction * (Math.PI / 180)) * 1000 * speed.y) / 1000
-            };
-        }
-    },
-
-    __applyActiveDirections: function() {
-        for (var direction in this._activeDirections) {
-            if (this._activeDirections[direction] > 0) {
-                this.vx += this._directionSpeed[direction].x;
-                this.vy += this._directionSpeed[direction].y;
-            }
-        }
-    },
-
-    __unapplyActiveDirections: function() {
-        for (var direction in this._activeDirections) {
-            if (this._activeDirections[direction] > 0) {
-                this.vx -= this._directionSpeed[direction].x;
-                this.vy -= this._directionSpeed[direction].y;
-            }
-        }
     },
 
     /**@
@@ -508,7 +639,7 @@ Crafty.c("Multiway", {
      * @comp Multiway
      * @sign public this .enableControl()
      *
-     * Enable the component to listen to key events.
+     * Enable the component to listen to input events.
      *
      * @example
      * ~~~
@@ -516,11 +647,7 @@ Crafty.c("Multiway", {
      * ~~~
      */
     enableControl: function () {
-        if (this.disableControls) {
-            this.__applyActiveDirections();
-        }
         this.disableControls = false;
-
         return this;
     },
 
@@ -529,7 +656,7 @@ Crafty.c("Multiway", {
      * @comp Multiway
      * @sign public this .disableControl()
      *
-     * Disable the component to listen to key events.
+     * Disable the component from responding to input events.
      *
      * @example
      * ~~~
@@ -537,11 +664,7 @@ Crafty.c("Multiway", {
      * ~~~
      */
     disableControl: function () {
-        if (!this.disableControls) {
-            this.__unapplyActiveDirections();
-        }
         this.disableControls = true;
-
         return this;
     }
 });
@@ -784,8 +907,9 @@ Crafty.c("Twoway", {
      * Pressing the jump key will cause the entity to jump with the supplied power.
      */
     twoway: function (speed, jumpSpeed) {
-
-        this.multiway(speed || this._speed, {
+        // Set multiway with horizontal speed only
+        var hSpeed = speed || this._speed;
+        this.multiway({x: hSpeed}, {
             RIGHT_ARROW: 0,
             LEFT_ARROW: 180,
             D: 0,
@@ -803,7 +927,7 @@ Crafty.c("Twoway", {
     }
 });
 
-},{"../core/core.js":7}],3:[function(require,module,exports){
+},{"../core/core.js":8}],4:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -964,7 +1088,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],4:[function(require,module,exports){
+},{"../core/core.js":8}],5:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -2009,7 +2133,7 @@ Crafty.c("Keyboard", {
         return !!Crafty.keydown[key];
     }
 });
-},{"../core/core.js":7}],5:[function(require,module,exports){
+},{"../core/core.js":8}],6:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -2226,7 +2350,7 @@ Crafty.extend({
         RIGHT: 2
     }
 });
-},{"../core/core.js":7}],6:[function(require,module,exports){
+},{"../core/core.js":8}],7:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -2348,7 +2472,7 @@ easing.prototype = {
 };
 
 module.exports = easing;
-},{"../core/core.js":7}],7:[function(require,module,exports){
+},{"../core/core.js":8}],8:[function(require,module,exports){
 var version = require('./version');
 
 /**@
@@ -3861,6 +3985,8 @@ Crafty.extend({
                         dt: dt,
                         gameTime: gameTime
                     };
+                    // Handle any changes due to user input
+                    Crafty.trigger("EnterFrameInput", frameData);
                     // Everything that changes over time hooks into this event
                     Crafty.trigger("EnterFrame", frameData);
                     // Event that happens after "EnterFrame", e.g. for resolivng collisions applied through movement during "EnterFrame" events
@@ -3916,13 +4042,13 @@ Crafty.extend({
              * @param timestep - the duration to pass each frame.  Defaults to milliSecPerFrame (20 ms) if not specified.
              */
             simulateFrames: function (frames, timestep) {
-                if (typeof timestep === "undefined")
-                    timestep = milliSecPerFrame;
+                timestep = timestep || milliSecPerFrame;
                 while (frames-- > 0) {
                     var frameData = {
                         frame: frame++,
                         dt: timestep
                     };
+                    Crafty.trigger("EnterFrameInput", frameData);
                     Crafty.trigger("EnterFrame", frameData);
                     Crafty.trigger("ExitFrame", frameData);
                 }
@@ -4369,7 +4495,7 @@ if (typeof define === 'function') { // AMD
 
 module.exports = Crafty;
 
-},{"./version":16}],8:[function(require,module,exports){
+},{"./version":17}],9:[function(require,module,exports){
 (function (process){
 var Crafty = require('../core/core.js');
 var document = (typeof window !== "undefined") && window.document;
@@ -4619,7 +4745,7 @@ module.exports = {
 };
 
 }).call(this,require('_process'))
-},{"../core/core.js":7,"_process":1}],9:[function(require,module,exports){
+},{"../core/core.js":8,"_process":1}],10:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 module.exports = {
@@ -5071,7 +5197,7 @@ module.exports = {
     }
 };
 
-},{"../core/core.js":7}],10:[function(require,module,exports){
+},{"../core/core.js":8}],11:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -5175,7 +5301,7 @@ module.exports = {
 };
 
 
-},{"../core/core.js":7}],11:[function(require,module,exports){
+},{"../core/core.js":8}],12:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -5346,7 +5472,7 @@ module.exports = {
     }
 };
 
-},{"../core/core.js":7}],12:[function(require,module,exports){
+},{"../core/core.js":8}],13:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 try {
@@ -5464,7 +5590,7 @@ store.remove = function(key) {
 
 module.exports = store;
 
-},{"../core/core.js":7}],13:[function(require,module,exports){
+},{"../core/core.js":8}],14:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -5637,7 +5763,7 @@ Crafty.CraftySystem.prototype = {
     }
 
 };
-},{"../core/core.js":7}],14:[function(require,module,exports){
+},{"../core/core.js":8}],15:[function(require,module,exports){
 /**@
  * #Delay
  * @category Utilities
@@ -5814,7 +5940,7 @@ module.exports = {
     }
 };
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -5970,9 +6096,9 @@ module.exports = {
   }
 };
 
-},{"../core/core.js":7}],16:[function(require,module,exports){
+},{"../core/core.js":8}],17:[function(require,module,exports){
 module.exports = "0.7.0";
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 var Crafty = require('./core/core');
 
 Crafty.easing = require('./core/animation');
@@ -6019,6 +6145,7 @@ require('./isometric/diamond-iso');
 require('./isometric/isometric');
 
 require('./controls/inputs');
+require('./controls/controls-system');
 require('./controls/controls');
 require('./controls/device');
 require('./controls/keycodes');
@@ -6032,7 +6159,7 @@ if(window) window.Crafty = Crafty;
 
 module.exports = Crafty;
 
-},{"./controls/controls":2,"./controls/device":3,"./controls/inputs":4,"./controls/keycodes":5,"./core/animation":6,"./core/core":7,"./core/extensions":8,"./core/loader":9,"./core/model":10,"./core/scenes":11,"./core/storage":12,"./core/systems":13,"./core/time":14,"./core/tween":15,"./debug/debug-layer":18,"./debug/logging":19,"./graphics/canvas":21,"./graphics/canvas-layer":20,"./graphics/color":22,"./graphics/dom":25,"./graphics/dom-helper":23,"./graphics/dom-layer":24,"./graphics/drawing":26,"./graphics/gl-textures":27,"./graphics/html":28,"./graphics/image":29,"./graphics/layers":30,"./graphics/particles":31,"./graphics/renderable":32,"./graphics/sprite":34,"./graphics/sprite-animation":33,"./graphics/text":35,"./graphics/viewport":36,"./graphics/webgl":38,"./graphics/webgl-layer":37,"./isometric/diamond-iso":39,"./isometric/isometric":40,"./sound/sound":41,"./spatial/2d":42,"./spatial/collision":43,"./spatial/math":44,"./spatial/rect-manager":45,"./spatial/spatial-grid":46}],18:[function(require,module,exports){
+},{"./controls/controls":3,"./controls/controls-system":2,"./controls/device":4,"./controls/inputs":5,"./controls/keycodes":6,"./core/animation":7,"./core/core":8,"./core/extensions":9,"./core/loader":10,"./core/model":11,"./core/scenes":12,"./core/storage":13,"./core/systems":14,"./core/time":15,"./core/tween":16,"./debug/debug-layer":19,"./debug/logging":20,"./graphics/canvas":22,"./graphics/canvas-layer":21,"./graphics/color":23,"./graphics/dom":26,"./graphics/dom-helper":24,"./graphics/dom-layer":25,"./graphics/drawing":27,"./graphics/gl-textures":28,"./graphics/html":29,"./graphics/image":30,"./graphics/layers":31,"./graphics/particles":32,"./graphics/renderable":33,"./graphics/sprite":35,"./graphics/sprite-animation":34,"./graphics/text":36,"./graphics/viewport":37,"./graphics/webgl":39,"./graphics/webgl-layer":38,"./isometric/diamond-iso":40,"./isometric/isometric":41,"./sound/sound":42,"./spatial/2d":43,"./spatial/collision":44,"./spatial/math":45,"./spatial/rect-manager":46,"./spatial/spatial-grid":47}],19:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6452,7 +6579,7 @@ Crafty.DebugCanvas = {
 
 };
 
-},{"../core/core.js":7}],19:[function(require,module,exports){
+},{"../core/core.js":8}],20:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -6491,7 +6618,7 @@ Crafty.extend({
 		}
 	}
 });
-},{"../core/core.js":7}],20:[function(require,module,exports){
+},{"../core/core.js":8}],21:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -6873,7 +7000,7 @@ Crafty._registerLayerTemplate("Canvas", {
 
 });
 
-},{"../core/core.js":7}],21:[function(require,module,exports){
+},{"../core/core.js":8}],22:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -7011,7 +7138,7 @@ Crafty.c("Canvas", {
     }
 });
 
-},{"../core/core.js":7}],22:[function(require,module,exports){
+},{"../core/core.js":8}],23:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -7288,7 +7415,7 @@ Crafty.c("Color", {
 });
 
 
-},{"../core/core.js":7}],23:[function(require,module,exports){
+},{"../core/core.js":8}],24:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -7406,7 +7533,7 @@ Crafty.extend({
         }
     }
 });
-},{"../core/core.js":7}],24:[function(require,module,exports){
+},{"../core/core.js":8}],25:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -7590,7 +7717,7 @@ Crafty._registerLayerTemplate("DOM", {
     }
 
 });
-},{"../core/core.js":7}],25:[function(require,module,exports){
+},{"../core/core.js":8}],26:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -7859,7 +7986,7 @@ Crafty.c("DOM", {
     }
 });
 
-},{"../core/core.js":7}],26:[function(require,module,exports){
+},{"../core/core.js":8}],27:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 Crafty.extend({
@@ -7905,7 +8032,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],27:[function(require,module,exports){
+},{"../core/core.js":8}],28:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 // An object for wrangling textures
@@ -8093,7 +8220,7 @@ TextureWrapper.prototype = {
         gl.uniform2f(gl.getUniformLocation(shader, dimension_name), this.width, this.height);
     }
 };
-},{"../core/core.js":7}],28:[function(require,module,exports){
+},{"../core/core.js":8}],29:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -8178,7 +8305,7 @@ Crafty.c("HTML", {
         return this;
     }
 });
-},{"../core/core.js":7}],29:[function(require,module,exports){
+},{"../core/core.js":8}],30:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -8327,7 +8454,7 @@ Crafty.c("Image", {
     }
 });
 
-},{"../core/core.js":7}],30:[function(require,module,exports){
+},{"../core/core.js":8}],31:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 Crafty.extend({
@@ -8430,7 +8557,7 @@ Crafty.extend({
         });
     }
 });
-},{"../core/core.js":7}],31:[function(require,module,exports){
+},{"../core/core.js":8}],32:[function(require,module,exports){
 var Crafty = require('../core/core.js'),    
     document = window.document;
 
@@ -8861,7 +8988,7 @@ Crafty.c("Particles", {
     }
 });
 
-},{"../core/core.js":7}],32:[function(require,module,exports){
+},{"../core/core.js":8}],33:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -9023,7 +9150,7 @@ Crafty.c("Renderable", {
         return this;
     }
 });
-},{"../core/core.js":7}],33:[function(require,module,exports){
+},{"../core/core.js":8}],34:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -9507,7 +9634,7 @@ Crafty.c("SpriteAnimation", {
     }
 });
 
-},{"../core/core.js":7}],34:[function(require,module,exports){
+},{"../core/core.js":8}],35:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 // Define some variables required for webgl
@@ -9872,7 +9999,7 @@ Crafty.c("Sprite", {
     }
 });
 
-},{"../core/core.js":7}],35:[function(require,module,exports){
+},{"../core/core.js":8}],36:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -10194,7 +10321,7 @@ Crafty.c("Text", {
     }
 
 });
-},{"../core/core.js":7}],36:[function(require,module,exports){
+},{"../core/core.js":8}],37:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -10994,7 +11121,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],37:[function(require,module,exports){
+},{"../core/core.js":8}],38:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -11464,7 +11591,7 @@ Crafty._registerLayerTemplate("WebGL", {
 });
 
 
-},{"../core/core.js":7}],38:[function(require,module,exports){
+},{"../core/core.js":8}],39:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 /**@
@@ -11753,7 +11880,7 @@ Crafty.c("WebGL", {
     }
 });
 
-},{"../core/core.js":7}],39:[function(require,module,exports){
+},{"../core/core.js":8}],40:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -11961,7 +12088,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":7}],40:[function(require,module,exports){
+},{"../core/core.js":8}],41:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -12151,7 +12278,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],41:[function(require,module,exports){
+},{"../core/core.js":8}],42:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -12706,7 +12833,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":7}],42:[function(require,module,exports){
+},{"../core/core.js":8}],43:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     HashMap = require('./spatial-grid.js');
 
@@ -14758,7 +14885,7 @@ Crafty.matrix.prototype = {
     }
 };
 
-},{"../core/core.js":7,"./spatial-grid.js":46}],43:[function(require,module,exports){
+},{"../core/core.js":8,"./spatial-grid.js":47}],44:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     DEG_TO_RAD = Math.PI / 180,
     EPSILON = 1e-6;
@@ -15689,7 +15816,7 @@ Crafty.c("Collision", {
     }
 });
 
-},{"../core/core.js":7}],44:[function(require,module,exports){
+},{"../core/core.js":8}],45:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -16787,7 +16914,7 @@ Crafty.math.Matrix2D = (function () {
 
     return Matrix2D;
 })();
-},{"../core/core.js":7}],45:[function(require,module,exports){
+},{"../core/core.js":8}],46:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -16968,7 +17095,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":7}],46:[function(require,module,exports){
+},{"../core/core.js":8}],47:[function(require,module,exports){
 /**
  * Spatial HashMap for broad phase collision
  *
@@ -17581,4 +17708,4 @@ Crafty.extend({
 
     module.exports = HashMap;
 
-},{}]},{},[17]);
+},{}]},{},[18]);
