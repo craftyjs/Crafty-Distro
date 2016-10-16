@@ -3,7 +3,7 @@
  * http://craftyjs.com/
  *
  * Copyright 2016, Louis Stowasser
- * Dual licensed under the MIT or GPL licenses.
+ * Licensed under the MIT license.
  */
 
 
