@@ -193,46 +193,128 @@ process.umask = function() { return 0; };
 var Crafty = require('../core/core.js');
 
 
-function InputButtonGroup(keys) {
-    this.keys = keys;
+// ToggleInput contract
+// Must provide an isDown method which returns whether the input is down or not
+// May provide a destroy method which can be used for cleanup
+
+
+
+
+// MouseButtonToggleInput
+function MouseButtonToggleInput(button) {
+    Crafty.mouseObjs++;
+    this.button = button;
 }
 
-InputButtonGroup.prototype = {
-    // should always have a value if isActive returns true
+MouseButtonToggleInput.prototype = {
+    isDown: function() {
+        return Crafty.mouseButtonsDown[this.button];
+    },
+    destroy: function() {
+        Crafty.mouseObjs--;
+    }
+};
+
+// KeyboardToggleInput
+function KeyboardToggleInput(key) {
+    this.key = key;
+}
+
+KeyboardToggleInput.prototype = {
+    isDown: function() {
+        return Crafty.keydown[this.key];
+    }
+};
+
+
+// ToggleInputGroup
+function ToggleInputGroup(inputs) {
+    this.inputs = inputs;
+}
+
+// Handles a group of inputs that represent the same toggle state
+ToggleInputGroup.prototype = {
     timeDown: null,
     isActive: function () {
-        for (var k in this.keys) {
-            if (Crafty.keydown[this.keys[k]]){
-                 if (!this.timeDown) {
-                     this.timeDown = Date.now();
-                 }
-                 return true;
+        for (var i in this.inputs) {
+            var input = this.inputs[i];
+            if (input.isDown()) {
+                if (!this.timeDown) {
+                    this.timeDown = Date.now();
+                }
+                return true;
             }
         }
         delete this.timeDown;
         return false;
+    },
+    destroy: function() {
+        for (var i in this.inputs) {
+            if (typeof this.inputs[i].destroy === 'function') {
+                this.inputs[i].destroy();
+            }
+        }
     }
 };
 
-// Allow the creation of custom inputs
+// Provides abstractions for specific types of inputs:
+// - DirectionalInput: {x, y}
+// - TriggerInputDown/TriggerInputUp
+
+/**@
+ * #Controls
+ * @category Controls
+ * 
+ * A built-in system for linking specific inputs to general types of input events.
+ * 
+ * @note The methods provided by this system are likely to change in future verisons of Crafty, as more input types are supported.
+ * 
+ * @trigger TriggerInputDown - When a trigger group is activated - {name}
+ * @trigger TriggerInputUp - When a trigger group is released - {name, downFor}
+ * @trigger DirectionalInput - When a directional input changes - {name, x, y}
+ * 
+ * 
+ */
 Crafty.s("Controls", {
     init: function () {
         // internal object to store definitions
         this._dpads = {};
+        this._triggers = {};
     },
 
     events: {
-        "EnterFrameInput" : function() {
+        "EnterFrameInput": function () {
             this.runEvents();
+        },
+        "KeyDown": function () {
+            this.updateTriggers();
+        },
+        "KeyUp": function () {
+            this.updateTriggers();
+        },
+        "MouseDown": function (e) {
+            this.updateTriggers();
+        },
+        "MouseUp": function (e) {
+            this.updateTriggers();
+        },
+    },
+
+    // Runs through all triggers and updates their status
+    updateTriggers: function(e) {
+        for (var t in this._triggers) {
+            var trigger = this._triggers[t];
+            this.updateTriggerInput(trigger);
         }
     },
 
-    runEvents: function () {
+    runEvents: function () { 
+        // Trigger DirectionalInput events for dpads
         for (var d in this._dpads) {
             var dpad = this._dpads[d];
             dpad.oldX = dpad.x;
             dpad.oldY = dpad.y;
-            this.updateInput(dpad, dpad.multipleDirectionBehavior);
+            this.updateDpadInput(dpad, dpad.multipleDirectionBehavior);
             this.updateActiveDirection(dpad, dpad.normalize);
             dpad.event.x = dpad.x;
             dpad.event.y = dpad.y;
@@ -242,14 +324,97 @@ Crafty.s("Controls", {
         }
     },
 
-    getDpad: function(name) {
+    getDpad: function (name) {
         return this._dpads[name];
     },
 
-    defineDpad: function (name, definition, options) {
-        // Store the name/definition pair
-        if (this._dpads[name]) delete this._dpads[name];
+    isTriggerDown: function(name) {
+        return this._triggers[name].active;
+    },
 
+    /**@
+     * #.defineTriggerGroup
+     * @comp Controls
+     * @sign defineTriggerGroup(string name, obj definition)
+     * @param name - a name for the trigger group
+     * @param definition - an object which defines the inputs for the trigger
+     * 
+     * A trigger group is a set of togglable inputs mapped to the same event.  
+     * If any of the inputs are down, the trigger is considered down.  If all are up, it is considered up.  
+     * When the trigger state changes, a `TriggerInputUp` or `TriggerInputDown` event is fired.
+     * 
+     * The definition object lists the inputs that are mapped to the trigger:
+     * - `keys`: An array of Crafty keycodes
+     * - `mouseButtons`: An array of Crafty mouse button codes
+     * 
+     * @example
+     * ~~~
+     * // Define a trigger group mapped to the left mouse button and the A and B keys.
+     * Crafty.s("Controls").defineTriggerGroup("MyTrigger", {
+     *   mouseButtons: [Crafty.mouseButtons.LEFT],
+     *   keys: [Crafty.keys.A, Crafty.keys.B]
+     * });
+     * ~~~
+     * 
+     * @see Crafty.mouseButtons
+     * @see Crafty.keys
+     * @see Controllable
+     */
+    defineTriggerGroup: function(name, definition) {
+        var inputs;
+        if (Array.isArray(definition)) {
+            inputs = definition;
+        } else {
+            inputs = [];
+            if (definition.mouseButtons) {
+                for (var b in definition.mouseButtons){
+                    inputs.push(new MouseButtonToggleInput(definition.mouseButtons[b]));
+                }
+            }
+            if (definition.keys) {
+                for (var k in definition.keys) {
+                    inputs.push(new KeyboardToggleInput(definition.keys[k]));
+                }
+            }
+        }
+        if (this._triggers[name]) {
+            this._triggers[name].input.destroy();
+        }
+        this._triggers[name] = {
+            name: name,
+            input: new ToggleInputGroup(inputs),
+            downFor: 0,
+            active: false
+        };
+    },
+
+    /**@
+     * #.defineDpad
+     * @comp Controls
+     * @sign defineDpad(string name, obj definition[, obj options])
+     * @param name - a name for the dpad input
+     * @param definition - an object which defines the inputs and directions for the dpad
+     * @param options - a set of options for the dpad
+     * 
+     * A dpad is a type of directional control which maps a set of triggers to a set of directions.
+     * 
+     * The options object has two properties:
+     * - `normalize` *(bool)*: If true, the directional input will be normalized to a unit vector.  Defaults to false.
+     * - `multipleDirectionBehavior` *(string)*: How to behave when multiple directions are active at the same time.  Values are "first", "last", and "all".  Defaults to "all".
+     * 
+     * @example
+     * ~~~
+     * // Define a two-direction dpad, with two keys each bound to the right and left directions
+     * Crafty.s("Controls").defineDpad("MyDpad", {
+     *   {RIGHT_ARROW: 0, LEFT_ARROW: 180, D: 0, A: 180}
+     * });
+     * ~~~
+     * 
+     * @see Crafty.keys
+     * @see Controllable
+     * @see Multiway
+     */
+    defineDpad: function (name, definition, options) {
         var directionDict = {};
         for (var k in definition) {
             var direction = definition[k];
@@ -259,15 +424,14 @@ Crafty.s("Controls", {
             if (!directionDict[direction]) {
                 directionDict[direction] = [];
             }
-            directionDict[direction].push(keyCode);
-            
+            directionDict[direction].push(new KeyboardToggleInput(keyCode));
         }
 
         // Create a useful definition from the input format that tracks state
         var parsedDefinition = {};
         for (var d in directionDict) {
             parsedDefinition[d] = {
-                input: new InputButtonGroup(directionDict[d]),
+                input: new ToggleInputGroup(directionDict[d]),
                 active: false,
                 n: this.parseDirection(d)
             };
@@ -275,13 +439,20 @@ Crafty.s("Controls", {
         if (typeof options === 'undefined') {
             options = {};
         }
-        if (typeof options.normalize === 'undefined'){
+        if (typeof options.normalize === 'undefined') {
             options.normalize = false;
         }
         if (typeof options.multipleDirectionBehavior === 'undefined') {
             options.multipleDirectionBehavior = "all";
         }
         // Create the fully realized dpad object
+          // Store the name/definition pair
+        if (this._dpads[name]) {
+            for (d in this._dpads[name].parsedDefinition) {
+                this._dpads[name].parsedDefinition[d].input.destroy();
+            }
+            delete this._dpads[name];
+        }
         this._dpads[name] = {
             name: name,
             directions: parsedDefinition,
@@ -325,14 +496,29 @@ Crafty.s("Controls", {
         }
     },
 
+    updateTriggerInput: function (trigger) {
+        if (!trigger.active) {
+            if (trigger.input.isActive()) {
+                trigger.downFor = Date.now() - trigger.input.timeDown;
+                trigger.active = true;
+                Crafty.trigger("TriggerInputDown", trigger);
+            }
+        } else {
+            if (!trigger.input.isActive()) {
+                trigger.active = false;
+                Crafty.trigger("TriggerInputUp", trigger);
+                trigger.downFor = 0;
+            }
+        }
+    },
+
     // Has to handle three cases concerning multiple active input groups:
     // - "all": all directions are active
     // - "last": one direction at a time, new directions replace old ones
     // - "first": one direction at a time, new directions are ignored while old ones are still active 
-    updateInput: function (dpad, multiBehavior) {
+    updateDpadInput: function (dpad, multiBehavior) {
         var d, dir;
         var winner;
-
 
         for (d in dpad.directions) {
             dir = dpad.directions[d];
@@ -356,8 +542,8 @@ Crafty.s("Controls", {
                             }
                         }
                     }
-                }      
-            }  
+                }
+            }
         }
         // If we picked a winner, set it active
         if (winner) winner.active = true;
@@ -493,27 +679,131 @@ Crafty.c("Draggable", {
 });
 
 
-// This is undocumented for now, since the interface here might change quickly
-// It provides a simple helper method to bind to direcctional input events of a particular type
-Crafty.c("DirectionalControl", {
+/**@
+ * #Controllable
+ * @category Controls
+ *
+ * Used to bind methods to generalized input events.
+ *
+ * Currently supports the events "DirectionalInput", "TriggerInputDown", and "TriggerInputUp".
+ *
+ */
+Crafty.c("Controllable", {
     init: function () {
-        this._boundFunctions = {};
+        this._inputBindings = {
+            "DirectionalInput": {},
+            "TriggerInputDown": {},
+            "TriggerInputUp": {}
+        };
     },
+    
     events: {
+        // We don't want to use dot notation here for the property names
+        /* jshint -W069 */
         "DirectionalInput": function (e) {
-            if (this._boundFunctions[e.name]) {
-                this._boundFunctions[e.name].call(this, e);
+            if (this._inputBindings["DirectionalInput"][e.name]) {
+                this._inputBindings["DirectionalInput"][e.name].call(this, e);
+            }
+        },
+
+        "TriggerInputDown": function (e) {
+            if (this._inputBindings["TriggerInputDown"][e.name]) {
+                this._inputBindings["TriggerInputDown"][e.name].call(this, e);
+            }
+        },
+
+         "TriggerInputUp": function (e) {
+            if (this._inputBindings["TriggerInputUp"][e.name]) {
+                this._inputBindings["TriggerInputUp"][e.name].call(this, e);
             }
         }
+        /* jshint +W069 */
     },
-    _boundFunctions: null,
-    linkDirectionalInput: function (name, fn) {
-        this._boundFunctions[name] = fn;
+
+    /**@
+     * #.linkInput
+     * @comp Controllable
+     * @sign public this linkInput(string event, string name, function fn)
+     * @param event - the name of the input event
+     * @param name - the name of the input
+     * @param fn - the function that will be called with the event object
+     * 
+     * Binds the function to the particular named event trigger.
+     * 
+     * Currently supports three types of input events.  Each event will have a `name` property.
+     * - `DirectionalInput`: The event will have `x` and `y` properties representing the directional input vector, often normalized to a unit vector.  Triggered when the input changes.
+     * - `TriggerInputDown`: Occurs when the input is triggered.
+     * - `TriggerInputDown`: Occurs when the trigger is released.  The event will have a `downFor` property, indicating how long it had been active.
+     * 
+     * @example
+     * ~~~~
+     * // Create a trigger bound to the `b` key
+     * Crafty.s("Controls").defineTriggerInput("BlushTrigger", {keys:['b']});
+     * // Create a blue square that turns pink when the trigger is pressed
+     * Crafty.e("2D, Canvas, Color, Controllable")
+     *   .attr({x:10, y:10, h:10, w:10}).color("blue")
+     *   .linkInput("TriggerInputDown", "BlushTrigger", function(){this.color('pink');});
+     * ~~~
+     * 
+     * @see .unlinkInput  
+     */
+    linkInput: function(event, name, fn) {
+        this._inputBindings[event][name] = fn;
     },
-    unlinkDirectionalInput: function (name) {
-        delete this._boundFunctions[name];
+
+    /**@
+     * #.unlinkInput
+     * @comp Controllable
+     * @sign public this linkInput(string event, string name)
+     * @param event - the name of the input event
+     * @param name - the name of the input
+     * 
+     * Removes a binding setup by linkInput
+     * 
+     * @see .linkInput
+     */
+    unlinkInput: function(event, name) {
+        delete this._inputBindings[event][name];
+    },
+
+
+    disableControls: false,
+
+    /**@
+     * #.enableControl
+     * @comp Controllable
+     * @sign public this .enableControl()
+     *
+     * Enable the component to listen to input events.
+     *
+     * @example
+     * ~~~
+     * this.enableControl();
+     * ~~~
+     */
+    enableControl: function () {
+        this.disableControls = false;
+        return this;
+    },
+
+    /**@
+     * #.disableControl
+     * @comp Controllable
+     * @sign public this .disableControl()
+     *
+     * Disable the component from responding to input events.
+     *
+     * @example
+     * ~~~
+     * this.disableControl();
+     * ~~~
+     */
+    disableControl: function () {
+        this.disableControls = true;
+        return this;
     }
 });
+
 
 /**@
  * #Multiway
@@ -537,11 +827,10 @@ Crafty.c("Multiway", {
     _speed: null,
     
     init: function () {
-        this.requires("Motion, DirectionalControl");
+        this.requires("Motion, Controllable");
         this._dpadName = "MultiwayDpad" + this[0];
         this._speed = { x: 150, y: 150 };
         this._direction = {x:0, y:0};
-        this.disableControls = false;
     },
 
     remove: function() {
@@ -561,6 +850,8 @@ Crafty.c("Multiway", {
         }
     },
    
+   // Rather than update the velocity directly in response to changing input, track the input direction separately
+   // That makes it easier to enable/disable control
     _updateDirection: function(e) {
         this._direction.x = e.x;
         this._direction.y = e.y;
@@ -602,7 +893,7 @@ Crafty.c("Multiway", {
             keys = speed;
         }
         inputSystem.defineDpad(this._dpadName, keys, options);
-        this.linkDirectionalInput(this._dpadName, this._updateDirection);
+        this.linkInput("DirectionalInput", this._dpadName, this._updateDirection);
 
         return this;
     },
@@ -634,39 +925,7 @@ Crafty.c("Multiway", {
         return this;
     },
 
-    /**@
-     * #.enableControl
-     * @comp Multiway
-     * @sign public this .enableControl()
-     *
-     * Enable the component to listen to input events.
-     *
-     * @example
-     * ~~~
-     * this.enableControl();
-     * ~~~
-     */
-    enableControl: function () {
-        this.disableControls = false;
-        return this;
-    },
-
-    /**@
-     * #.disableControl
-     * @comp Multiway
-     * @sign public this .disableControl()
-     *
-     * Disable the component from responding to input events.
-     *
-     * @example
-     * ~~~
-     * this.disableControl();
-     * ~~~
-     */
-    disableControl: function () {
-        this.disableControls = true;
-        return this;
-    }
+    
 });
 
 
@@ -737,22 +996,18 @@ Crafty.c("Jumper", {
      */
 
     init: function () {
-        this.requires("Supportable, Motion, Keyboard");
-        // don't overwrite methods from Multiway if they exist
-        this.enableControl = this.enableControl || function() { this.disableControls = false; };
-        this.disableControl = this.disableControl || function() { this.disableControls = true; };
+        this.requires("Supportable, Motion, Controllable");
     },
 
+    
+
     remove: function() {
-        this.unbind("KeyDown", this._keydown_jumper);
+        this.unlinkInput("TriggerInputDown", this._jumpTriggerName);
     },
 
     _keydown_jumper: function (e) {
         if (this.disableControls) return;
-
-        if (this._jumpKeys[e.key]) {
-            this.jump();
-        }
+        this.jump();        
     },
 
     /**@
@@ -779,9 +1034,15 @@ Crafty.c("Jumper", {
      * @sign public this .jumper([Number jumpSpeed,] Array jumpKeys)
      * @param jumpSpeed - Vertical jump speed in pixels per second
      * @param jumpKeys - Keys to listen for and make entity jump in response
+     * 
+     * @sign public this .jumper([Number jumpSpeed,] Object jumpInputs)
+     * @param jumpSpeed - Vertical jump speed in pixels per second
+     * @param jumpInputs - An object with two properties, `keys` and `mouseButtons`.
      *
      * Constructor to initialize the power of jump and keys to listen to.
      * Component will listen for key events and make the entity jump appropriately.
+     * 
+     * If second argument is an object, the properties `keys` and `mouseButtons` will be used as triggers.
      *
      * @example
      * ~~~
@@ -797,15 +1058,22 @@ Crafty.c("Jumper", {
         } else {
             jumpKeys = jumpSpeed;
         }
-
-        this._jumpKeys = {};
-        for (var i = 0; i < jumpKeys.length; ++i) {
-            var key = jumpKeys[i];
-            var keyCode = Crafty.keys[key] || key;
-            this._jumpKeys[keyCode] = true;
+        this._jumpTriggerName = "JumpTrigger" + this[0];
+        if (Array.isArray(jumpKeys)) {
+            var keys = [];
+            for (var i = 0; i < jumpKeys.length; ++i) {
+                var key = jumpKeys[i];
+                var keyCode = Crafty.keys[key] || key;
+                keys.push(keyCode);
+            }
+            Crafty.s("Controls")
+                .defineTriggerGroup(this._jumpTriggerName, {keys:keys});
+        } else {
+            Crafty.s("Controls")
+                .defineTriggerGroup(this._jumpTriggerName, jumpKeys);
         }
-
-        this.uniqueBind("KeyDown", this._keydown_jumper);
+        
+        this.linkInput("TriggerInputDown", this._jumpTriggerName, this._keydown_jumper);
 
         return this;
     },
@@ -1095,7 +1363,7 @@ var Crafty = require('../core/core.js'),
 Crafty.extend({
     over: null, //object mouseover, waiting for out
     mouseObjs: 0,
-    mousePos: {},
+    mousePos: {},   
     touchObjs: 0,
 
     /**@
@@ -1234,6 +1502,7 @@ Crafty.extend({
      *
      * @see Crafty.mouseButtons, Crafty.lastEvent, Mouse
      */
+    mouseButtonsDown: {    },
     mouseDispatch: function (e) {
         if (!Crafty.mouseObjs) return;
         Crafty.lastEvent = e;
@@ -1250,8 +1519,17 @@ Crafty.extend({
             e.mouseButton = (e.which < 2) ? Crafty.mouseButtons.LEFT : ((e.which === 2) ? Crafty.mouseButtons.MIDDLE : Crafty.mouseButtons.RIGHT);
         }
 
+        // Set the mouse position based on standard viewport coordinates
         Crafty.mousePos.x = pos.x;
         Crafty.mousePos.y = pos.y;
+
+        // Track button state
+        if (type === "mousedown") {
+            this.mouseButtonsDown[e.mouseButton] = true;
+        }
+        if (type === "mouseup") {
+            delete this.mouseButtonsDown[e.mouseButton];
+        }
 
         closest = Crafty.findPointerEventTargetByComponent("Mouse", e, tar);
         //found closest object to mouse
@@ -1268,7 +1546,7 @@ Crafty.extend({
             } else if (type === "mousemove") {
                 closest.trigger("MouseMove", e);
                 if (this.over !== closest) { //if new mousemove, it is over
-                    if (this.over) {
+                    if (this.over) { 
                         this.over.trigger("MouseOut", e); //if over wasn't null, send mouseout
                         this.over = null;
                     }
@@ -1287,6 +1565,17 @@ Crafty.extend({
                 Crafty.viewport.mouselook('drag', e);
             } else if (type === "mouseup") {
                 Crafty.viewport.mouselook('stop');
+            }
+
+            // If nothing in particular was clicked, the controls system should get fed the event
+            if (type === "mousedown") {
+                Crafty.s("Controls").trigger("MouseDown", e);
+            } else if (type === "mouseup") {
+                Crafty.s("Controls").trigger("MouseUp", e);
+            } else if (type === "dblclick") {
+                Crafty.s("Controls").trigger("DoubleClick", e);
+            } else if (type === "click") {
+                Crafty.s("Controls").trigger("Click", e);
             }
         }
 
