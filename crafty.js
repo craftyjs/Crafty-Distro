@@ -7070,10 +7070,10 @@ Crafty._registerLayerTemplate("Canvas", {
         // Set the camera transforms from the combination of the current viewport parameters and this layers 
         var cameraOptions = this.options;
         if (dirtyViewport && cameraOptions) {
-            var view = Crafty.viewport;
-            var scale = Math.pow(Crafty.viewport._scale, cameraOptions.scaleResponse); 
-            var dx = view._x * scale * cameraOptions.xResponse;
-            var dy = view._y * scale * cameraOptions.yResponse;
+            var view = this._viewportRect();
+            var scale = view._scale; 
+            var dx = -view._x * scale;
+            var dy = -view._y * scale;
             ctx.setTransform(scale, 0, 0, scale, Math.round(dx), Math.round(dy) );
         }
 
@@ -7998,12 +7998,11 @@ Crafty._registerLayerTemplate("DOM", {
     // Called by render when the dirtyViewport flag is set
     _setViewport: function() {
         var style = this._div.style,
-            view = Crafty.viewport;
-        
-        var cameraOptions = this.options;
-        var scale = Math.pow(view._scale, cameraOptions.scaleResponse); 
-        var dx = view._x * scale * cameraOptions.xResponse;
-        var dy = view._y * scale * cameraOptions.yResponse;
+            view = this._viewportRect();
+
+        var scale = view._scale;
+        var dx = -view._x * scale;
+        var dy = -view._y * scale;
 
         style.transform = style[Crafty.support.prefix + "Transform"] = "scale(" + scale + ", " + scale + ")";
         style.left = Math.round(dx) + "px";
@@ -8775,20 +8774,30 @@ Crafty.extend({
             if (layerTemplate[key]) continue;
             layerTemplate[key] = common[key];
         }
+        // A marker to avoid creating temporary objects
+        layerTemplate._viewportRectHolder = {};
     },
 
     _commonLayerProperties: {
         // Based on the camera options, find the Crafty coordinates corresponding to the layer's position in the viewport
         _viewportRect: function () {
             var options = this.options;
-            var rect = {};
+            var rect = this._viewportRectHolder;
             var scale = Math.pow(Crafty.viewport._scale, options.scaleResponse);
             var viewport = Crafty.viewport;
             rect._scale = scale;
             rect._w = viewport._width / scale;
             rect._h = viewport._height / scale;
-            rect._x = (-viewport._x + rect._w / 2) * options.xResponse - rect._w / 2;
-            rect._y = (-viewport._y + rect._h / 2) * options.yResponse - rect._h / 2;
+
+            
+            // This particular transformation is designed such that,
+            // if a combination pan/scale keeps the center of the screen fixed for a layer with x/y response of 1,
+            // then it will also be fixed for layers with other values for x/y response
+            // (note that the second term vanishes when either the response or scale are 1)
+            rect._x = options.xResponse * (-viewport._x) - 
+                0.5 * (options.xResponse - 1) * (1 - 1 / scale) * viewport._width;  
+            rect._y = options.yResponse * (-viewport._y) - 
+                0.5 * (options.yResponse - 1) * (1 - 1 / scale) * viewport._height; 
             return rect;
         },
         // A tracker for whether any elements in this layer need to listen to mouse/touch events
@@ -8838,8 +8847,8 @@ Crafty.extend({
         Crafty.s(name, layerTemplate, options);
         Crafty.c(name, {
             init: function () {
-                this.requires("Renderable");
-
+                this.requires("Renderable"); 
+                
                 // Flag to indicate that the base component doesn't need to attach a layer
                 this._customLayer = true;
                 this.requires(layerTemplate.type);
