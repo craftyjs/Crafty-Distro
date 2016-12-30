@@ -264,6 +264,7 @@ ToggleInputGroup.prototype = {
 /**@
  * #Controls
  * @category Controls
+ * @kind System
  * 
  * A built-in system for linking specific inputs to general types of input events.
  * 
@@ -555,6 +556,7 @@ var Crafty = require('../core/core.js');
 /**@
  * #Draggable
  * @category Controls
+ * @kind Component
  * Enable drag and drop of the entity. Listens to events from `MouseDrag` and moves entity accordingly.
  *
  * @see MouseDrag
@@ -682,6 +684,7 @@ Crafty.c("Draggable", {
 /**@
  * #Controllable
  * @category Controls
+ * @kind Component
  *
  * Used to bind methods to generalized input events.
  *
@@ -808,6 +811,7 @@ Crafty.c("Controllable", {
 /**@
  * #Multiway
  * @category Controls
+ * @kind Component
  *
  * Used to bind keys to directions and have the entity move accordingly.
  *
@@ -932,6 +936,7 @@ Crafty.c("Multiway", {
 /**@
  * #Jumper
  * @category Controls
+ * @kind Component
  * @trigger CheckJumping - When entity is about to jump. This event is triggered with the object the entity is about to jump from (if it exists). Third parties can respond to this event and enable the entity to jump.
  *
  * Make the entity jump in response to key events.
@@ -1100,6 +1105,7 @@ Crafty.c("Jumper", {
 /**@
  * #Fourway
  * @category Controls
+ * @kind Component
  *
  * Move an entity in four directions by using the
  * `Up Arrow`, `Left Arrow`, `Down Arrow`, `Right Arrow` keys or `W`, `A`, `S`, `D`.
@@ -1146,6 +1152,7 @@ Crafty.c("Fourway", {
 /**@
  * #Twoway
  * @category Controls
+ * @kind Component
  *
  * Move an entity left or right using the `Left Arrow`, `Right Arrow` keys or `D` and `A`
  * and make it jump using `Up Arrow` or `W`.
@@ -1203,6 +1210,7 @@ Crafty.extend({
     /**@
      * #Crafty.device
      * @category Misc
+     * @kind Property
      *
      * Methods relating to devices such as tablets or phones
      */
@@ -1281,6 +1289,8 @@ Crafty.extend({
         /**@
          * #Crafty.device.deviceOrientation
          * @comp Crafty.device
+         * @kind Method
+         * 
          * @sign public Crafty.device.deviceOrientation(Function callback)
          * @param callback - Callback method executed once as soon as device orientation is change
          *
@@ -1320,6 +1330,8 @@ Crafty.extend({
         /**@
          * #Crafty.device.deviceMotion
          * @comp Crafty.device
+         * @kind Method
+         * 
          * @sign public Crafty.device.deviceMotion(Function callback)
          * @param callback - Callback method executed once as soon as device motion is change
          *
@@ -1369,6 +1381,7 @@ Crafty.extend({
     /**@
      * #Crafty.lastEvent
      * @category Input
+     * @kind Property
      * Check which mouse event occured most recently (useful for determining mouse position in every frame).
      *
      * The native [`MouseEvent`](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent) is augmented with additional properties.
@@ -1393,6 +1406,7 @@ Crafty.extend({
     /**@
      * #Crafty.keydown
      * @category Input
+     * @kind Property
      * Check which keys (referred by `Crafty.keys` key codes) are currently down.
      *
      * @example
@@ -1407,6 +1421,7 @@ Crafty.extend({
     /**@
      * #Crafty.selected
      * @category Input
+     * @kind Property
      * @trigger CraftyFocus - is triggered when Crafty's stage gets selected
      * @trigger CraftyBlur - is triggered when Crafty's stage is no longer selected
      *
@@ -1437,6 +1452,7 @@ Crafty.extend({
     /**@
      * #Crafty.multitouch
      * @category Input
+     * @kind Method
      * @sign public this .multitouch(Boolean bool)
      * @param bool - Turns multitouch on and off.  The initial state is off (false).
      *
@@ -1491,6 +1507,8 @@ Crafty.extend({
     /**@
      * #Crafty.mouseDispatch
      * @category Input
+     * @private
+     * @kind Method
      *
      * Internal method which dispatches mouse events received by Crafty.
      *
@@ -1589,6 +1607,8 @@ Crafty.extend({
     /**@
      * #Crafty.touchDispatch
      * @category Input
+     * @kind Method
+     * @private
      *
      * Internal method which dispatches touch events received by Crafty (crafty.stage.elem).
      * The touch events get dispatched to the closest entity to the source of the event (if available).
@@ -1775,6 +1795,8 @@ Crafty.extend({
     /**@
      * #Crafty.findPointerEventTargetByComponent
      * @category Input
+     * @kind Method
+     * @private
      * 
      * @sign public this .findPointerEventTargetByComponent(String comp, Event e[, Object target])
      * Finds closest entity with certain component at a given event.
@@ -1861,6 +1883,8 @@ Crafty.extend({
     /**@
      * #Crafty.mouseWheelDispatch
      * @category Input
+     * @kind Method
+     * @private
      *
      * Internal method which dispatches mouse wheel events received by Crafty.
      * @trigger MouseWheelScroll - is triggered when mouse is scrolled on stage - { direction: +1 | -1} - Scroll direction (up | down)
@@ -1938,6 +1962,8 @@ Crafty.extend({
     /**@
      * #Crafty.keyboardDispatch
      * @category Input
+     * @kind Method
+     * @private
      *
      * Internal method which dispatches keyboard events received by Crafty.
      * @trigger KeyDown - is triggered for each entity when the DOM 'keydown' event is triggered. - { key: `Crafty.keys` keyCode (Number), originalEvent: original KeyboardEvent } - Crafty's KeyboardEvent
@@ -2065,6 +2091,7 @@ Crafty._preBind("CraftyStop", function () {
 /**@
  * #Mouse
  * @category Input
+ * @kind Component
  *
  * Provides the entity with mouse related events.
  *
@@ -2130,6 +2157,7 @@ Crafty.c("Mouse", {
 /**@
  * #Touch
  * @category Input
+ * @kind Component
  * Provides the entity with touch related events
  * @trigger TouchStart - when entity is touched - TouchPoint
  * @trigger TouchMove - when finger is moved over entity - TouchPoint
@@ -2176,6 +2204,8 @@ Crafty.c("Touch", {
 /**@
  * #AreaMap
  * @category Input
+ * @kind Component
+ * 
  * Component used by Mouse and Touch.
  * Can be added to other entities for use with the Crafty.findClosestEntityByComponent method.
  * 
@@ -2207,6 +2237,7 @@ Crafty.c("AreaMap", {
     /**@
      * #.areaMap
      * @comp AreaMap
+     * @kind Method
      *
      * @trigger NewAreaMap - when a new areaMap is assigned - Crafty.polygon
      *
@@ -2263,6 +2294,8 @@ Crafty.c("AreaMap", {
 /**@
  * #Button
  * @category Input
+ * @kind Component
+ * 
  * Provides the entity with touch or mouse functionality, depending on whether this is a pc 
  * or mobile device, and also on multitouch configuration.
  *
@@ -2280,6 +2313,8 @@ Crafty.c("Button", {
 /**@
  * #MouseDrag
  * @category Input
+ * @kind Component
+ * 
  * Provides the entity with drag and drop mouse events.
  * @trigger Dragging - is triggered each frame the entity is being dragged - MouseEvent
  * @trigger StartDrag - is triggered when dragging begins - MouseEvent
@@ -2321,6 +2356,8 @@ Crafty.c("MouseDrag", {
     /**@
      * #.startDrag
      * @comp MouseDrag
+     * @kind Method
+     * 
      * @sign public this .startDrag(void)
      *
      * Make the entity produce drag events, essentially making the entity follow the mouse positions.
@@ -2342,6 +2379,8 @@ Crafty.c("MouseDrag", {
     /**@
      * #.stopDrag
      * @comp MouseDrag
+     * @kind Method
+     * 
      * @sign public this .stopDrag(void)
      *
      * Stop the entity from producing drag events, essentially reproducing the drop.
@@ -2364,6 +2403,7 @@ Crafty.c("MouseDrag", {
 /**@
  * #Keyboard
  * @category Input
+ * @kind Component
  *
  * Provides entity with keyboard events.
  * @trigger KeyDown - is triggered for each entity when the DOM 'keydown' event is triggered. - { key: `Crafty.keys` keyCode (Number), originalEvent: original KeyboardEvent } - Crafty's KeyboardEvent
@@ -2397,6 +2437,8 @@ Crafty.c("Keyboard", {
     /**@
      * #.isDown
      * @comp Keyboard
+     * @kind Method
+     * 
      * @sign public Boolean isDown(String keyName)
      * @param keyName - Name of the key to check. See `Crafty.keys`.
      * @sign public Boolean isDown(Number keyCode)
@@ -2430,6 +2472,8 @@ Crafty.extend({
     /**@
      * #Crafty.keys
      * @category Input
+     * @kind Property
+     * 
      * Object of key names and the corresponding Unicode key code.
      *
      * ~~~
@@ -2624,6 +2668,8 @@ Crafty.extend({
     /**@
      * #Crafty.mouseButtons
      * @category Input
+     * @kind Property
+     * 
      * An object mapping mouseButton names to the corresponding button ID.
      * In all mouseEvents, we add the `e.mouseButton` property with a value normalized to match e.button of modern webkit browsers:
      *
@@ -2646,6 +2692,7 @@ var Crafty = require('../core/core.js');
 /**@
  * #Crafty.easing
  * @category Animation
+ * @kind Class
  * 
  *
  * An object for tracking transitions.  Typically used indirectly through "SpriteAnimation", "Tween", or viewport animations.
@@ -2767,6 +2814,7 @@ var version = require('./version');
 /**@
  * #Crafty
  * @category Core
+ * @kind CoreObject
  *
  * `Crafty` is both an object, and a function for selecting entities.
  * Its many methods and properties are discussed individually.
@@ -2841,6 +2889,8 @@ initState();
 /**@
  * #Crafty Core
  * @category Core
+ * @kind CoreObject
+ * 
  * @trigger NewEntityName - After setting new name for entity - String - entity name
  * @trigger NewComponent - when a new component is added to the entity - String - Component
  * @trigger RemoveComponent - when a component is removed from the entity - String - Component
@@ -2954,6 +3004,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.setName
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public this .setName(String name)
      * @param name - A human readable name for debugging purposes.
      *
@@ -2976,6 +3028,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.getName
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public this .getName(String name)
      * @returns A human readable name for debugging purposes.
      *
@@ -2996,6 +3050,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.addComponent
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public this .addComponent(String componentList)
      * @param componentList - A string of components to add separated by a comma `,`
      * @sign public this .addComponent(String Component1[, .., String ComponentN])
@@ -3067,6 +3123,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.toggleComponent
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public this .toggleComponent(String ComponentList)
      * @param ComponentList - A string of components to add or remove separated by a comma `,`
      * @sign public this .toggleComponent(String Component1[, .., String componentN])
@@ -3128,6 +3186,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.requires
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public this .requires(String componentList)
      * @param componentList - List of components that must be added
      *
@@ -3149,6 +3209,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.removeComponent
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public this .removeComponent(String Component[, soft])
      * @param component - Component to remove
      * @param soft - Whether to soft remove it (defaults to `true`)
@@ -3191,6 +3253,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.getId
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public Number .getId(void)
      * @returns the ID of this entity.
      *
@@ -3211,6 +3275,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.has
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public Boolean .has(String component)
      * @param component - The name of the component to check
      * @returns `true` or `false` depending on if the
@@ -3227,6 +3293,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.attr
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @trigger Change - when properties change - {key: value}
      *
      * @sign public this .attr(String property, Any value[, Boolean silent[, Boolean recursive]])
@@ -3386,6 +3454,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.toArray
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public this .toArray(void)
      *
      * This method will simply return the found entities as an array of ids.  To get an array of the actual entities, use `get()`.
@@ -3398,6 +3468,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
     * #.timeout
     * @comp Crafty Core
+    * @kind Method
+
     * @sign public this .timeout(Function callback, Number delay)
     * @param callback - Method to execute after given amount of milliseconds
     * @param delay - Amount of milliseconds to execute the method
@@ -3427,6 +3499,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.bind
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public this .bind(String eventName, Function callback)
      * @param eventName - Name of the event to bind to
      * @param callback - Method to execute when the event is triggered
@@ -3478,6 +3552,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.uniqueBind
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public Number .uniqueBind(String eventName, Function callback)
      * @param eventName - Name of the event to bind to
      * @param callback - Method to execute upon event triggered
@@ -3496,6 +3572,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.one
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public Number one(String eventName, Function callback)
      * @param eventName - Name of the event to bind to
      * @param callback - Method to execute upon event triggered
@@ -3518,6 +3596,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.unbind
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public this .unbind(String eventName[, Function callback])
      * @param eventName - Name of the event to unbind
      * @param callback - Function to unbind
@@ -3544,6 +3624,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.trigger
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public this .trigger(String eventName[, Object data])
      * @param eventName - Event to trigger
      * @param data - Arbitrary data that will be passed into every callback as an argument
@@ -3577,6 +3659,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.each
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public this .each(Function method)
      * @param method - Method to call on each iteration
      *
@@ -3610,6 +3694,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.get
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public Array .get()
      * @returns An array of entities corresponding to the active selector
      *
@@ -3657,6 +3743,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.clone
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public Entity .clone(void)
      * @returns Cloned entity of the current entity
      *
@@ -3685,6 +3773,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.setter
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public this .setter(String property, Function callback)
      * @param property - Property to watch for modification
      * @param callback - Method to execute if the property is modified
@@ -3702,6 +3792,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.defineField
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public this .defineField(String property, Function getCallback, Function setCallback)
      * @param property - Property name to assign getter & setter to
      * @param getCallback - Method to execute if the property is accessed
@@ -3734,6 +3826,8 @@ Crafty.fn = Crafty.prototype = {
     /**@
      * #.destroy
      * @comp Crafty Core
+     * @kind Method
+     * 
      * @sign public this .destroy(void)
      * Will remove all event listeners and delete all properties as well as removing from the stage
      */
@@ -3760,6 +3854,8 @@ Crafty.fn.init.prototype = Crafty.fn;
 /**@
  * #Crafty.extend
  * @category Core
+ * @kind Method
+ * 
  * @sign public this Crafty.extend(Object obj)
  * @param obj - An object whose fields will be copied onto Crafty.  This is a shallow copy.
  *
@@ -3919,6 +4015,8 @@ Crafty.extend({
     /**@
      * #Crafty.init
      * @category Core
+     * @kind Method
+     * 
      * @trigger Load - Just after the viewport is initialised. Before the EnterFrame loops is started
      * @sign public this Crafty.init([Number width, Number height, String stage_elem])
      * @sign public this Crafty.init([Number width, Number height, HTMLElement stage_elem])
@@ -3972,6 +4070,8 @@ Crafty.extend({
     /**@
      * #Crafty.getVersion
      * @category Core
+     * @kind Method
+     * 
      * @sign public String Crafty.getVersion()
      * @returns Current version of Crafty as a string
      *
@@ -3989,6 +4089,8 @@ Crafty.extend({
     /**@
      * #Crafty.stop
      * @category Core
+     * @kind Method
+     * 
      * @trigger CraftyStop - when the game is stopped  - {bool clearState}
      * @sign public this Crafty.stop([bool clearState])
      * @param clearState - if true the stage and all game state is cleared.
@@ -4031,6 +4133,8 @@ Crafty.extend({
     /**@
      * #Crafty.pause
      * @category Core
+     * @kind Method
+     * 
      * @trigger Pause - when the game is paused
      * @trigger Unpause - when the game is unpaused
      * @sign public this Crafty.pause(void)
@@ -4069,6 +4173,8 @@ Crafty.extend({
     /**@
      * #Crafty.isPaused
      * @category Core
+     * @kind Method
+     * 
      * @sign public Boolean Crafty.isPaused()
      * @returns Whether the game is currently paused.
      *
@@ -4084,6 +4190,8 @@ Crafty.extend({
     /**@
      * #Crafty.timer
      * @category Game Loop
+     * @kind CoreObject
+     * 
      * Handles game ticks
      */
     timer: (function () {
@@ -4166,6 +4274,7 @@ Crafty.extend({
             /**@
              * #Crafty.timer.steptype
              * @comp Crafty.timer
+             * @kind Method
              *
              * @trigger NewSteptype - when the current steptype changes - { mode, maxTimeStep } - New steptype
              *
@@ -4210,6 +4319,8 @@ Crafty.extend({
             /**@
              * #Crafty.timer.step
              * @comp Crafty.timer
+             * @kind Method
+             * 
              * @sign public void Crafty.timer.step()
              * @trigger EnterFrame - Triggered on each frame.  Passes the frame number, and the amount of time since the last frame.  If the time is greater than maxTimestep, that will be used instead.  (The default value of maxTimestep is 50 ms.) - { frame: Number, dt:Number }
              * @trigger ExitFrame - Triggered after each frame.  Passes the frame number, and the amount of time since the last frame.  If the time is greater than maxTimestep, that will be used instead.  (The default value of maxTimestep is 50 ms.) - { frame: Number, dt:Number }
@@ -4301,6 +4412,8 @@ Crafty.extend({
             /**@
              * #Crafty.timer.FPS
              * @comp Crafty.timer
+             * @kind Method
+             * 
              * @sign public void Crafty.timer.FPS()
              * Returns the target frames per second. This is not an actual frame rate.
              * @sign public void Crafty.timer.FPS(Number value)
@@ -4325,6 +4438,8 @@ Crafty.extend({
             /**@
              * #Crafty.timer.simulateFrames
              * @comp Crafty.timer
+             * @kind Method
+             * 
              * @sign public this Crafty.timer.simulateFrames(Number frames[, Number timestep])
              * Advances the game state by a number of frames and draws the resulting stage at the end. Useful for tests and debugging.
              * @param frames - number of frames to simulate
@@ -4352,6 +4467,8 @@ Crafty.extend({
     /**@
      * #Crafty.e
      * @category Core
+     * @kind Method
+     * 
      * @trigger NewEntity - When the entity is created and all components are added - { id:Number }
      * @sign public Entity Crafty.e(String componentList)
      * @param componentList - List of components to assign to new entity
@@ -4392,6 +4509,8 @@ Crafty.extend({
     /**@
      * #Crafty.c
      * @category Core
+     * @kind Method
+     * 
      * @sign public void Crafty.c(String name, Object component)
      * @param name - Name of the component
      * @param component - Object with the component's properties and methods
@@ -4468,6 +4587,8 @@ Crafty.extend({
     /**@
      * #Crafty.trigger
      * @category Core, Events
+     * @kind Method
+     * 
      * @sign public void Crafty.trigger(String eventName, * data)
      * @param eventName - Name of the event to trigger
      * @param data - Arbitrary data to pass into the callback as an argument
@@ -4496,6 +4617,8 @@ Crafty.extend({
     /**@
      * #Crafty.bind
      * @category Core, Events
+     * @kind Method
+     * 
      * @sign public Function bind(String eventName, Function callback)
      * @param eventName - Name of the event to bind to
      * @param callback - Method to execute upon event triggered
@@ -4517,6 +4640,8 @@ Crafty.extend({
     /**@
      * #Crafty.uniqueBind
      * @category Core, Events
+     * @kind Method
+     * 
      * @sign public Function uniqueBind(String eventName, Function callback)
      * @param eventName - Name of the event to bind to
      * @param callback - Method to execute upon event triggered
@@ -4534,6 +4659,8 @@ Crafty.extend({
     /**@
      * #Crafty.one
      * @category Core, Events
+     * @kind Method
+     * 
      * @sign public Function one(String eventName, Function callback)
      * @param eventName - Name of the event to bind to
      * @param callback - Method to execute upon event triggered
@@ -4555,6 +4682,8 @@ Crafty.extend({
     /**@
      * #Crafty.unbind
      * @category Core, Events
+     * @kind Method
+     * 
      * @sign public Boolean Crafty.unbind(String eventName, Function callback)
      * @param eventName - Name of the event to unbind
      * @param callback - Function to unbind
@@ -4586,6 +4715,8 @@ Crafty.extend({
     /**@
      * #Crafty.frame
      * @category Core
+     * @kind Method
+     * 
      * @sign public Number Crafty.frame(void)
      * @returns the current frame number
      */
@@ -4612,6 +4743,8 @@ Crafty.extend({
     /**@
      * #Crafty.settings
      * @category Core
+     * @kind CoreObject
+     * 
      * Modify the inner workings of Crafty through the settings.
      */
     settings: (function () {
@@ -4622,6 +4755,8 @@ Crafty.extend({
             /**@
              * #Crafty.settings.register
              * @comp Crafty.settings
+             * @kind Method
+             * 
              * @sign public void Crafty.settings.register(String settingName, Function callback)
              * @param settingName - Name of the setting
              * @param callback - Function to execute when use modifies setting
@@ -4637,6 +4772,8 @@ Crafty.extend({
             /**@
              * #Crafty.settings.modify
              * @comp Crafty.settings
+             * @kind Method
+             * 
              * @sign public void Crafty.settings.modify(String settingName, * value)
              * @param settingName - Name of the setting
              * @param value - Value to set the setting to
@@ -4654,6 +4791,8 @@ Crafty.extend({
             /**@
              * #Crafty.settings.get
              * @comp Crafty.settings
+             * @kind Method
+             * 
              * @sign public * Crafty.settings.get(String settingName)
              * @param settingName - Name of the setting
              * @returns Current value of the setting
@@ -4671,6 +4810,8 @@ Crafty.extend({
     /**@
      * #Crafty.defineField
      * @category Core
+     * @kind Method
+     * 
      * @sign public void Crafty.defineField(Object object, String property, Function getCallback, Function setCallback)
      * @param object - Object to define property on
      * @param property - Property name to assign getter & setter to
@@ -4725,6 +4866,8 @@ function UID() {
 /**@
  * #Crafty.clone
  * @category Core
+ * @kind Method
+ * 
  * @sign public Object .clone(Object obj)
  * @param obj - an object
  *
@@ -4783,7 +4926,6 @@ if (typeof define === 'function') { // AMD
 }
 
 module.exports = Crafty;
-
 },{"./version":17}],9:[function(require,module,exports){
 (function (process){
 var Crafty = require('../core/core.js');
@@ -4792,6 +4934,8 @@ var document = (typeof window !== "undefined") && window.document;
 /**@
  * #Crafty.support
  * @category Misc, Core
+ * @kind CoreObject
+ * 
  * Determines feature support for what Crafty can do.
  */
 (function testSupport() {
@@ -4807,6 +4951,7 @@ var document = (typeof window !== "undefined") && window.document;
     /**@
      * #Crafty.mobile
      * @comp Crafty.device
+     * @kind Property
      *
      * Determines if Crafty is running on mobile device.
      *
@@ -4824,6 +4969,8 @@ var document = (typeof window !== "undefined") && window.document;
     /**@
      * #Crafty.support.defineProperty
      * @comp Crafty.support
+     * @kind Property
+     * 
      * Is `Object.defineProperty` supported?
      */
     support.defineProperty = (function () {
@@ -4839,6 +4986,8 @@ var document = (typeof window !== "undefined") && window.document;
     /**@
      * #Crafty.support.audio
      * @comp Crafty.support
+     * @kind Property
+     * 
      * Is HTML5 `Audio` supported?
      */
     support.audio = (typeof window !== "undefined") && ('canPlayType' in document.createElement('audio'));
@@ -4846,6 +4995,8 @@ var document = (typeof window !== "undefined") && window.document;
     /**@
      * #Crafty.support.prefix
      * @comp Crafty.support
+     * @kind Property
+     * 
      * Returns the browser specific prefix (`Moz`, `O`, `ms`, `webkit`, `node`).
      */
     support.prefix = (match[1] || match[0]);
@@ -4859,6 +5010,8 @@ var document = (typeof window !== "undefined") && window.document;
         /**@
          * #Crafty.support.versionName
          * @comp Crafty.support
+         * @kind Property
+         * 
          * Version of the browser
          */
         support.versionName = match[2];
@@ -4866,6 +5019,8 @@ var document = (typeof window !== "undefined") && window.document;
         /**@
          * #Crafty.support.version
          * @comp Crafty.support
+         * @kind Property
+         * 
          * Version number of the browser as an Integer (first number)
          */
         support.version = +(match[2].split("."))[0];
@@ -4874,6 +5029,8 @@ var document = (typeof window !== "undefined") && window.document;
     /**@
      * #Crafty.support.canvas
      * @comp Crafty.support
+     * @kind Property
+     * 
      * Is the `canvas` element supported?
      */
     support.canvas = (typeof window !== "undefined") && ('getContext' in document.createElement("canvas"));
@@ -4881,6 +5038,8 @@ var document = (typeof window !== "undefined") && window.document;
     /**@
      * #Crafty.support.webgl
      * @comp Crafty.support
+     * @kind Property
+     * 
      * Is WebGL supported on the canvas element?
      */
     if (support.canvas) {
@@ -4899,6 +5058,8 @@ var document = (typeof window !== "undefined") && window.document;
     /**@
      * #Crafty.support.css3dtransform
      * @comp Crafty.support
+     * @kind Property
+     * 
      * Is css3Dtransform supported by browser.
      */
     support.css3dtransform = (typeof window !== "undefined") && ((typeof document.createElement("div").style.Perspective !== "undefined") || (typeof document.createElement("div").style[support.prefix + "Perspective"] !== "undefined"));
@@ -4906,6 +5067,7 @@ var document = (typeof window !== "undefined") && window.document;
     /**@
      * #Crafty.support.deviceorientation
      * @comp Crafty.support
+     * @kind Property
      * Is deviceorientation event supported by browser.
      */
     support.deviceorientation = (typeof window !== "undefined") && ((typeof window.DeviceOrientationEvent !== "undefined") || (typeof window.OrientationEvent !== "undefined"));
@@ -4913,6 +5075,8 @@ var document = (typeof window !== "undefined") && window.document;
     /**@
      * #Crafty.support.devicemotion
      * @comp Crafty.support
+     * @kind Property
+     * 
      * Is devicemotion event supported by browser.
      */
     support.devicemotion = (typeof window !== "undefined") && (typeof window.DeviceMotionEvent !== "undefined");
@@ -4925,6 +5089,8 @@ module.exports = {
     /**@
      * #Crafty.addEvent
      * @category Events, Misc
+     * @kind Method
+     * 
      * @sign public this Crafty.addEvent(Object ctx, HTMLElement obj, String event, Function callback)
      * @param ctx - Context of the callback or the value of `this`
      * @param obj - Element to add the DOM event to
@@ -4982,6 +5148,8 @@ module.exports = {
     /**@
      * #Crafty.removeEvent
      * @category Events, Misc
+     * @kind Method
+     * 
      * @sign public this Crafty.removeEvent(Object ctx, HTMLElement obj, String event, Function callback)
      * @param ctx - Context of the callback or the value of `this`
      * @param obj - Element the event is on
@@ -5014,6 +5182,8 @@ module.exports = {
     /**@
      * #Crafty.background
      * @category Graphics, Stage
+     * @kind Method
+     * 
      * @sign public void Crafty.background(String style)
      * @param style - Modify the background with a color or image
      *
@@ -5041,6 +5211,8 @@ module.exports = {
     /**@
      * #Crafty.assets
      * @category Assets
+     * @kind Property
+     * 
      * An object containing every asset used in the current Crafty game.
      * The key is the URL and the value is the `Audio` or `Image` object.
      *
@@ -5057,6 +5229,8 @@ module.exports = {
     /**@
      * #Crafty.paths
      * @category Assets
+     * @kind Method
+     * 
      * @sign public void Crafty.paths([Object paths])
      * @param paths - Object containing paths for audio and images folders
      *
@@ -5101,6 +5275,8 @@ module.exports = {
     /**@
      * #Crafty.asset
      * @category Assets
+     * @kind Method
+     * 
      * @trigger NewAsset - After setting new asset - Object - key and value of new added asset.
      * @sign public void Crafty.asset(String key, Object asset)
      * @param key - asset url.
@@ -5139,6 +5315,7 @@ module.exports = {
     /**@
      * #Crafty.image_whitelist
      * @category Assets
+     * @kind Method
      *
      * A list of file extensions that can be loaded as images by Crafty.load
      *
@@ -5181,6 +5358,8 @@ module.exports = {
     /**@
      * #Crafty.load
      * @category Assets
+     * @kind Method
+     * 
      * @sign public void Crafty.load(Object assets, Function onLoad[, Function onProgress[, Function onError]])
      * @param assets - Object JSON formatted (or JSON string), with assets to load (accepts sounds, images and sprites)
      * @param onLoad - Callback when the assets are loaded
@@ -5396,6 +5575,7 @@ module.exports = {
     /**@
      * #Crafty.removeAssets
      * @category Assets
+     * @kind Method
      *
      * @sign public void Crafty.removeAssets(Object assets)
      * @param data - Object JSON formatted (or JSON string), with assets to remove (accepts sounds, images and sprites)
@@ -5493,6 +5673,8 @@ var Crafty = require('../core/core.js');
 /**@
  * #Model
  * @category Model
+ * @kind Component
+ * 
  * Model is a component that offers new features for isolating business
  * logic in your application. It offers default values, dirty values,
  * and deep events on your data.
@@ -5565,6 +5747,8 @@ module.exports = {
   /**@
    * #.is_dirty
    * @comp Model
+   * @kind Method
+   * 
    * Helps determine when data or the entire component is "dirty" or has changed attributes.
    *
    * @example
@@ -5601,6 +5785,8 @@ module.exports = {
     /**@
      * #Crafty.scene
      * @category Scenes, Stage
+     * @kind Method
+     * 
      * @trigger SceneChange - just before a new scene is initialized - { oldScene:String, newScene:String }
      * @trigger SceneDestroy - just before the current scene is destroyed - { newScene:String  }
      *
@@ -5687,6 +5873,7 @@ module.exports = {
     /* 
      * #Crafty.defineScene
      * @category Scenes, Stage
+     * @kind Method
      *
      * @sign public void Crafty.enterScene(String name[, Data])
      * @param name - Name of the scene to run.
@@ -5710,6 +5897,8 @@ module.exports = {
     /* 
      * #Crafty.enterScene
      * @category Scenes, Stage
+     * @kind Method
+     * 
      * @trigger SceneChange - just before a new scene is initialized - { oldScene:String, newScene:String }
      * @trigger SceneDestroy - just before the current scene is destroyed - { newScene:String  }
      *
@@ -5774,6 +5963,8 @@ try {
 /**@
  * #Storage
  * @category Utilities
+ * @kind Component
+ * 
  * Very simple way to get and set values, which will persist when the browser is closed also.
  * Storage wraps around HTML5 Web Storage, which is well-supported across browsers and platforms, but limited to 5MB total storage per domain.
  * Storage is also available for node, which is permanently persisted to the `./localStorage` folder - take care of removing entries. Note that multiple Crafty instances use the same storage, so care has to be taken not to overwrite existing entries.
@@ -5781,6 +5972,8 @@ try {
 /**@
  * #Crafty.storage
  * @comp Storage
+ * @kind Method
+ * 
  * @sign Crafty.storage(String key)
  * @param key - a key you would like to get from the storage. 
  * @returns The stored value, or `null` if none saved under that key exists
@@ -5855,6 +6048,8 @@ var store = function(key, value) {
 /**@
  * #Crafty.storage.remove
  * @comp Storage
+ * @kind Method
+ * 
  * @sign Crafty.storage.remove(String key)
  * @param key - a key where you will like to delete the value of.
  *
@@ -5889,6 +6084,7 @@ Crafty._systems = {};
 /**@
  * #Crafty.s
  * @category Core
+ * @kind Method
  *
  * Registers a system.
  *
@@ -6056,6 +6252,7 @@ Crafty.CraftySystem.prototype = {
 /**@
  * #Delay
  * @category Utilities
+ * @kind Component
  *
  * A component for triggering functions after a given amount of time.
  *
@@ -6095,6 +6292,7 @@ module.exports = {
     /**@
      * #.delay
      * @comp Delay
+     * @kind Method
      * @sign public this.delay(Function callback, Number delay[, Number repeat[, Function callbackOff]])
      * @param callback - Method to execute after given amount of milliseconds. If reference of a
      * method is passed, there's possibility to cancel the delay.
@@ -6147,6 +6345,8 @@ module.exports = {
     /**@
      * #.cancelDelay
      * @comp Delay
+     * @kind Method
+     * 
      * @sign public this.cancelDelay(Function callback)
      * @param callback - Method reference passed to .delay
      *
@@ -6178,6 +6378,8 @@ module.exports = {
     /**@
      * #.pauseDelays
      * @comp Delay
+     * @kind Method
+     * 
      * @sign public this.pauseDelays()
      *
      * The pauseDelays method will pause all delays of this
@@ -6202,6 +6404,8 @@ module.exports = {
     /**@
      * #.resumeDelays
      * @comp Delay
+     * @kind Method
+     * 
      * @sign public this.resumeDelays()
      *
      * The resumeDelays method will resume earlier paused delays for this
@@ -6236,6 +6440,8 @@ var Crafty = require('../core/core.js');
 /**@
  * #Tween
  * @category Animation
+ * @kind Component
+ * 
  * @trigger TweenEnd - when a tween finishes - String - property
  *
  * Component to animate the change in 2D properties over time.
@@ -6275,6 +6481,8 @@ module.exports = {
   /**@
   * #.tween
   * @comp Tween
+  * @kind Method
+  *
   * @sign public this .tween(Object properties, Number duration[, String|function easingFn])
   * @param properties - Object of numeric properties and what they should animate to
   * @param duration - Duration to animate the properties over, in milliseconds.
@@ -6330,6 +6538,8 @@ module.exports = {
   /**@
   * #.cancelTween
   * @comp Tween
+  * @kind Method
+  *
   * @sign public this .cancelTween(String target)
   * @param target - The property to cancel
   *
@@ -6355,6 +6565,8 @@ module.exports = {
   /**@
   * #.pauseTweens
   * @comp Tween
+  * @kind Method
+  *
   * @sign public this .pauseTweens()
   *
   * Pauses all tweens associated with the entity
@@ -6364,8 +6576,10 @@ module.exports = {
   },
 
   /**@
-  * #.resumeTWeens
+  * #.resumeTweens
   * @comp Tween
+  * @kind Method
+  *
   * @sign public this .resumeTweens()
   *
   * Resumes all paused tweens associated with the entity
@@ -6402,6 +6616,8 @@ Crafty.c('Tween', require('./core/tween'));
 require('./core/systems');
 
 require('./spatial/2d');
+require('./spatial/motion');
+require('./spatial/platform');
 require('./spatial/collision');
 require('./spatial/spatial-grid');
 require('./spatial/rect-manager');
@@ -6448,13 +6664,15 @@ if(window) window.Crafty = Crafty;
 
 module.exports = Crafty;
 
-},{"./controls/controls":3,"./controls/controls-system":2,"./controls/device":4,"./controls/inputs":5,"./controls/keycodes":6,"./core/animation":7,"./core/core":8,"./core/extensions":9,"./core/loader":10,"./core/model":11,"./core/scenes":12,"./core/storage":13,"./core/systems":14,"./core/time":15,"./core/tween":16,"./debug/debug-layer":19,"./debug/logging":20,"./graphics/canvas":22,"./graphics/canvas-layer":21,"./graphics/color":23,"./graphics/dom":26,"./graphics/dom-helper":24,"./graphics/dom-layer":25,"./graphics/drawing":27,"./graphics/gl-textures":28,"./graphics/html":29,"./graphics/image":30,"./graphics/layers":31,"./graphics/particles":32,"./graphics/renderable":33,"./graphics/sprite":35,"./graphics/sprite-animation":34,"./graphics/text":36,"./graphics/viewport":37,"./graphics/webgl":39,"./graphics/webgl-layer":38,"./isometric/diamond-iso":40,"./isometric/isometric":41,"./sound/sound":42,"./spatial/2d":43,"./spatial/collision":44,"./spatial/math":45,"./spatial/rect-manager":46,"./spatial/spatial-grid":47}],19:[function(require,module,exports){
+},{"./controls/controls":3,"./controls/controls-system":2,"./controls/device":4,"./controls/inputs":5,"./controls/keycodes":6,"./core/animation":7,"./core/core":8,"./core/extensions":9,"./core/loader":10,"./core/model":11,"./core/scenes":12,"./core/storage":13,"./core/systems":14,"./core/time":15,"./core/tween":16,"./debug/debug-layer":19,"./debug/logging":20,"./graphics/canvas":22,"./graphics/canvas-layer":21,"./graphics/color":23,"./graphics/dom":26,"./graphics/dom-helper":24,"./graphics/dom-layer":25,"./graphics/drawing":27,"./graphics/gl-textures":28,"./graphics/html":29,"./graphics/image":30,"./graphics/layers":31,"./graphics/particles":32,"./graphics/renderable":33,"./graphics/sprite":35,"./graphics/sprite-animation":34,"./graphics/text":36,"./graphics/viewport":37,"./graphics/webgl":39,"./graphics/webgl-layer":38,"./isometric/diamond-iso":40,"./isometric/isometric":41,"./sound/sound":42,"./spatial/2d":43,"./spatial/collision":44,"./spatial/math":45,"./spatial/motion":46,"./spatial/platform":47,"./spatial/rect-manager":48,"./spatial/spatial-grid":49}],19:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
 /**@
  * #DebugCanvas
  * @category Debug
+ * @kind Component
+ * 
  * @trigger DebugDraw - when the entity is ready to be drawn to the stage
  * @trigger NoCanvas - if the browser does not support canvas
  *
@@ -6494,6 +6712,8 @@ Crafty.c("DebugCanvas", {
     /**@
      * #.debugAlpha
      * @comp DebugCanvas
+     * @kind Method
+     * 
      * @sign public  .debugAlpha(Number alpha)
      * @param alpha - The alpha level the component will be drawn with
      */
@@ -6505,6 +6725,8 @@ Crafty.c("DebugCanvas", {
     /**@
      * #.debugFill
      * @comp DebugCanvas
+     * @kind Method
+     * 
      * @sign public  .debugFill([String fillStyle])
      * @param fillStyle - The color the component will be filled with.  Defaults to "red". Pass the boolean false to turn off filling.
      * @example
@@ -6522,6 +6744,8 @@ Crafty.c("DebugCanvas", {
     /**@
      * #.debugStroke
      * @comp DebugCanvas
+     * @kind Method
+     * 
      * @sign public  .debugStroke([String strokeStyle])
      * @param strokeStyle - The color the component will be outlined with.  Defaults to "red".  Pass the boolean false to turn this off.
      * @example
@@ -6566,6 +6790,7 @@ Crafty.c("DebugCanvas", {
 /**@
  * #DebugRectangle
  * @category Debug
+ * @kind Component
  *
  * A component for rendering an object with a position and dimensions to the debug canvas.
  *
@@ -6586,6 +6811,8 @@ Crafty.c("DebugRectangle", {
     /**@
      * #.debugRectangle
      * @comp DebugRectangle
+     * @kind Method
+     * 
      * @sign public  .debugRectangle(Object rect)
      * @param rect - an object with _x, _y, _w, and _h to draw
      *
@@ -6623,6 +6850,7 @@ Crafty.c("DebugRectangle", {
 /**@
  * #VisibleMBR
  * @category Debug
+ * @kind Component
  *
  * Adding this component to an entity will cause it's MBR to be drawn to the debug canvas.
  *
@@ -6652,6 +6880,7 @@ Crafty.c("VisibleMBR", {
 /**@
  * #DebugPolygon
  * @category Debug
+ * @kind Component
  *
  * For drawing a polygon to the debug canvas
  *
@@ -6670,6 +6899,8 @@ Crafty.c("DebugPolygon", {
     /**@
      * #.debugPolygon
      * @comp DebugPolygon
+     * @kind Method
+     * 
      * @sign public  .debugPolygon(Polygon poly)
      * @param poly - a polygon to render
      *
@@ -6705,6 +6936,7 @@ Crafty.c("DebugPolygon", {
 /**@
  * #WiredHitBox
  * @category Debug
+ * @kind Component
  *
  * Adding this component to an entity with a Collision component will cause its collision polygon to be drawn to the debug canvas as an outline
  *
@@ -6726,6 +6958,7 @@ Crafty.c("WiredHitBox", {
 /**@
  * #SolidHitBox
  * @category Debug
+ * @kind Component
  *
  * Adding this component to an entity with a Collision component will cause its collision polygon to be drawn to the debug canvas, with a default alpha level of 0.7.
  *
@@ -6747,6 +6980,7 @@ Crafty.c("SolidHitBox", {
 /**@
  * #WiredAreaMap
  * @category Debug
+ * @kind Component
  *
  * Adding this component to an entity with an AreaMap component will cause its click polygon to be drawn to the debug canvas as an outline.
  * Following click areas exist for an entity (in decreasing order of priority): AreaMap, Hitbox, MBR. Use the appropriate debug components to display them.
@@ -6769,6 +7003,7 @@ Crafty.c("WiredAreaMap", {
 /**@
  * #SolidAreaMap
  * @category Debug
+ * @kind Component
  *
  * Adding this component to an entity with an AreaMap component will cause its click polygon to be drawn to the debug canvas, with a default alpha level of 0.7.
  * Following click areas exist for an entity (in decreasing order of priority): AreaMap, Hitbox, MBR. Use the appropriate debug components to display them.
@@ -6881,6 +7116,7 @@ var Crafty = require('../core/core.js');
 /**@
  * #Crafty.log
  * @category Debug
+ * @kind Method
  *
  * @sign Crafty.log( arguments )
  * @param arguments - arguments which are passed to `console.log`
@@ -6891,6 +7127,7 @@ var Crafty = require('../core/core.js');
 /**@
  * #Crafty.error
  * @category Debug
+ * @kind Method
  *
  * @sign Crafty.error( arguments )
  * @param arguments - arguments which are passed to `console.error`
@@ -6920,6 +7157,7 @@ var Crafty = require('../core/core.js');
 /**@
  * #CanvasLayer
  * @category Graphics
+ * @kind System
  *
  * An object for creating the canvas layer system.
  *
@@ -6948,6 +7186,9 @@ Crafty._registerLayerTemplate("Canvas", {
     /**@
      * #.dirty
      * @comp CanvasLayer
+     * @kind Method
+     * @private
+     * 
      * @sign public .dirty(ent)
      * @param ent - The entity to add
      *
@@ -6960,6 +7201,9 @@ Crafty._registerLayerTemplate("Canvas", {
     /**@
      * #.attach
      * @comp CanvasLayer
+     * @kind Method
+     * @private
+     * 
      * @sign public .attach(ent)
      * @param ent - The entity to add
      *
@@ -6974,8 +7218,11 @@ Crafty._registerLayerTemplate("Canvas", {
     /**@
      * #.detach
      * @comp CanvasLayer
+     * @kind Method
+     * @private
+     * 
      * @sign public .detach(ent)
-     * @param ent - The entity to add
+     * @param ent - The entity to detach
      *
      * Removes an entity to the list of Canvas objects to draw
      */
@@ -6990,6 +7237,7 @@ Crafty._registerLayerTemplate("Canvas", {
     /**@
      * #.context
      * @comp CanvasLayer
+     * @kind Property
      *
      * This will return the 2D context associated with the canvas layer's canvas element.
      */
@@ -6998,6 +7246,8 @@ Crafty._registerLayerTemplate("Canvas", {
     /**@
      * #._canvas
      * @comp CanvasLayer
+     * @kind Property
+     * @private
      *
      * The canvas element associated with the canvas layer.
      */
@@ -7092,6 +7342,9 @@ Crafty._registerLayerTemplate("Canvas", {
     /**@
      * #._drawDirty
      * @comp CanvasLayer
+     * @kind Method
+     * @private
+     * 
      * @sign public ._drawDirty()
      *
      * - Triggered by the "RenderScene" event
@@ -7192,6 +7445,9 @@ Crafty._registerLayerTemplate("Canvas", {
     /**@
      * #._drawAll
      * @comp CanvasLayer
+     * @kind Method
+     * @private
+     * 
      * @sign public CanvasLayer.drawAll([Object rect])
      * @param rect - a rectangular region {_x: x_val, _y: y_val, _w: w_val, _h: h_val}
      *
@@ -7302,6 +7558,8 @@ var Crafty = require('../core/core.js');
 /**@
  * #Canvas
  * @category Graphics
+ * @kind Component
+ * 
  * @trigger Draw - when the entity is ready to be drawn to the stage - {type: "canvas", pos, co, ctx}
  * @trigger NoCanvas - if the browser does not support canvas
  *
@@ -7338,6 +7596,8 @@ Crafty.c("Canvas", {
     /**@
      * #.draw
      * @comp Canvas
+     * @kind Method
+     * 
      * @sign public this .draw([[Context ctx, ]Number x, Number y, Number w, Number h])
      * @param ctx - Canvas 2D context if drawing on another canvas is required
      * @param x - X offset for drawing a segment
@@ -7443,6 +7703,10 @@ var Crafty = require('../core/core.js'),
 /**@
  * #Crafty.assignColor
  * @category Graphics
+ * @kind Method
+ * 
+ * Maps a wide vareity of color representations to a set of simple rgb(a) properties. 
+ * 
  * @sign Crafty.assignColor(color[, assignee])
  * @param color - a string represenation of the color to assign, in any valid HTML format
  * @param assignee - an object to use instead of creating one from scratch
@@ -7601,6 +7865,8 @@ Crafty.defaultShader("Color", new Crafty.WebGLShader(
 /**@
  * #Color
  * @category Graphics
+ * @kind Component
+ * 
  * Draw a colored rectangle.
  */
 Crafty.c("Color", {
@@ -7654,6 +7920,8 @@ Crafty.c("Color", {
     /**@
      * #.color
      * @comp Color
+     * @kind Method
+     * 
      * @trigger Invalidate - when the color changes
      *
      * Will assign the color and opacity, either through a string shorthand, or through explicit rgb values.
@@ -7717,6 +7985,7 @@ var Crafty = require('../core/core.js'),
 Crafty.extend({
     /**@
      * #Crafty.domHelper
+     * @kind Property
      * @category Graphics
      *
      * Collection of utilities for using the DOM.
@@ -7753,6 +8022,8 @@ Crafty.extend({
         /**@
          * #Crafty.domHelper.getStyle
          * @comp Crafty.domHelper
+         * @kind Method
+         * 
          * @sign public Object Crafty.domHelper.getStyle(HTMLElement obj, String property)
          * @param obj - HTML element to find the style
          * @param property - Style to return
@@ -7792,6 +8063,8 @@ Crafty.extend({
         /**@
          * #Crafty.domHelper.translate
          * @comp Crafty.domHelper
+         * @kind Method
+         * 
          * @sign public Object Crafty.domHelper.translate(Number clientX, Number clientY[, DrawLayer layer])
          * @param clientX - clientX position in the browser screen
          * @param clientY - clientY position in the browser screen
@@ -7836,6 +8109,7 @@ var Crafty = require('../core/core.js'),
 /**@
  * #DomLayer
  * @category Graphics
+ * @kind System
  *
  * Collection of mostly private methods to represent entities using the DOM.
  */
@@ -7854,6 +8128,9 @@ Crafty._registerLayerTemplate("DOM", {
     /**@
      * #._div
      * @comp DomLayer
+     * @kind Property
+     * @private
+     * 
      * A div inside the `#cr-stage` div that holds all DOM entities.
      */
     _div: null,
@@ -7914,7 +8191,11 @@ Crafty._registerLayerTemplate("DOM", {
     /**@
      * #.debug
      * @comp DomLayer
+     * @kind Method
+     * 
      * @sign public .debug()
+     * 
+     * Logs the current list of entities that have been invalidated in this layer.
      */
     debug: function () {
         Crafty.log(this._changedObjs);
@@ -7924,6 +8205,9 @@ Crafty._registerLayerTemplate("DOM", {
     /**@
      * #._render
      * @comp DomLayer
+     * @kind Method
+     * @private
+     * 
      * @sign public .render()
      *
      * When "RenderScene" is triggered, draws all DOM entities that have been flagged
@@ -7956,6 +8240,9 @@ Crafty._registerLayerTemplate("DOM", {
     /**@
      * #.dirty
      * @comp DomLayer
+     * @kind Method
+     * @private
+     * 
      * @sign public .dirty(ent)
      * @param ent - The entity to mark as dirty
      *
@@ -7968,6 +8255,9 @@ Crafty._registerLayerTemplate("DOM", {
     /**@
      * #.attach
      * @comp DomLayer
+     * @kind Method
+     * @private
+     * 
      * @sign public .attach(ent)
      * @param ent - The entity to add
      *
@@ -7985,6 +8275,9 @@ Crafty._registerLayerTemplate("DOM", {
     /**@
      * #.detach
      * @comp DomLayer
+     * @kind Method
+     * @private
+     * 
      * @sign public .detach(ent)
      * @param ent - The entity to remove
      *
@@ -8018,6 +8311,7 @@ var Crafty = require('../core/core.js'),
 /**@
  * #DOM
  * @category Graphics
+ * @kind Component
  *
  * A component which renders entities as DOM nodes, specifically `<div>`s.
  */
@@ -8025,6 +8319,7 @@ Crafty.c("DOM", {
     /**@
      * #._element
      * @comp DOM
+     * @kind Property
      * The DOM element used to represent the entity.
      */
     _element: null,
@@ -8034,6 +8329,8 @@ Crafty.c("DOM", {
     /**@
      * #.avoidCss3dTransforms
      * @comp DOM
+     * @kind Property
+     * 
      * Avoids using of CSS 3D Transform for positioning when true. Default value is false.
      */
     avoidCss3dTransforms: false,
@@ -8072,6 +8369,8 @@ Crafty.c("DOM", {
     /**@
      * #.getDomId
      * @comp DOM
+     * @kind Method
+     * 
      * @sign public this .getId()
      *
      * Get the Id of the DOM element used to represent the entity.
@@ -8109,6 +8408,8 @@ Crafty.c("DOM", {
     /**@
      * #.DOM
      * @comp DOM
+     * @kind Method
+     * 
      * @trigger Draw - when the entity is ready to be drawn to the stage - { style:String, type:"DOM", co}
      * @sign public this .DOM(HTMLElement elem)
      * @param elem - HTML element that will replace the dynamically created one
@@ -8130,6 +8431,9 @@ Crafty.c("DOM", {
     /**@
      * #.draw
      * @comp DOM
+     * @kind Method
+     * @private
+     * 
      * @sign public this .draw(void)
      *
      * Updates the CSS properties of the node to draw on the stage.
@@ -8222,6 +8526,8 @@ Crafty.c("DOM", {
     /**@
      * #.css
      * @comp DOM
+     * @kind Method
+     * 
      * @sign public css(String property, String value)
      * @param property - CSS property to modify
      * @param value - Value to give the CSS property
@@ -8287,6 +8593,8 @@ Crafty.extend({
     /**@
      * #Crafty.pixelart
      * @category Graphics
+     * @kind Method
+     * 
      * @sign public void Crafty.pixelart(Boolean enabled)
      * @param enabled - whether to preserve sharp edges when rendering images
      *
@@ -8521,6 +8829,7 @@ var Crafty = require('../core/core.js');
 /**@
  * #HTML
  * @category Graphics
+ * @kind Component
  *
  * A component which allows for the insertion of arbitrary HTML into a DOM entity.  
  *
@@ -8536,6 +8845,8 @@ Crafty.c("HTML", {
     /**@
      * #.replace
      * @comp HTML
+     * @kind Method
+     * 
      * @sign public this .replace(String html)
      * @param html - arbitrary html
      *
@@ -8558,6 +8869,8 @@ Crafty.c("HTML", {
     /**@
      * #.append
      * @comp HTML
+     * @kind Method
+     * 
      * @sign public this .append(String html)
      * @param html - arbitrary html
      *
@@ -8580,6 +8893,8 @@ Crafty.c("HTML", {
     /**@
      * #.prepend
      * @comp HTML
+     * @kind Method
+     * 
      * @sign public this .prepend(String html)
      * @param html - arbitrary html
      *
@@ -8631,6 +8946,8 @@ Crafty.defaultShader("Image", new Crafty.WebGLShader(
 /**@
  * #Image
  * @category Graphics
+ * @kind Component
+ * 
  * Draw an image with or without repeating (tiling).
  */
 Crafty.c("Image", {
@@ -8650,6 +8967,8 @@ Crafty.c("Image", {
     /**@
      * #.image
      * @comp Image
+     * @kind Method
+     * 
      * @trigger Invalidate - when the image is loaded
      * @sign public this .image(String url[, String repeat])
      * @param url - URL of the image
@@ -8806,6 +9125,7 @@ Crafty.extend({
 
     /**@
      * #Crafty.createLayer
+     * @kind Method
      * @category Graphics
      *
      * @sign public void Crafty.createLayer(string name, string type[, object options])
@@ -8868,6 +9188,8 @@ var Crafty = require('../core/core.js'),
 /**@
  * #Particles
  * @category Graphics
+ * @kind Component
+ * 
  * @trigger ParticleEnd - when the particle animation has finished
  *
  * Based on Parcycle by Mr. Speaker, licensed under the MIT, Ported by Leo Koppelkamm
@@ -8887,6 +9209,8 @@ Crafty.c("Particles", {
     /**@
      * #.particles
      * @comp Particles
+     * @kind Method
+     * 
      * @sign public this .particles(Object options)
      * @param options - Map of options that specify the behavior and look of the particles.
      *
@@ -9250,6 +9574,8 @@ Crafty.c("Particles", {
     /**@
      * #.pauseParticles
      * @comp Particles
+     * @kind Method
+     * 
      * @sign public this.pauseParticles()
      *
      * The pauseParticles will freeze these particles in execution.
@@ -9270,6 +9596,8 @@ Crafty.c("Particles", {
     /**@
      * #.resumeParticles
      * @comp Particles
+     * @kind Method
+     * 
      * @sign public this.resumeParticles()
      *
      * The resumeParticles will resume earlier paused particles
@@ -9299,6 +9627,8 @@ var Crafty = require('../core/core.js');
 /**@
  * #Renderable
  * @category Graphics
+ * @kind Component
+ * 
  * Component for any entity that has a position on the stage.
  * @trigger Invalidate - when the entity needs to be redrawn
  */
@@ -9310,6 +9640,8 @@ Crafty.c("Renderable", {
     /**@
      * #.alpha
      * @comp Renderable
+     * @kind Property
+     * 
      * Transparency of an entity. Must be a decimal value between 0.0 being fully transparent to 1.0 being fully opaque.
      */
     _alpha: 1.0,
@@ -9317,6 +9649,8 @@ Crafty.c("Renderable", {
     /**@
      * #.visible
      * @comp Renderable
+     * @kind Property
+     * 
      * If the entity is visible or not. Accepts a true or false value.
      * Can be used for optimization by setting an entities visibility to false when not needed to be drawn.
      *
@@ -9411,6 +9745,8 @@ Crafty.c("Renderable", {
     /**@
      * #.flip
      * @comp Renderable
+     * @kind Method
+     * 
      * @trigger Invalidate - when the entity has flipped
      * @sign public this .flip(String dir)
      * @param dir - Flip direction
@@ -9434,6 +9770,8 @@ Crafty.c("Renderable", {
     /**@
      * #.unflip
      * @comp Renderable
+     * @kind Method
+     * 
      * @trigger Invalidate - when the entity has unflipped
      * @sign public this .unflip(String dir)
      * @param dir - Unflip direction
@@ -9461,6 +9799,8 @@ var Crafty = require('../core/core.js');
 /**@
  * #SpriteAnimation
  * @category Animation
+ * @kind Component
+ * 
  * @trigger StartAnimation - When an animation starts playing, or is resumed from the paused state - {Reel}
  * @trigger AnimationEnd - When the animation finishes - { Reel }
  * @trigger FrameChange - Each time the frame of the current reel changes - { Reel }
@@ -9524,6 +9864,8 @@ Crafty.c("SpriteAnimation", {
     /**@
      * #.reel
      * @comp SpriteAnimation
+     * @kind Method
+     * 
      * Used to define reels, to change the active reel, and to fetch the id of the active reel.
      *
      * @sign public this .reel(String reelId, Duration duration, Number fromX, Number fromY, Number frameCount[, Number rowLength])
@@ -9648,6 +9990,8 @@ Crafty.c("SpriteAnimation", {
     /**@
      * #.animate
      * @comp SpriteAnimation
+     * @kind Method
+     * 
      * @sign public this .animate([String reelId] [, Number loopCount])
      * @param reelId - ID of the animation reel to play.  Defaults to the current reel if none is specified.
      * @param loopCount - Number of times to repeat the animation. Use -1 to repeat indefinitely.  Defaults to 1.
@@ -9715,6 +10059,8 @@ Crafty.c("SpriteAnimation", {
     /**@
      * #.resumeAnimation
      * @comp SpriteAnimation
+     * @kind Method
+     * 
      * @sign public this .resumeAnimation()
      *
      * This will resume animation of the current reel from its current state.
@@ -9734,6 +10080,8 @@ Crafty.c("SpriteAnimation", {
     /**@
      * #.pauseAnimation
      * @comp SpriteAnimation
+     * @kind Method
+     * 
      * @sign public this .pauseAnimation(void)
      *
      * Pauses the currently playing animation, or does nothing if no animation is playing.
@@ -9751,6 +10099,8 @@ Crafty.c("SpriteAnimation", {
     /**@
      * #.resetAnimation
      * @comp SpriteAnimation
+     * @kind Method
+     * 
      * @sign public this .resetAnimation()
      *
      * Resets the current animation to its initial state.  Resets the number of loops to the last specified value, which defaults to 1.
@@ -9771,6 +10121,8 @@ Crafty.c("SpriteAnimation", {
     /**@
      * #.loops
      * @comp SpriteAnimation
+     * @kind Method
+     * 
      * @sign public this .loops(Number loopCount)
      * @param loopCount - The number of times to play the animation
      *
@@ -9800,6 +10152,8 @@ Crafty.c("SpriteAnimation", {
 
     /**@
      * #.reelPosition
+     * @kind Method
+     * 
      * @comp SpriteAnimation
      *
      * @sign public this .reelPosition(Integer position)
@@ -9898,6 +10252,8 @@ Crafty.c("SpriteAnimation", {
     /**@
      * #.isPlaying
      * @comp SpriteAnimation
+     * @kind Method
+     * 
      * @sign public Boolean .isPlaying([String reelId])
      * @param reelId - The reelId of the reel we wish to examine
      * @returns The current animation state
@@ -9920,6 +10276,8 @@ Crafty.c("SpriteAnimation", {
     /**@
      * #.getReel
      * @comp SpriteAnimation
+     * @kind Method
+     * 
      * @sign public Reel .getReel()
      * @returns The current reel, or null if there is no active reel
      *
@@ -9968,6 +10326,8 @@ Crafty.defaultShader("Sprite", new Crafty.WebGLShader(
 Crafty.extend({
     /**@
      * #Crafty.sprite
+     * @kind Method
+     * 
      * @category Graphics
      * @sign public this Crafty.sprite([Number tile, [Number tileh]], String url, Object map[, Number paddingX[, Number paddingY[, Boolean paddingAroundBorder]]])
      * @param tile - Tile size of the sprite map, defaults to 1
@@ -10109,6 +10469,8 @@ Crafty.extend({
 /**@
  * #Sprite
  * @category Graphics
+ * @kind Component
+ * 
  * @trigger Invalidate - when the sprites change
  *
  * A component for using tiles in a sprite map.
@@ -10310,6 +10672,8 @@ var Crafty = require('../core/core.js');
 /**@
  * #Text
  * @category Graphics
+ * @kind Component
+ * 
  * @trigger Invalidate - when the text is changed
  * @requires Canvas or DOM
  * Component to make a text entity.
@@ -10415,6 +10779,8 @@ Crafty.c("Text", {
     /**@
      * #.text
      * @comp Text
+     * @kind Method
+     * 
      * @sign public this .text(String text)
      * @param text - String of text that will be inserted into the DOM or Canvas element.
      *
@@ -10464,6 +10830,8 @@ Crafty.c("Text", {
     /**@
      * #.dynamicTextGeneration
      * @comp Text
+     * @kind Method
+     * 
      * @sign public this .dynamicTextGeneration(bool dynamicTextOn[, string textUpdateEvent])
      * @param dynamicTextOn - A flag that indicates whether dyanamic text should be on or off.
      * @param textUpdateEvent - The name of the event which will trigger text to be updated.  Defaults to "EnterFrame".  (This parameter does nothing if dynamicTextOn is false.)
@@ -10526,6 +10894,8 @@ Crafty.c("Text", {
     /**@
      * #.textColor
      * @comp Text
+     * @kind Method
+     * 
      * @sign public this .textColor(String color)
      * @param color - The color in name, hex, rgb or rgba
      *
@@ -10555,6 +10925,8 @@ Crafty.c("Text", {
 
     /**@
      * @comp Text
+     * @kind Method
+     * 
      * @sign public this .textAlign(String alignment)
      * @param alignment - The new alignment of the text.
      *
@@ -10571,6 +10943,8 @@ Crafty.c("Text", {
     /**@
      * #.textFont
      * @comp Text
+     * @kind Method
+     * 
      * @triggers Invalidate
      * @sign public this .textFont(String key, * value)
      * @param key - Property of the entity to modify
@@ -10621,6 +10995,8 @@ Crafty.c("Text", {
     /**@
      * #.unselectable
      * @comp Text
+     * @kind Method
+     * 
      * @triggers Invalidate
      * @sign public this .unselectable()
      *
@@ -10662,6 +11038,8 @@ Crafty.extend({
     /**@
      * #Crafty.viewport
      * @category Stage
+     * @kind Property
+     * 
      * @trigger ViewportScroll - when the viewport's x or y coordinates change
      * @trigger ViewportScale - when the viewport's scale changes
      * @trigger ViewportResize - when the viewport's dimension's change
@@ -10702,6 +11080,7 @@ Crafty.extend({
         /**@
          * #Crafty.viewport.clampToEntities
          * @comp Crafty.viewport
+         * @kind Property
          *
          * Decides if the viewport functions should clamp to game entities.
          * When set to `true` functions such as Crafty.viewport.mouselook() will not allow you to move the
@@ -10714,6 +11093,7 @@ Crafty.extend({
         /**@
          * #Crafty.viewport.x
          * @comp Crafty.viewport
+         * @kind Property
          *
          * Will move the stage and therefore every visible entity along the `x`
          * axis in the opposite direction.
@@ -10726,6 +11106,7 @@ Crafty.extend({
         /**@
          * #Crafty.viewport.y
          * @comp Crafty.viewport
+         * @kind Property
          *
          * Will move the stage and therefore every visible entity along the `y`
          * axis in the opposite direction.
@@ -10739,6 +11120,7 @@ Crafty.extend({
         /**@
          * #Crafty.viewport._scale
          * @comp Crafty.viewport
+         * @kind Property
          *
          * This value is the current scale (zoom) of the viewport. When the value is bigger than 1, everything
          * looks bigger (zoomed in). When the value is less than 1, everything looks smaller (zoomed out). This
@@ -10753,6 +11135,7 @@ Crafty.extend({
         /**@
          * #Crafty.viewport.bounds
          * @comp Crafty.viewport
+         * @kind Property
          *
          * A rectangle which defines the bounds of the viewport.
          * It should be an object with two properties, `max` and `min`,
@@ -10777,6 +11160,8 @@ Crafty.extend({
         /**@
          * #Crafty.viewport.scroll
          * @comp Crafty.viewport
+         * @kind Method
+         * 
          * @sign Crafty.viewport.scroll(String axis, Number val)
          * @param axis - 'x' or 'y'
          * @param val - The new absolute position on the axis
@@ -10802,6 +11187,8 @@ Crafty.extend({
         /**@
          * #Crafty.viewport.rect
          * @comp Crafty.viewport
+         * @kind Method
+         * 
          * @sign public Object Crafty.viewport.rect([Object out])
          * @param Object out - an optional Object to write the `rect` to
          * @return a rectangle encompassing the currently visible viewport region.
@@ -10835,6 +11222,8 @@ Crafty.extend({
 
          * #Crafty.viewport.pan
          * @comp Crafty.viewport
+         * @kind Method
+         * 
          * @sign public void Crafty.viewport.pan(Number dx, Number dy, Number time[, String|function easingFn])
          * @param Number dx - The distance along the x axis
          * @param Number dy - The distance along the y axis
@@ -10896,6 +11285,8 @@ Crafty.extend({
         /**@
          * #Crafty.viewport.follow
          * @comp Crafty.viewport
+         * @kind Method
+         * 
          * @sign public void Crafty.viewport.follow(Object target, Number offsetx, Number offsety)
          * @param Object target - An entity with the 2D component
          * @param Number offsetx - Follow target's center should be offsetx pixels away from viewport's center. Positive values puts target to the right of the screen.
@@ -10949,6 +11340,8 @@ Crafty.extend({
         /**@
          * #Crafty.viewport.centerOn
          * @comp Crafty.viewport
+         * @kind Method
+         * 
          * @sign public void Crafty.viewport.centerOn(Object target, Number time)
          * @param Object target - An entity with the 2D component
          * @param Number time - The duration in ms of the camera motion
@@ -10977,6 +11370,8 @@ Crafty.extend({
         /**@
          * #Crafty.viewport.zoom
          * @comp Crafty.viewport
+         * @kind Method
+         * 
          * @sign public void Crafty.viewport.zoom(Number amt, Number cent_x, Number cent_y, Number time[, String|function easingFn])
          * @param Number amt - amount to zoom in on the target by (eg. 2, 4, 0.5)
          * @param Number cent_x - the center to zoom on
@@ -11073,6 +11468,8 @@ Crafty.extend({
         /**@
          * #Crafty.viewport.scale
          * @comp Crafty.viewport
+         * @kind Method
+         * 
          * @sign public void Crafty.viewport.scale(Number amt)
          * @param Number amt - amount to zoom/scale in on the elements
          *
@@ -11100,9 +11497,12 @@ Crafty.extend({
 
             };
         })(),
+
         /**@
          * #Crafty.viewport.mouselook
          * @comp Crafty.viewport
+         * @kind Method
+         * 
          * @sign public void Crafty.viewport.mouselook(Boolean active)
          * @param Boolean active - Activate or deactivate mouselook
          *
@@ -11188,6 +11588,8 @@ Crafty.extend({
         /**@
          * #Crafty.viewport.init
          * @comp Crafty.stage
+         * @kind Method
+         * 
          * @sign public void Crafty.viewport.init([Number width, Number height, String stage_elem])
          * @sign public void Crafty.viewport.init([Number width, Number height, HTMLElement stage_elem])
          * @param Number width - Width of the viewport
@@ -11236,12 +11638,16 @@ Crafty.extend({
             /**@
              * #Crafty.stage
              * @category Core
+             * @kind CoreObject
+             * 
              * The stage where all the DOM entities will be placed.
              */
 
             /**@
              * #Crafty.stage.elem
              * @comp Crafty.stage
+             * @kind Property
+             * 
              * The `#cr-stage` div element.
              */
 
@@ -11395,6 +11801,7 @@ Crafty.extend({
         /**@
          * #Crafty.viewport.reload
          * @comp Crafty.stage
+         * @kind Method
          *
          * @sign public Crafty.viewport.reload()
          *
@@ -11423,6 +11830,8 @@ Crafty.extend({
         /**@
          * #Crafty.viewport.reset
          * @comp Crafty.stage
+         * @kind Method
+         * 
          * @trigger StopCamera - called to cancel camera animations
          *
          * @sign public Crafty.viewport.reset()
@@ -11442,6 +11851,8 @@ Crafty.extend({
         /**@
          * #Crafty.viewport.onScreen
          * @comp Crafty.viewport
+         * @kind Method
+         * 
          * @sign public Crafty.viewport.onScreen(Object rect)
          * @param rect - A rectangle with field {_x: x_val, _y: y_val, _w: w_val, _h: h_val}
          *
@@ -11633,6 +12044,7 @@ RenderProgramWrapper.prototype = {
 /**@
  * #WebGLLayer
  * @category Graphics
+ * @kind System
  *
  * A collection of methods to handle webgl contexts.
  */
@@ -11648,6 +12060,7 @@ Crafty._registerLayerTemplate("WebGL", {
     /**@
      * #.context
      * @comp WebGLLayer
+     * @kind Property
      *
      * This will return the context of the webgl canvas element.
      */
@@ -11883,6 +12296,9 @@ Crafty._registerLayerTemplate("WebGL", {
     /**@
      * #.dirty
      * @comp WebGLLayer
+     * @kind Method
+     * @private
+     * 
      * @sign public .dirty(ent)
      * @param ent - The entity to mark as dirty
      *
@@ -11895,6 +12311,9 @@ Crafty._registerLayerTemplate("WebGL", {
     /**@
      * #.attach
      * @comp WebGLLayer
+     * @kind Method
+     * @private
+     * 
      * @sign public .attach(ent)
      * @param ent - The entity to add
      *
@@ -11908,6 +12327,9 @@ Crafty._registerLayerTemplate("WebGL", {
     /**@
      * #.detach
      * @comp WebGLLayer
+     * @kind Method
+     * @private
+     * 
      * @sign public .detach(ent)
      * @param ent - The entity to remove
      *
@@ -11930,6 +12352,8 @@ var Crafty = require('../core/core.js');
 /**@
  * #WebGL
  * @category Graphics
+ * @kind Component
+ * 
  * @trigger Draw - when the entity is ready to be drawn to the stage - {type: "canvas", pos, co, ctx}
  * @trigger NoCanvas - if the browser does not support canvas
  *
@@ -11953,6 +12377,8 @@ Crafty.extend({
     /**@
      * #Crafty.WebGLShader
      * @category Graphics
+     * @kind Method
+     * 
      * @sign public Crafty.WebGLShader Crafty.WebGLShader(String vertexShaderCode, String fragmentShaderCode, Array attributeList, Function drawCallback(e, entity))
      * @param vertexShaderCode - GLSL code for the vertex shader
      * @param fragmentShaderCode - GLSL code for the fragment shader
@@ -12051,6 +12477,8 @@ Crafty.extend({
     /**@
      * #Crafty.defaultShader
      * @category Graphics
+     * @kind Method
+     * 
      * @sign public Crafty.WebGLShader Crafty.defaultShader(String component[, Crafty.WebGLShader shader])
      * @param component - Name of the component to assign a default shader to
      * @param shader - New default shader to assign to a component
@@ -12087,6 +12515,7 @@ Crafty.c("WebGL", {
     /**@
      * #.context
      * @comp WebGL
+     * @kind Property
      *
      * The webgl context this entity will be rendered to.
      */
@@ -12119,6 +12548,9 @@ Crafty.c("WebGL", {
     /**@
      * #.draw
      * @comp WebGL
+     * @kind Method
+     * @private
+     * 
      * @sign public this .draw([[Context ctx, ]Number x, Number y, Number w, Number h])
      * @param ctx - Optionally supply a different r 2D context if drawing on another canvas is required
      * @param x - X offset for drawing a segment
@@ -12221,6 +12653,8 @@ Crafty.extend({
     /**@
      * #Crafty.diamondIso
      * @category 2D
+     * @kind CoreObject
+     * 
      * Place entities in a 45deg diamond isometric fashion. It is similar to isometric but has another grid locations
      * In this mode, the x axis and y axis are aligned to the edges of tiles with x increasing being down and to the
      * right and y being down and to the left.
@@ -12248,6 +12682,8 @@ Crafty.extend({
         /**@
          * #Crafty.diamondIso.init
          * @comp Crafty.diamondIso
+         * @kind Method
+         * 
          * @sign public this Crafty.diamondIso.init(Number tileWidth,Number tileHeight,Number mapWidth,Number mapHeight)
          * @param tileWidth - The size of base tile width's grid space in Pixel
          * @param tileHeight - The size of base tile height grid space in Pixel
@@ -12288,6 +12724,8 @@ Crafty.extend({
         /**@
          * #Crafty.diamondIso.place
          * @comp Crafty.diamondIso
+         * @kind Method
+         * 
          * @sign public this Crafty.diamondIso.place(Entity tile,Number x, Number y, Number layer)
          * @param x - The `x` position to place the tile
          * @param y - The `y` position to place the tile
@@ -12429,6 +12867,8 @@ Crafty.extend({
     /**@
      * #Crafty.isometric
      * @category 2D
+     * @kind CoreObject
+     * 
      * Place entities in a 45deg isometric fashion. The alignment of this
      * grid's axes for tile placement is 90 degrees.  If you are looking
      * to have the grid of tile indicies for this.place aligned to the tiles
@@ -12448,6 +12888,8 @@ Crafty.extend({
         /**@
          * #Crafty.isometric.size
          * @comp Crafty.isometric
+         * @kind Method
+         * 
          * @sign public this Crafty.isometric.size(Number tileSize)
          * @param tileSize - The size of the tiles to place.
          *
@@ -12470,6 +12912,8 @@ Crafty.extend({
         /**@
          * #Crafty.isometric.place
          * @comp Crafty.isometric
+         * @kind Method
+         * 
          * @sign public this Crafty.isometric.place(Number x, Number y, Number z, Entity tile)
          * @param x - The `x` position to place the tile
          * @param y - The `y` position to place the tile
@@ -12497,6 +12941,8 @@ Crafty.extend({
         /**@
          * #Crafty.isometric.pos2px
          * @comp Crafty.isometric
+         * @kind Method
+         * 
          * @sign public Object Crafty.isometric.pos2px(Number x,Number y)
          * @param x - A position along the x axis
          * @param y - A position along the y axis
@@ -12519,6 +12965,8 @@ Crafty.extend({
         /**@
          * #Crafty.isometric.px2pos
          * @comp Crafty.isometric
+         * @kind Method
+         * 
          * @sign public Object Crafty.isometric.px2pos(Number left,Number top)
          * @param top - Offset from the top in pixels
          * @param left - Offset from the left in pixels
@@ -12542,7 +12990,8 @@ Crafty.extend({
         /**@
          * #Crafty.isometric.centerAt
          * @comp Crafty.isometric
-         *
+         * @kind Method
+         * 
          * @sign public Obect Crafty.isometric.centerAt()
          * @returns An object with `top` and `left` fields represneting the viewport's current center
          *
@@ -12575,6 +13024,8 @@ Crafty.extend({
         /**@
          * #Crafty.isometric.area
          * @comp Crafty.isometric
+         * @kind Method
+         * 
          * @sign public Object Crafty.isometric.area()
          * @return An obect with `x` and `y` fields, each of which have a start and end field.
          * In other words, the object has this structure: `{x:{start Number,end Number},y:{start Number,end Number}}`
@@ -12619,6 +13070,7 @@ Crafty.extend({
     /**@
      * #Crafty.audio
      * @category Audio
+     * @kind CoreObject
      *
      * Add sound files and play them. Chooses best format for browser support.
      * Due to the nature of HTML5 audio, three types of audio files will be
@@ -12667,6 +13119,8 @@ Crafty.extend({
         /**@
          * #Crafty.audio.supports
          * @comp Crafty.audio
+         * @kind Method
+         * 
          * @sign public this Crafty.audio.supports(String extension)
          * @param extension - A file extension to check audio support for
          *
@@ -12694,6 +13148,9 @@ Crafty.extend({
         /**@
          * #Crafty.audio.create
          * @comp Crafty.audio
+         * @kind Method
+         * @private
+         * 
          * @sign public this Crafty.audio.create(String id, String url)
          * @param id - A string to refer to sounds
          * @param url - A string pointing to the sound file
@@ -12729,6 +13186,8 @@ Crafty.extend({
         /**@
          * #Crafty.audio.add
          * @comp Crafty.audio
+         * @kind Method
+         * 
          * @sign public this Crafty.audio.add(String id, String url)
          * @param id - A string to refer to sounds
          * @param url - A string pointing to the sound file
@@ -12804,6 +13263,8 @@ Crafty.extend({
         /**@
          * #Crafty.audio.play
          * @comp Crafty.audio
+         * @kind Method
+         * 
          * @sign public this Crafty.audio.play(String id)
          * @sign public this Crafty.audio.play(String id, Number repeatCount)
          * @sign public this Crafty.audio.play(String id, Number repeatCount, Number volume)
@@ -12874,6 +13335,8 @@ Crafty.extend({
         /**@
          * #Crafty.audio.setChannels
          * @comp Crafty.audio
+         * @kind Method
+         * 
          * @sign public this Crafty.audio.setChannels(Number n)
          * @param n - The maximum number of channels
          */
@@ -12919,6 +13382,8 @@ Crafty.extend({
         /**@
          * #Crafty.audio.remove
          * @comp Crafty.audio
+         * @kind Method
+         * 
          * @sign public this Crafty.audio.remove([String id])
          * @param id - A string to refer to sounds
          *
@@ -12962,6 +13427,8 @@ Crafty.extend({
         /**@
          * #Crafty.audio.stop
          * @comp Crafty.audio
+         * @kind Method
+         * 
          * @sign public this Crafty.audio.stop([Number ID])
          *
          * Stops any playing sound. if id is not set, stop all sounds which are playing
@@ -12989,6 +13456,9 @@ Crafty.extend({
         /**
          * #Crafty.audio._mute
          * @comp Crafty.audio
+         * @kind Method
+         * @kind private
+         * 
          * @sign public this Crafty.audio._mute([Boolean mute])
          *
          * Mute or unmute every Audio instance that is playing.
@@ -13006,6 +13476,8 @@ Crafty.extend({
         /**@
          * #Crafty.audio.toggleMute
          * @comp Crafty.audio
+         * @kind Method
+         * 
          * @sign public this Crafty.audio.toggleMute()
          *
          * Mute or unmute every Audio instance that is playing. Toggles between
@@ -13028,6 +13500,8 @@ Crafty.extend({
         /**@
          * #Crafty.audio.mute
          * @comp Crafty.audio
+         * @kind Method
+         * 
          * @sign public this Crafty.audio.mute()
          *
          * Mute every Audio instance that is playing.
@@ -13043,6 +13517,8 @@ Crafty.extend({
         /**@
          * #Crafty.audio.unmute
          * @comp Crafty.audio
+         * @kind Method
+         * 
          * @sign public this Crafty.audio.unmute()
          *
          * Unmute every Audio instance that is playing.
@@ -13059,6 +13535,8 @@ Crafty.extend({
         /**@
          * #Crafty.audio.pause
          * @comp Crafty.audio
+         * @kind Method
+         * 
          * @sign public this Crafty.audio.pause(string ID)
          * @param {string} id - The id of the audio object to pause
          *
@@ -13085,6 +13563,8 @@ Crafty.extend({
         /**@
          * #Crafty.audio.unpause
          * @comp Crafty.audio
+         * @kind Method
+         * 
          * @sign public this Crafty.audio.unpause(string ID)
          * @param {string} id - The id of the audio object to unpause
          *
@@ -13110,6 +13590,8 @@ Crafty.extend({
         /**@
          * #Crafty.audio.togglePause
          * @comp Crafty.audio
+         * @kind Method
+         * 
          * @sign public this Crafty.audio.togglePause(string ID)
          * @param {string} id - The id of the audio object to pause/
          *
@@ -13140,6 +13622,8 @@ Crafty.extend({
         /**@
          * #Crafty.audio.isPlaying
          * @comp Crafty.audio
+         * @kind Method
+         * 
          * @sign public Boolean Crafty.audio.isPlaying(string ID)
          * @param {string} id - The id of the audio object
          * @return a Boolean indicating whether the audio is playing or not
@@ -13175,6 +13659,8 @@ var Crafty = require('../core/core.js'),
 /**@
  * #Crafty.map
  * @category 2D
+ * @kind CoreObject
+ * 
  * Functions related with querying entities.
  * @see Crafty.HashMap
  */
@@ -13188,6 +13674,8 @@ var M = Math,
 /**@
  * #2D
  * @category 2D
+ * @kind Component
+ * 
  * Component for any entity that has a position on the stage.
  * @trigger Move - when the entity has moved - { _x:Number, _y:Number, _w:Number, _h:Number } - Old position
  * @trigger Invalidate - when the entity needs to be redrawn
@@ -13198,6 +13686,8 @@ Crafty.c("2D", {
     /**@
      * #.x
      * @comp 2D
+     * @kind Property
+     * 
      * The `x` position on the stage. When modified, will automatically be redrawn.
      * Is actually a getter/setter so when using this value for calculations and not modifying it,
      * use the `._x` property.
@@ -13206,6 +13696,8 @@ Crafty.c("2D", {
     _x: 0,
     /**@
      * #.y
+     * @kind Property
+     * 
      * @comp 2D
      * The `y` position on the stage. When modified, will automatically be redrawn.
      * Is actually a getter/setter so when using this value for calculations and not modifying it,
@@ -13216,6 +13708,8 @@ Crafty.c("2D", {
     /**@
      * #.w
      * @comp 2D
+     * @kind Property
+     * 
      * The width of the entity. When modified, will automatically be redrawn.
      * Is actually a getter/setter so when using this value for calculations and not modifying it,
      * use the `._w` property.
@@ -13227,6 +13721,8 @@ Crafty.c("2D", {
     /**@
      * #.h
      * @comp 2D
+     * @kind Property
+     * 
      * The height of the entity. When modified, will automatically be redrawn.
      * Is actually a getter/setter so when using this value for calculations and not modifying it,
      * use the `._h` property.
@@ -13239,6 +13735,8 @@ Crafty.c("2D", {
     /**@
      * #.z
      * @comp 2D
+     * @kind Property
+     * 
      * The `z` index on the stage. When modified, will automatically be redrawn.
      * Is actually a getter/setter so when using this value for calculations and not modifying it,
      * use the `._z` property.
@@ -13255,6 +13753,8 @@ Crafty.c("2D", {
     /**@
      * #._globalZ
      * @comp 2D
+     * @kind Property
+     * 
      * When two entities overlap, the one with the larger `_globalZ` will be on top of the other.
      */
     _globalZ: null,
@@ -13262,6 +13762,8 @@ Crafty.c("2D", {
     /**@
      * #.rotation
      * @comp 2D
+     * @kind Property
+     * 
      * The rotation state of the entity, in clockwise degrees.
      * `this.rotation = 0` sets it to its original orientation; `this.rotation = 10`
      * sets it to 10 degrees clockwise from its original orientation;
@@ -13445,6 +13947,8 @@ Crafty.c("2D", {
     /**@
      * #.offsetBoundary
      * @comp 2D
+     * @kind Method
+     * 
      * Extends the MBR of the entity by a specified amount.
      * 
      * @trigger BoundaryOffset - when the MBR offset changes
@@ -13579,6 +14083,8 @@ Crafty.c("2D", {
     /**@
      * #.area
      * @comp 2D
+     * @kind Method
+     * 
      * @sign public Number .area(void)
      * Calculates the area of the entity
      */
@@ -13589,6 +14095,8 @@ Crafty.c("2D", {
     /**@
      * #.intersect
      * @comp 2D
+     * @kind Method
+     * 
      * @sign public Boolean .intersect(Number x, Number y, Number w, Number h)
      * @param x - X position of the rect
      * @param y - Y position of the rect
@@ -13619,6 +14127,8 @@ Crafty.c("2D", {
     /**@
      * #.within
      * @comp 2D
+     * @kind Method
+     * 
      * @sign public Boolean .within(Number x, Number y, Number w, Number h)
      * @param x - X position of the rect
      * @param y - Y position of the rect
@@ -13649,6 +14159,8 @@ Crafty.c("2D", {
     /**@
      * #.contains
      * @comp 2D
+     * @kind Method
+     * 
      * @sign public Boolean .contains(Number x, Number y, Number w, Number h)
      * @param x - X position of the rect
      * @param y - Y position of the rect
@@ -13679,6 +14191,8 @@ Crafty.c("2D", {
     /**@
      * #.pos
      * @comp 2D
+     * @kind Method
+     * 
      * @sign public Object .pos([Object pos])
      * @param pos - an object to use as output
      * @returns an object with `_x`, `_y`, `_w`, and `_h` properties; if an object is passed in, it will be reused rather than creating a new object.
@@ -13700,6 +14214,8 @@ Crafty.c("2D", {
     /**@
      * #.mbr
      * @comp 2D
+     * @kind Method
+     * 
      * @sign public Object .mbr([Object mbr])
      * @param mbr - an object to use as output
      * @returns an object with `_x`, `_y`, `_w`, and `_h` properties; if an object is passed in, it will be reused rather than creating a new object.
@@ -13729,6 +14245,8 @@ Crafty.c("2D", {
     /**@
      * #.isAt
      * @comp 2D
+     * @kind Method
+     * 
      * @sign public Boolean .isAt(Number x, Number y)
      * @param x - X position of the point
      * @param y - Y position of the point
@@ -13752,6 +14270,8 @@ Crafty.c("2D", {
     /**@
      * #.move
      * @comp 2D
+     * @kind Method
+     * 
      * @sign public this .move(String dir, Number by)
      * @param dir - Direction to move (n,s,e,w,ne,nw,se,sw)
      * @param by - Amount to move in the specified direction
@@ -13770,6 +14290,8 @@ Crafty.c("2D", {
     /**@
      * #.shift
      * @comp 2D
+     * @kind Method
+     * 
      * @sign public this .shift(Number x, Number y, Number w, Number h)
      * @param x - Amount to move X
      * @param y - Amount to move Y
@@ -13791,6 +14313,9 @@ Crafty.c("2D", {
     /**@
      * #._cascade
      * @comp 2D
+     * @kind Method
+     * @private
+     * 
      * @sign public void ._cascade(e)
      * @param e - An object describing the motion
      *
@@ -13828,6 +14353,8 @@ Crafty.c("2D", {
     /**@
      * #.attach
      * @comp 2D
+     * @kind Method
+     * 
      * @sign public this .attach(Entity obj[, .., Entity objN])
      * @param obj - Child entity(s) to attach
      *
@@ -13863,6 +14390,8 @@ Crafty.c("2D", {
     /**@
      * #.detach
      * @comp 2D
+     * @kind Method
+     * 
      * @sign public this .detach([Entity obj])
      * @param obj - The entity to detach. Left blank will remove all attached entities
      *
@@ -13894,7 +14423,8 @@ Crafty.c("2D", {
     /**@
      * #.origin
      * @comp 2D
-     *
+     * @kind Method
+     * 
      * @sign public this .origin(Number x, Number y)
      * @param x - Pixel value of origin offset on the X axis
      * @param y - Pixel value of origin offset on the Y axis
@@ -14033,826 +14563,13 @@ Crafty.c("2D", {
     }
 });
 
-/**@
- * #Supportable
- * @category 2D
- * @trigger LandedOnGround - When entity has landed. This event is triggered with the object the entity landed on.
- * @trigger LiftedOffGround - When entity has lifted off. This event is triggered with the object the entity stood on before lift-off.
- * @trigger CheckLanding - When entity is about to land. This event is triggered with the object the entity is about to land on. Third parties can respond to this event and prevent the entity from being able to land.
- *
- * Component that detects if the entity collides with the ground. This component is automatically added and managed by the Gravity component.
- * The appropriate events are fired when the entity state changes (lands on ground / lifts off ground). The current ground entity can also be accessed with `.ground`.
- */
-Crafty.c("Supportable", {
-    /**@
-     * #.ground
-     * @comp Supportable
-     *
-     * Access the ground entity (which may be the actual ground entity if it exists, or `null` if it doesn't exist) and thus whether this entity is currently on the ground or not. 
-     * The ground entity is also available through the events, when the ground entity changes.
-     */
-    _ground: null,
-    _groundComp: null,
-    _preventGroundTunneling: false,
 
-    /**@
-     * #.canLand
-     * @comp Supportable
-     *
-     * The canLand boolean determines if the entity is allowed to land or not (e.g. perhaps the entity should not land if it's not falling).
-     * The Supportable component will trigger a "CheckLanding" event. 
-     * Interested parties can listen to this event and prevent the entity from landing by setting `canLand` to false.
-     *
-     * @example
-     * ~~~
-     * var player = Crafty.e("2D, Gravity");
-     * player.bind("CheckLanding", function(ground) {
-     *     if (player.y + player.h > ground.y + player.dy) { // forbid landing, if player's feet are not above ground
-     *         player.canLand = false;
-     *     }
-     * });
-     * ~~~
-     */
-    canLand: true,
 
-    init: function () {
-        this.requires("2D");
-        this.__area = {_x: 0, _y: 0, _w: 0, _h: 0};
-        this.defineField("ground", function() { return this._ground; }, function(newValue) {});
-    },
-    remove: function(destroyed) {
-        this.unbind("EnterFrame", this._detectGroundTick);
-    },
-
-    /*@
-     * #.startGroundDetection
-     * @comp Supportable
-     * @sign private this .startGroundDetection([comp])
-     * @param comp - The name of a component that will be treated as ground
-     *
-     * This method is automatically called by the Gravity component and should not be called by the user.
-     *
-     * Enable ground detection for this entity no matter whether comp parameter is specified or not.
-     * If comp parameter is specified all entities with that component will stop this entity from falling.
-     * For a player entity in a platform game this would be a component that is added to all entities
-     * that the player should be able to walk on.
-     * 
-     * @example
-     * ~~~
-     * Crafty.e("2D, DOM, Color, Gravity")
-     *   .color("red")
-     *   .attr({ w: 100, h: 100 })
-     *   .gravity("platform");
-     * ~~~
-     *
-     * @see Gravity
-     */
-    startGroundDetection: function(ground) {
-        if (ground) this._groundComp = ground;
-        this.uniqueBind("EnterFrame", this._detectGroundTick);
-
-        return this;
-    },
-    /*@
-     * #.stopGroundDetection
-     * @comp Supportable
-     * @sign private this .stopGroundDetection()
-     *
-     * This method is automatically called by the Gravity component and should not be called by the user.
-     *
-     * Disable ground detection for this component. It can be reenabled by calling .startGroundDetection()
-     */
-    stopGroundDetection: function() {
-        this.unbind("EnterFrame", this._detectGroundTick);
-
-        return this;
-    },
-
-    /**@
-     * #.preventGroundTunneling
-     * @comp Supportable
-     * @sign this .preventGroundTunneling([Boolean enable])
-     * @param enable - Boolean indicating whether to enable continous collision detection or not; if omitted defaults to true
-     *
-     * Prevent entity from falling through thin ground entities at high speeds. This setting is disabled by default.
-     * This is performed by approximating continous collision detection, which may impact performance negatively.
-     * For further details, refer to [FAQ#Tunneling](https://github.com/craftyjs/Crafty/wiki/Crafty-FAQ-%28draft%29#why-are-my-bullets-passing-through-other-entities-without-registering-hits).
-     *
-     * @see Motion#.ccdbr
-     */
-    preventGroundTunneling: function(enable) {
-        if (typeof enable === 'undefined')
-            enable = true;
-        if (enable)
-            this.requires("Motion");
-        this._preventGroundTunneling = enable;
-
-        return this;
-    },
-
-    _detectGroundTick: function() {
-        var groundComp = this._groundComp,
-            ground = this._ground,
-            overlap = Crafty.rectManager.overlap,
-            area;
-
-        if (!this._preventGroundTunneling) {
-            var pos = this._cbr || this._mbr || this;
-            area = this.__area;
-            area._x = pos._x;
-            area._y = pos._y;
-            area._w = pos._w;
-            area._h = pos._h;
-        } else {
-            area = this.ccdbr(this.__area);
-        }
-        area._h++; // Increase by 1 to make sure map.search() finds the floor
-        // Decrease width by 1px from left and 1px from right, to fall more gracefully
-        // area._x++; area._w--;
-
-
-        // check if we lift-off
-        if (ground) {
-            var garea = ground._cbr || ground._mbr || ground;
-            if (!(ground.__c[groundComp] && Crafty(ground[0]) === ground && overlap(garea, area))) {
-                this._ground = null;
-                this.trigger("LiftedOffGround", ground); // no collision with ground was detected for first time
-                ground = null;
-            }
-        }
-
-        // check if we land (also possible to land on other ground object in same frame after lift-off from current ground object)
-        if (!ground) {
-            var obj, oarea,
-                results = Crafty.map.search(area, false),
-                i = 0,
-                l = results.length;
-
-            for (; i < l; ++i) {
-                obj = results[i];
-                oarea = obj._cbr || obj._mbr || obj;
-                // check for an intersection with the player
-                if (obj !== this && obj.__c[groundComp] && overlap(oarea, area)) {
-                    this.canLand = true;
-                    this.trigger("CheckLanding", obj); // is entity allowed to land?
-                    if (this.canLand) {
-                        this._ground = ground = obj;
-
-                        // snap entity to ground object
-                        this.y = ground._y - this._h;
-                        if (this._x > ground._x + ground._w)
-                            this.x = ground._x + ground._w - 1;
-                        else if (this._x + this._w < ground._x)
-                            this.x = ground._x - this._w + 1;
-
-                        this.trigger("LandedOnGround", ground); // collision with ground was detected for first time
-                        break;
-                    }
-                }
-            }
-        }
-    }
-});
-
-/**@
- * #GroundAttacher
- * @category 2D
- *
- * Attach the entity to the ground when it lands. Useful for platformers with moving platforms.
- * Remove the component to disable the functionality.
- *
- * Additionally, this component provides the entity with `Supportable` methods & events.
- *
- * @example
- * ~~~
- * Crafty.e("2D, Gravity, GroundAttacher")
- *     .gravity("Platform"); // entity will land on and move with entites that have the "Platform" component
- * ~~~
- *
- * @see Supportable, Gravity
- */
-Crafty.c("GroundAttacher", {
-    _groundAttach: function(ground) {
-        ground.attach(this);
-    },
-    _groundDetach: function(ground) {
-        ground.detach(this);
-    },
-
-    init: function () {
-        this.requires("Supportable");
-
-        this.bind("LandedOnGround", this._groundAttach);
-        this.bind("LiftedOffGround", this._groundDetach);
-    },
-    remove: function(destroyed) {
-        this.unbind("LandedOnGround", this._groundAttach);
-        this.unbind("LiftedOffGround", this._groundDetach);
-    }
-});
-
-
-/**@
- * #Gravity
- * @category 2D
- *
- * Adds gravitational pull to the entity.
- *
- * Additionally, this component provides the entity with `Supportable` and `Motion` methods & events.
- *
- * @see Supportable, Motion
- */
-Crafty.c("Gravity", {
-    _gravityConst: 500,
-    _gravityActive: false,
-
-    init: function () {
-        this.requires("2D, Supportable, Motion");
-
-        this.bind("LiftedOffGround", this._startGravity); // start gravity if we are off ground
-        this.bind("LandedOnGround", this._stopGravity); // stop gravity once landed
-    },
-    remove: function(destroyed) {
-        this.unbind("LiftedOffGround", this._startGravity);
-        this.unbind("LandedOnGround", this._stopGravity);
-    },
-
-    _gravityCheckLanding: function(ground) {
-        if (this._dy < 0) 
-            this.canLand = false;
-    },
-
-    /**@
-     * #.gravity
-     * @comp Gravity
-     * @sign public this .gravity([comp])
-     * @param comp - The name of a component that will stop this entity from falling
-     *
-     * Enable gravity for this entity no matter whether comp parameter is specified or not.
-     * If comp parameter is specified all entities with that component will stop this entity from falling.
-     * For a player entity in a platform game this would be a component that is added to all entities
-     * that the player should be able to walk on.
-     *
-     * @example
-     * ~~~
-     * Crafty.e("2D, DOM, Color, Gravity")
-     *   .color("red")
-     *   .attr({ w: 100, h: 100 })
-     *   .gravity("platform");
-     * ~~~
-     */
-    gravity: function (comp) {
-        this.uniqueBind("CheckLanding", this._gravityCheckLanding);
-        this.startGroundDetection(comp);
-        this._startGravity();
-
-        return this;
-    },
-    /**@
-     * #.antigravity
-     * @comp Gravity
-     * @sign public this .antigravity()
-     * Disable gravity for this component. It can be reenabled by calling .gravity()
-     */
-    antigravity: function () {
-        this._stopGravity();
-        this.stopGroundDetection();
-        this.unbind("CheckLanding", this._gravityCheckLanding);
-
-        return this;
-    },
-
-    /**@
-     * #.gravityConst
-     * @comp Gravity
-     * @sign public this .gravityConst(g)
-     * @param g - gravitational constant in pixels per second squared
-     *
-     * Set the gravitational constant to g for this entity. The default is 500. The greater g, the stronger the downwards acceleration.
-     *
-     * @example
-     * ~~~
-     * Crafty.e("2D, DOM, Color, Gravity")
-     *   .color("red")
-     *   .attr({ w: 100, h: 100 })
-     *   .gravityConst(750)
-     *   .gravity("platform");
-     * ~~~
-     */
-    gravityConst: function (g) {
-        if (this._gravityActive) { // gravity active, change acceleration
-            this.ay -= this._gravityConst;
-            this.ay += g;
-        }
-        this._gravityConst = g;
-
-        return this;
-    },
-
-    _startGravity: function() {
-        if (this._gravityActive) return;
-        this._gravityActive = true;
-        this.ay += this._gravityConst;
-    },
-    _stopGravity: function() {
-        if (!this._gravityActive) return;
-        this._gravityActive = false;
-        this.ay = 0;
-        this.vy = 0;
-    }
-});
-
-// This is used to define getters and setters for Motion properties
-// For instance
-//      __motionProp(entity, "a", "x", true) 
-// will define a getter for `ax` which accesses an underlying private property `_ax`
-// If the `setter` property is false, setting a value will be a null-op
-var __motionProp = function(self, prefix, prop, setter) {
-    var publicProp = prefix + prop;
-    var privateProp = "_" + publicProp;
-
-    var motionEvent = { key: "", oldValue: 0};
-    // getters & setters for public property
-    if (setter) {
-        Crafty.defineField(self, publicProp, function() { return this[privateProp]; }, function(newValue) {
-            var oldValue = this[privateProp];
-            if (newValue !== oldValue) {
-                this[privateProp] = newValue;
-
-                motionEvent.key = publicProp;
-                motionEvent.oldValue = oldValue;
-                this.trigger("MotionChange", motionEvent);
-            }
-        });
-    } else {
-        Crafty.defineField(self, publicProp, function() { return this[privateProp]; }, function(newValue) {});
-    }
-
-    // hide private property
-    Object.defineProperty(self, privateProp, {
-        value : 0,
-        writable : true,
-        enumerable : false,
-        configurable : false
-    });
-};
-
-// This defines an alias for a pair of underlying properties which represent the components of a vector
-// It takes an object with vector methods, and redefines its x/y properties as getters and setters to properties of self
-// This allows you to use the vector's special methods to manipulate the entity's properties, 
-// while still allowing you to manipulate those properties directly if performance matters
-var __motionVector = function(self, prefix, setter, vector) {
-    var publicX = prefix + "x",
-        publicY = prefix + "y",
-        privateX = "_" + publicX,
-        privateY = "_" + publicY;
-
-    if (setter) {
-        Crafty.defineField(vector, "x", function() { return self[privateX]; }, function(v) { self[publicX] = v; });
-        Crafty.defineField(vector, "y", function() { return self[privateY]; }, function(v) { self[publicY] = v; });
-    } else {
-        Crafty.defineField(vector, "x", function() { return self[privateX]; }, function(v) {});
-        Crafty.defineField(vector, "y", function() { return self[privateY]; }, function(v) {});
-    }
-    if (Object.seal) { Object.seal(vector); }
-
-    return vector;
-};
-
-
-/**@
- * #AngularMotion
- * @category 2D
- * @trigger Rotated - When entity has rotated due to angular velocity/acceleration a Rotated event is triggered. - Number - Old rotation
- * @trigger NewRotationDirection - When entity has changed rotational direction due to rotational velocity a NewRotationDirection event is triggered. The event is triggered once, if direction is different from last frame. - -1 | 0 | 1 - New direction
- * @trigger MotionChange - When a motion property has changed a MotionChange event is triggered. - { key: String, oldValue: Number } - Motion property name and old value
- *
- * Component that allows rotating an entity by applying angular velocity and acceleration.
- * All angular motion values are expressed in degrees per second (e.g. an entity with `vrotation` of 10 will rotate 10 degrees each second).
- */
-Crafty.c("AngularMotion", {
-    /**@
-     * #.vrotation
-     * @comp AngularMotion
-     * 
-     * A property for accessing/modifying the angular(rotational) velocity. 
-     * The velocity remains constant over time, unless the acceleration increases the velocity.
-     *
-     * @example
-     * ~~~
-     * var ent = Crafty.e("2D, AngularMotion");
-     *
-     * var vrotation = ent.vrotation; // retrieve the angular velocity
-     * ent.vrotation += 1; // increase the angular velocity
-     * ent.vrotation = 0; // reset the angular velocity
-     * ~~~
-     */
-    _vrotation: 0,
-
-    /**@
-     * #.arotation
-     * @comp AngularMotion
-     * 
-     * A property for accessing/modifying the angular(rotational) acceleration. 
-     * The acceleration increases the velocity over time, resulting in ever increasing speed.
-     *
-     * @example
-     * ~~~
-     * var ent = Crafty.e("2D, AngularMotion");
-     *
-     * var arotation = ent.arotation; // retrieve the angular acceleration
-     * ent.arotation += 1; // increase the angular acceleration
-     * ent.arotation = 0; // reset the angular acceleration
-     * ~~~
-     */
-    _arotation: 0,
-
-    /**@
-     * #.drotation
-     * @comp AngularMotion
-     * 
-     * A number that reflects the change in rotation (difference between the old & new rotation) that was applied in the last frame.
-     *
-     * @example
-     * ~~~
-     * var ent = Crafty.e("2D, AngularMotion");
-     *
-     * var drotation = ent.drotation; // the change of rotation in the last frame
-     * ~~~
-     */
-    _drotation: 0,
-
-    init: function () {
-        this.requires("2D");
-
-        __motionProp(this, "v", "rotation", true);
-        __motionProp(this, "a", "rotation", true);
-        __motionProp(this, "d", "rotation", false);
-
-        this.__oldRotationDirection = 0;
-
-        this.bind("EnterFrame", this._angularMotionTick);
-    },
-    remove: function(destroyed) {
-        this.unbind("EnterFrame", this._angularMotionTick);
-    },
-
-    /**@
-     * #.resetAngularMotion
-     * @comp AngularMotion
-     * @sign public this .resetAngularMotion()
-     * 
-     * Reset all motion (resets velocity, acceleration, motionDelta).
-     */
-    resetAngularMotion: function() {
-        this._drotation = 0;
-        this.vrotation = 0;
-        this.arotation = 0;
-
-        return this;
-    },
-
-    /*
-     * s += v * Δt + (0.5 * a) * Δt * Δt
-     * v += a * Δt
-     */
-    _angularMotionTick: function(frameData) {
-        var dt = frameData.dt / 1000; // Time in s
-        var oldR = this._rotation,
-            vr = this._vrotation,
-            ar = this._arotation;
-
-        // s += v * Δt + (0.5 * a) * Δt * Δt
-        var newR = oldR + vr * dt + 0.5 * ar * dt * dt;
-        // v += a * Δt
-        this.vrotation = vr + ar * dt;
-
-        // Check if direction of velocity has changed
-        var _vr = this._vrotation, dvr = _vr ? (_vr<0 ? -1:1):0; // Quick implementation of Math.sign
-        if (this.__oldRotationDirection !== dvr) {
-            this.__oldRotationDirection = dvr;
-            this.trigger('NewRotationDirection', dvr);
-        }
-
-        // Check if velocity has changed
-        // Δs = s[t] - s[t-1]
-        this._drotation = newR - oldR;
-        if (this._drotation !== 0) {
-            this.rotation = newR;
-            this.trigger('Rotated', oldR);
-        }
-    }
-});
-
-/**@
- * #Motion
- * @category 2D
- * @trigger Moved - When entity has moved due to velocity/acceleration on either x or y axis a Moved event is triggered. If the entity has moved on both axes for diagonal movement the event is triggered twice. - { axis: 'x' | 'y', oldValue: Number } - Old position
- * @trigger NewDirection - When entity has changed direction due to velocity on either x or y axis a NewDirection event is triggered. The event is triggered once, if direction is different from last frame. - { x: -1 | 0 | 1, y: -1 | 0 | 1 } - New direction
- * @trigger MotionChange - When a motion property has changed a MotionChange event is triggered. - { key: String, oldValue: Number } - Motion property name and old value
- *
- * Component that allows moving an entity by applying linear velocity and acceleration.
- * All linear motion values are expressed in pixels per second (e.g. an entity with `vx` of 1 will move 1px on the x axis each second).
- *
- * @note Several methods return Vector2D objects that dynamically reflect the entity's underlying properties.  If you want a static copy instead, use the vector's `clone()` method.
- */
-Crafty.c("Motion", {
-    /**@
-     * #.vx
-     * @comp Motion
-     * 
-     * A property for accessing/modifying the linear velocity in the x axis.
-     * The velocity remains constant over time, unless the acceleration changes the velocity.
-     *
-     * @example
-     * ~~~
-     * var ent = Crafty.e("2D, Motion");
-     *
-     * var vx = ent.vx; // retrieve the linear velocity in the x axis
-     * ent.vx += 1; // increase the linear velocity in the x axis
-     * ent.vx = 0; // reset the linear velocity in the x axis
-     * ~~~
-     */
-    _vx: 0,
-
-    /**@
-     * #.vy
-     * @comp Motion
-     * 
-     * A property for accessing/modifying the linear velocity in the y axis.
-     * The velocity remains constant over time, unless the acceleration changes the velocity.
-     *
-     * @example
-     * ~~~
-     * var ent = Crafty.e("2D, Motion");
-     *
-     * var vy = ent.vy; // retrieve the linear velocity in the y axis
-     * ent.vy += 1; // increase the linear velocity in the y axis
-     * ent.vy = 0; // reset the linear velocity in the y axis
-     * ~~~
-     */
-    _vy: 0,
-
-    /**@
-     * #.ax
-     * @comp Motion
-     * 
-     * A property for accessing/modifying the linear acceleration in the x axis.
-     * The acceleration changes the velocity over time.
-     *
-     * @example
-     * ~~~
-     * var ent = Crafty.e("2D, Motion");
-     *
-     * var ax = ent.ax; // retrieve the linear acceleration in the x axis
-     * ent.ax += 1; // increase the linear acceleration in the x axis
-     * ent.ax = 0; // reset the linear acceleration in the x axis
-     * ~~~
-     */
-    _ax: 0,
-
-    /**@
-     * #.ay
-     * @comp Motion
-     * 
-     * A property for accessing/modifying the linear acceleration in the y axis.
-     * The acceleration changes the velocity over time.
-     *
-     * @example
-     * ~~~
-     * var ent = Crafty.e("2D, Motion");
-     *
-     * var ay = ent.ay; // retrieve the linear acceleration in the y axis
-     * ent.ay += 1; // increase the linear acceleration in the y axis
-     * ent.ay = 0; // reset the linear acceleration in the y axis
-     * ~~~
-     */
-    _ay: 0,
-
-    /**@
-     * #.dx
-     * @comp Motion
-     * 
-     * A number that reflects the change in x (difference between the old & new x) that was applied in the last frame.
-     *
-     * @example
-     * ~~~
-     * var ent = Crafty.e("2D, Motion");
-     *
-     * var dx = ent.dx; // the change of x in the last frame
-     * ~~~
-     */
-    _dx: 0,
-
-    /**@
-     * #.dy
-     * @comp Motion
-     * 
-     * A number that reflects the change in y (difference between the old & new y) that was applied in the last frame.
-     *
-     * @example
-     * ~~~
-     * var ent = Crafty.e("2D, Motion");
-     *
-     * var dy = ent.dy; // the change of y in the last frame
-     * ~~~
-     */
-    _dy: 0,
-
-    init: function () {
-        this.requires("2D");
-
-        __motionProp(this, "v", "x", true);
-        __motionProp(this, "v", "y", true);
-        this._velocity = __motionVector(this, "v", true, new Crafty.math.Vector2D());
-        __motionProp(this, "a", "x", true);
-        __motionProp(this, "a", "y", true);
-        this._acceleration = __motionVector(this, "a", true, new Crafty.math.Vector2D());
-        __motionProp(this, "d", "x", false);
-        __motionProp(this, "d", "y", false);
-        this._motionDelta = __motionVector(this, "d", false, new Crafty.math.Vector2D());
-
-        this.__movedEvent = {axis: '', oldValue: 0};
-        this.__oldDirection = {x: 0, y: 0};
-
-        this.bind("EnterFrame", this._linearMotionTick);
-    },
-    remove: function(destroyed) {
-        this.unbind("EnterFrame", this._linearMotionTick);
-    },
-
-    /**@
-     * #.resetMotion
-     * @comp Motion
-     * @sign public this .resetMotion()
-     * @return this
-     * 
-     * Reset all linear motion (resets velocity, acceleration, motionDelta).
-     */
-    resetMotion: function() {
-        this.vx = 0; this.vy = 0;
-        this.ax = 0; this.ay = 0;
-        this._dx = 0; this._dy = 0;
-
-        return this;
-    },
-
-    /**@
-     * #.motionDelta
-     * @comp Motion
-     * @sign public Vector2D .motionDelta()
-     * @return A Vector2D with the properties {x, y} that reflect the change in x & y.
-     * 
-     * Returns the difference between the old & new position that was applied in the last frame.
-     *
-     * @example
-     * ~~~
-     * var ent = Crafty.e("2D, Motion");
-     *
-     * var deltaY = ent.motionDelta().y; // the change of y in the last frame
-     * ~~~
-     * @see Crafty.math.Vector2D
-     */
-    motionDelta: function() {
-        return this._motionDelta;
-    },
-
-    /**@
-     * #.velocity
-     * @comp Motion
-     * Method for accessing/modifying the linear(x,y) velocity. 
-     * The velocity remains constant over time, unless the acceleration increases the velocity.
-     *
-     * @sign public Vector2D .velocity()
-     * @return The velocity Vector2D with the properties {x, y} that reflect the velocities in the <x, y> direction of the entity.
-     *
-     * Returns the current velocity. You can access/modify the properties in order to retrieve/change the velocity.
-
-     * @example
-     * ~~~
-     * var ent = Crafty.e("2D, Motion");
-     *
-     * var vel = ent.velocity(); //returns the velocity vector
-     * vel.x;       // retrieve the velocity in the x direction
-     * vel.x = 0;   // set the velocity in the x direction
-     * vel.x += 4   // add to the velocity in the x direction
-     * ~~~
-     * @see Crafty.math.Vector2D
-     */
-    velocity: function() {
-        return this._velocity;
-    },
-
-
-    /**@
-     * #.acceleration
-     * @comp Motion
-     * Method for accessing/modifying the linear(x,y) acceleration. 
-     * The acceleration increases the velocity over time, resulting in ever increasing speed.
-     * 
-     * @sign public Vector2D .acceleration()
-     * @return The acceleration Vector2D with the properties {x, y} that reflects the acceleration in the <x, y> direction of the entity.
-     *
-     * Returns the current acceleration. You can access/modify the properties in order to retrieve/change the acceleration.
-     *
-     * @example
-     * ~~~
-     * var ent = Crafty.e("2D, Motion");
-     *
-     * var acc = ent.acceleration(); //returns the acceleration object
-     * acc.x;       // retrieve the acceleration in the x direction
-     * acc.x = 0;   // set the acceleration in the x direction
-     * acc.x += 4   // add to the acceleration in the x direction
-     * ~~~
-     * @see Crafty.math.Vector2D
-     */
-    acceleration: function() {
-        return this._acceleration;
-    },
-
-    /**@
-     * #.ccdbr
-     * @comp Motion
-     * @sign public Object .ccdbr([Object ccdbr])
-     * @param ccdbr - an object to use as output
-     * @returns an object with `_x`, `_y`, `_w`, and `_h` properties; if an object is passed in, it will be reused rather than creating a new object.
-     *
-     * Return an object containing the entity's continuous collision detection bounding rectangle.
-     * The CCDBR encompasses the motion delta of the entity's bounding rectangle since last frame.
-     * The CCDBR is minimal if the entity moved on only one axis since last frame, however it encompasses a non-minimal region if it moved on both axis.
-     * For further details, refer to [FAQ#Tunneling](https://github.com/craftyjs/Crafty/wiki/Crafty-FAQ-%28draft%29#why-are-my-bullets-passing-through-other-entities-without-registering-hits).
-     *
-     * @note The keys have an underscore prefix. This is due to the x, y, w, h properties
-     * being setters and getters that wrap the underlying properties with an underscore (_x, _y, _w, _h).
-     *
-     * @see .motionDelta, Collision#.cbr
-     */
-    ccdbr: function (ccdbr) {
-        var pos = this._cbr || this._mbr || this,
-            dx = this._dx,
-            dy = this._dy,
-            ccdX = 0, ccdY = 0,
-            ccdW = dx > 0 ? (ccdX = dx) : -dx,
-            ccdH = dy > 0 ? (ccdY = dy) : -dy;
-
-        ccdbr = ccdbr || {};
-        ccdbr._x = pos._x - ccdX;
-        ccdbr._y = pos._y - ccdY;
-        ccdbr._w = pos._w + ccdW;
-        ccdbr._h = pos._h + ccdH;
-
-        return ccdbr;
-    },
-
-    /*
-     * s += v * Δt + (0.5 * a) * Δt * Δt
-     * v += a * Δt
-     */
-    _linearMotionTick: function(frameData) {
-        var dt = frameData.dt / 1000; // time in s
-        var oldX = this._x, vx = this._vx, ax = this._ax,
-            oldY = this._y, vy = this._vy, ay = this._ay;
-
-        // s += v * Δt + (0.5 * a) * Δt * Δt
-        var newX = oldX + vx * dt + 0.5 * ax * dt * dt;
-        var newY = oldY + vy * dt + 0.5 * ay * dt * dt;
-        // v += a * Δt
-        this.vx = vx + ax * dt;
-        this.vy = vy + ay * dt;
-
-        // Check if direction of velocity has changed
-        var oldDirection = this.__oldDirection,
-            _vx = this._vx, dvx = _vx ? (_vx<0 ? -1:1):0, // A quick implementation of Math.sign
-            _vy = this._vy, dvy = _vy ? (_vy<0 ? -1:1):0;
-        if (oldDirection.x !== dvx || oldDirection.y !== dvy) {
-            oldDirection.x = dvx;
-            oldDirection.y = dvy;
-            this.trigger('NewDirection', oldDirection);
-        }
-
-        // Check if velocity has changed
-        var movedEvent = this.__movedEvent;
-        // Δs = s[t] - s[t-1]
-        this._dx = newX - oldX;
-        this._dy = newY - oldY;
-        if (this._dx !== 0) {
-            this.x = newX;
-            movedEvent.axis = 'x';
-            movedEvent.oldValue = oldX;
-            this.trigger('Moved', movedEvent);
-        }
-        if (this._dy !== 0) {
-            this.y = newY;
-            movedEvent.axis = 'y';
-            movedEvent.oldValue = oldY;
-            this.trigger('Moved', movedEvent);
-        }
-    }
-});
 
 /**@
  * #Crafty.polygon
  * @category 2D
+ * @kind Class
  *
  * The constructor for a polygon object used for hitboxes and click maps. Takes a set of points as an
  * argument, giving alternately the x and y coordinates of the polygon's vertices in order.
@@ -14885,6 +14602,8 @@ Crafty.polygon.prototype = {
     /**@
      * #.containsPoint
      * @comp Crafty.polygon
+     * @kind Method
+     * 
      * @sign public Boolean .containsPoint(Number x, Number y)
      * @param x - X position of the point
      * @param y - Y position of the point
@@ -14914,6 +14633,8 @@ Crafty.polygon.prototype = {
     /**@
      * #.shift
      * @comp Crafty.polygon
+     * @kind Method
+     * 
      * @sign public void .shift(Number x, Number y)
      * @param x - Amount to shift the `x` axis
      * @param y - Amount to shift the `y` axis
@@ -14939,6 +14660,8 @@ Crafty.polygon.prototype = {
     /**@
      * #.clone
      * @comp Crafty.polygon
+     * @kind Method
+     * 
      * @sign public void .clone()
      * 
      * Returns a clone of the polygon.
@@ -14973,6 +14696,8 @@ Crafty.polygon.prototype = {
     /**@
      * #.intersectRay
      * @comp Crafty.polygon
+     * @kind Method
+     * 
      * @sign public Number .intersectRay(Object origin, Object direction)
      * @param origin - the point of origin from which the ray will be cast. The object must contain the properties `_x` and `_y`.
      * @param direction - the direction the ray will be cast. It must be normalized. The object must contain the properties `x` and `y`.
@@ -15095,6 +14820,8 @@ Crafty.polygon.prototype = {
 /**@
  * #Crafty.circle
  * @category 2D
+ * @kind Class
+ * 
  * Circle object used for hitboxes and click maps. Must pass a `x`, a `y` and a `radius` value.
  *
  *@example
@@ -15129,6 +14856,8 @@ Crafty.circle.prototype = {
     /**@
      * #.containsPoint
      * @comp Crafty.circle
+     * @kind Method
+     * 
      * @sign public Boolean .containsPoint(Number x, Number y)
      * @param x - X position of the point
      * @param y - Y position of the point
@@ -15153,6 +14882,8 @@ Crafty.circle.prototype = {
     /**@
      * #.shift
      * @comp Crafty.circle
+     * @kind Method
+     * 
      * @sign public void .shift(Number x, Number y)
      * @param x - Amount to shift the `x` axis
      * @param y - Amount to shift the `y` axis
@@ -15218,7 +14949,7 @@ Crafty.matrix.prototype = {
     }
 };
 
-},{"../core/core.js":8,"./spatial-grid.js":47}],44:[function(require,module,exports){
+},{"../core/core.js":8,"./spatial-grid.js":49}],44:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     DEG_TO_RAD = Math.PI / 180,
     EPSILON = 1e-6;
@@ -15227,6 +14958,8 @@ Crafty.extend({
     /**@
      * #Crafty.raycast
      * @category 2D
+     * @kind Method
+     * 
      * @sign public Array .raycast(Object origin, Object direction[, Number maxDistance][, String comp][, Boolean sort])
      * @param origin - the point of origin from which the ray will be cast. The object must contain the properties `_x` and `_y`.
      * @param direction - the direction the ray will be cast. It must be normalized. The object must contain the properties `x` and `y`.
@@ -15390,6 +15123,8 @@ Crafty.extend({
 /**@
  * #Collision
  * @category 2D
+ * @kind Component
+ * 
  * @trigger HitOn - Triggered when collisions occur. Will not trigger again until collisions of this type cease, or an event is requested once more (using `resetHitChecks(component)`). - { hitData }
  * @trigger HitOff - Triggered when collision with a specific component type ceases - String - componentName
  *
@@ -15425,6 +15160,7 @@ Crafty.c("Collision", {
     /**@
      * #.collision
      * @comp Collision
+     * @kind Method
      *
      * @trigger NewHitbox - when a new hitbox is assigned - Crafty.polygon
      *
@@ -15516,6 +15252,8 @@ Crafty.c("Collision", {
     /**@
      * #.cbr
      * @comp Collision
+     * @kind Method
+     * 
      * @sign public Object .cbr([Object cbr])
      * @param cbr - an object to use as output
      * @returns an object with `_x`, `_y`, `_w`, and `_h` properties; if an object is passed in, it will be reused rather than creating a new object.
@@ -15639,6 +15377,8 @@ Crafty.c("Collision", {
     /**@
      * #.hit
      * @comp Collision
+     * @kind Method
+     * 
      * @sign public Array .hit(String component)
      * @param component - Check collision with entities that have this component
      * applied to them.
@@ -15750,6 +15490,8 @@ Crafty.c("Collision", {
     /**@
      * #.onHit
      * @comp Collision
+     * @kind Method
+     * 
      * @sign public this .onHit(String component, Function callbackOn[, Function callbackOff])
      * @param component - Component to check collisions for.
      * @param callbackOn - Callback method to execute upon collision with the component.
@@ -15830,6 +15572,8 @@ Crafty.c("Collision", {
     /**@
      * #.checkHits
      * @comp Collision
+     * @kind Method
+     * 
      * @sign public this .checkHits(String componentList)
      * @param componentList - A comma seperated list of components to check for collisions with.
      * @sign public this .checkHits(String component1[, .., String componentN])
@@ -15899,6 +15643,7 @@ Crafty.c("Collision", {
     /**@
      * #.ignoreHits
      * @comp Collision
+     * @kind Method
      *
      * @sign public this .ignoreHits()
      *
@@ -15961,6 +15706,8 @@ Crafty.c("Collision", {
     /**@
      * #.resetHitChecks
      * @comp Collision
+     * @kind Method
+     * 
      * @sign public this .resetHitChecks()
      * @sign public this .resetHitChecks(String componentList)
      * @param componentList - A comma seperated list of components to re-check
@@ -16156,6 +15903,7 @@ var Crafty = require('../core/core.js');
 /**@
  * #Crafty.math
  * @category Utilities
+ * @kind CoreObj
  *
  * A set of utility functions for common (and not so common) operations.
  */
@@ -16163,6 +15911,8 @@ Crafty.math = {
     /**@
      * #Crafty.math.abs
      * @comp Crafty.math
+     * @kind Method
+     * 
      * @sign public this Crafty.math.abs(Number n)
      * @param n - Some value.
      * @return Absolute value.
@@ -16176,6 +15926,8 @@ Crafty.math = {
     /**@
      * #Crafty.math.amountOf
      * @comp Crafty.math
+     * @kind Method
+     * 
      * @sign public Number Crafty.math.amountOf(Number checkValue, Number minValue, Number maxValue)
      * @param checkValue - Value that should checked with minimum and maximum.
      * @param minValue - Bottom of the range
@@ -16195,6 +15947,8 @@ Crafty.math = {
     /**@
      * #Crafty.math.clamp
      * @comp Crafty.math
+     * @kind Method
+     * 
      * @sign public Number Crafty.math.clamp(Number value, Number min, Number max)
      * @param value - A value.
      * @param max - Maximum that value can be.
@@ -16216,6 +15970,8 @@ Crafty.math = {
      * #Crafty.math.degToRad
      * Converts angle from degree to radian.
      * @comp Crafty.math
+     * @kind Method
+     * 
      * @sign public Number degToRad(angleInDeg)
      * @param angleInDeg - The angle in degrees.
      * @return The angle in radians.
@@ -16227,6 +15983,8 @@ Crafty.math = {
     /**@
      * #Crafty.math.distance
      * @comp Crafty.math
+     * @kind Method
+     * 
      * @sign public Number Crafty.math.distance(Number x1, Number y1, Number x2, Number y2)
      * @param x1 - First x coordinate.
      * @param y1 - First y coordinate.
@@ -16244,6 +16002,8 @@ Crafty.math = {
     /**@
      * #Crafty.math.lerp
      * @comp Crafty.math
+     * @kind Method
+     * 
      * @sign public Number Crafty.math.lerp(Number value1, Number value2, Number amount)
      * @param value1 - One value.
      * @param value2 - Another value.
@@ -16260,6 +16020,8 @@ Crafty.math = {
     /**@
      * #Crafty.math.negate
      * @comp Crafty.math
+     * @kind Method
+     * 
      * @sign public Number Crafty.math.negate(Number percent)
      * @param percent - The probability of returning `-1`
      * @return 1 or -1.
@@ -16276,6 +16038,8 @@ Crafty.math = {
     /**@
      * #Crafty.math.radToDeg
      * @comp Crafty.math
+     * @kind Method
+     * 
      * @sign public Number Crafty.math.radToDeg(Number angle)
      * @param angleInRad - The angle in radian.
      * @return The angle in degree.
@@ -16289,6 +16053,8 @@ Crafty.math = {
     /**@
      * #Crafty.math.randomElementOfArray
      * @comp Crafty.math
+     * @kind Method
+     * 
      * @sign public Object Crafty.math.randomElementOfArray(Array array)
      * @param array - A specific array.
      * @return A random element of a specific array.
@@ -16302,6 +16068,8 @@ Crafty.math = {
     /**@
      * #Crafty.math.randomInt
      * @comp Crafty.math
+     * @kind Method
+     * 
      * @sign public Number Crafty.math.randomInt(Number start, Number end)
      * @param start - Smallest int value that can be returned.
      * @param end - Biggest int value that can be returned.
@@ -16316,6 +16084,8 @@ Crafty.math = {
     /**@
      * #Crafty.math.randomNumber
      * @comp Crafty.math
+     * @kind Method
+     * 
      * @sign public Number Crafty.math.randomNumber(Number start, Number end)
      * @param start - Smallest number value that can be returned.
      * @param end - Biggest number value that can be returned.
@@ -16330,6 +16100,8 @@ Crafty.math = {
     /**@
      * #Crafty.math.squaredDistance
      * @comp Crafty.math
+     * @kind Method
+     * 
      * @sign public Number Crafty.math.squaredDistance(Number x1, Number y1, Number x2, Number y2)
      * @param x1 - First x coordinate.
      * @param y1 - First y coordinate.
@@ -16346,6 +16118,8 @@ Crafty.math = {
     /**@
      * #Crafty.math.withinRange
      * @comp Crafty.math
+     * @kind Method
+     * 
      * @sign public Boolean Crafty.math.withinRange(Number value, Number min, Number max)
      * @param value - The specific value.
      * @param min - Minimum value.
@@ -16363,6 +16137,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #Crafty.math.Vector2D
      * @category 2D
+     * @kind Class
+     * 
      * @class This is a general purpose 2D vector class
      *
      * Vector2D uses the following form:
@@ -16393,6 +16169,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.add
      * @comp Crafty.math.Vector2D
+     * @kind Method
+     * 
      *
      * Adds the passed vector to this vector
      *
@@ -16410,6 +16188,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.angleBetween
      * @comp Crafty.math.Vector2D
+     * @kind Method
+     * 
      *
      * Calculates the angle between the passed vector and this vector, using <0,0> as the point of reference.
      * Angles returned have the range (−π, π].
@@ -16426,6 +16206,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.angleTo
      * @comp Crafty.math.Vector2D
+     * @kind Method
+     * 
      *
      * Calculates the angle to the passed vector from this vector, using this vector as the point of reference.
      *
@@ -16441,6 +16223,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.clone
      * @comp Crafty.math.Vector2D
+     * @kind Method
+     * 
      *
      * Creates and exact, numeric copy of this vector
      *
@@ -16455,6 +16239,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.distance
      * @comp Crafty.math.Vector2D
+     * @kind Method
+     * 
      *
      * Calculates the distance from this vector to the passed vector.
      *
@@ -16470,6 +16256,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.distanceSq
      * @comp Crafty.math.Vector2D
+     * @kind Method
+     * 
      *
      * Calculates the squared distance from this vector to the passed vector.
      * This function avoids calculating the square root, thus being slightly faster than .distance( ).
@@ -16487,6 +16275,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.divide
      * @comp Crafty.math.Vector2D
+     * @kind Method
+     * 
      *
      * Divides this vector by the passed vector.
      *
@@ -16504,6 +16294,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.dotProduct
      * @comp Crafty.math.Vector2D
+     * @kind Method
+     * 
      *
      * Calculates the dot product of this and the passed vectors
      *
@@ -16519,6 +16311,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.crossProduct
      * @comp Crafty.math.Vector2D
+     * @kind Method
+     * 
      *
      * Calculates the z component of the cross product of the two vectors augmented to 3D.
      *
@@ -16534,6 +16328,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.equals
      * @comp Crafty.math.Vector2D
+     * @kind Method
+     * 
      *
      * Determines if this vector is numerically equivalent to the passed vector.
      *
@@ -16550,6 +16346,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.perpendicular
      * @comp Crafty.math.Vector2D
+     * @kind Method
+     * 
      *
      * Calculates a new vector that is perpendicular to this vector.
      * The perpendicular vector has the same magnitude as this vector and is obtained by a counter-clockwise rotation of 90° of this vector.
@@ -16567,6 +16365,7 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.getNormal
      * @comp Crafty.math.Vector2D
+     * @kind Method
      *
      * Calculates a new right-handed unit vector that is perpendicular to the line created by this and the passed vector.
      *
@@ -16584,6 +16383,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.isZero
      * @comp Crafty.math.Vector2D
+     * @kind Method
+     * 
      *
      * Determines if this vector is equal to <0,0>
      *
@@ -16598,6 +16399,7 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.magnitude
      * @comp Crafty.math.Vector2D
+     * @kind Method
      *
      * Calculates the magnitude of this vector.
      * Note: Function objects in JavaScript already have a 'length' member, hence the use of magnitude instead.
@@ -16613,7 +16415,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.magnitudeSq
      * @comp Crafty.math.Vector2D
-     *
+     * @kind Method
+     * 
      * Calculates the square of the magnitude of this vector.
      * This function avoids calculating the square root, thus being slightly faster than .magnitude( ).
      *
@@ -16629,7 +16432,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.multiply
      * @comp Crafty.math.Vector2D
-     *
+     * @kind Method
+     * 
      * Multiplies this vector by the passed vector
      *
      * @public
@@ -16646,7 +16450,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.negate
      * @comp Crafty.math.Vector2D
-     *
+     * @kind Method
+     * 
      * Negates this vector (ie. <-x,-y>)
      *
      * @public
@@ -16662,7 +16467,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.normalize
      * @comp Crafty.math.Vector2D
-     *
+     * @kind Method
+     * 
      * Normalizes this vector (scales the vector so that its new magnitude is 1)
      * For vectors where magnitude is 0, <1,0> is returned.
      *
@@ -16688,7 +16494,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.scale
      * @comp Crafty.math.Vector2D
-     *
+     * @kind Method
+     * 
      * Scales this vector by the passed amount(s)
      * If scalarY is omitted, scalarX is used for both axes
      *
@@ -16711,7 +16518,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.scaleToMagnitude
      * @comp Crafty.math.Vector2D
-     *
+     * @kind Method
+     * 
      * Scales this vector such that its new magnitude is equal to the passed value.
      *
      * @public
@@ -16729,7 +16537,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.setValues
      * @comp Crafty.math.Vector2D
-     *
+     * @kind Method
+     * 
      * Sets the values of this vector using a passed vector or pair of numbers.
      *
      * @public
@@ -16754,7 +16563,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.subtract
      * @comp Crafty.math.Vector2D
-     *
+     * @kind Method
+     * 
      * Subtracts the passed vector from this vector.
      *
      * @public
@@ -16771,7 +16581,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.toString
      * @comp Crafty.math.Vector2D
-     *
+     * @kind Method
+     * 
      * Returns a string representation of this vector.
      *
      * @public
@@ -16785,7 +16596,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.translate
      * @comp Crafty.math.Vector2D
-     *
+     * @kind Method
+     * 
      * Translates (moves) this vector by the passed amounts.
      * If dy is omitted, dx is used for both axes.
      *
@@ -16808,7 +16620,8 @@ Crafty.math.Vector2D = (function () {
     /**@
      * #.tripleProduct
      * @comp Crafty.math.Vector2D
-     *
+     * @kind Method
+     * 
      * Calculates the triple product of three vectors.
      * triple vector product = b(a•c) - a(b•c)
      *
@@ -16835,7 +16648,8 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #Crafty.math.Matrix2D
      * @category 2D
-     *
+     * @kind Class
+     * 
      * @class This is a 2D Matrix2D class. It is 3x3 to allow for affine transformations in 2D space.
      * The third row is always assumed to be [0, 0, 1].
      *
@@ -16884,7 +16698,8 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.apply
      * @comp Crafty.math.Matrix2D
-     *
+     * @kind Method
+     * 
      * Applies the matrix transformations to the passed object
      *
      * @public
@@ -16909,7 +16724,8 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.clone
      * @comp Crafty.math.Matrix2D
-     *
+     * @kind Method
+     * 
      * Creates an exact, numeric copy of the current matrix
      *
      * @public
@@ -16923,6 +16739,7 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.combine
      * @comp Crafty.math.Matrix2D
+     * @kind Method
      *
      * Multiplies this matrix with another, overriding the values of this matrix.
      * The passed matrix is assumed to be on the right-hand side.
@@ -16948,6 +16765,7 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.equals
      * @comp Crafty.math.Matrix2D
+     * @kind Method
      *
      * Checks for the numeric equality of this matrix versus another.
      *
@@ -16965,6 +16783,7 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.determinant
      * @comp Crafty.math.Matrix2D
+     * @kind Method
      *
      * Calculates the determinant of this matrix
      *
@@ -16979,6 +16798,7 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.invert
      * @comp Crafty.math.Matrix2D
+     * @kind Method
      *
      * Inverts this matrix if possible
      *
@@ -17014,7 +16834,8 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.isIdentity
      * @comp Crafty.math.Matrix2D
-     *
+     * @kind Method
+     * 
      * Returns true if this matrix is the identity matrix
      *
      * @public
@@ -17028,7 +16849,8 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.isInvertible
      * @comp Crafty.math.Matrix2D
-     *
+     * @kind Method
+     * 
      * Determines is this matrix is invertible.
      *
      * @public
@@ -17043,7 +16865,8 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.preRotate
      * @comp Crafty.math.Matrix2D
-     *
+     * @kind Method
+     * 
      * Applies a counter-clockwise pre-rotation to this matrix
      *
      * @public
@@ -17068,7 +16891,8 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.preScale
      * @comp Crafty.math.Matrix2D
-     *
+     * @kind Method
+     * 
      * Applies a pre-scaling to this matrix
      *
      * @public
@@ -17092,7 +16916,8 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.preTranslate
      * @comp Crafty.math.Matrix2D
-     *
+     * @kind Method
+     * 
      * Applies a pre-translation to this matrix
      *
      * @public
@@ -17117,7 +16942,8 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.rotate
      * @comp Crafty.math.Matrix2D
-     *
+     * @kind Method
+     * 
      * Applies a counter-clockwise post-rotation to this matrix
      *
      * @public
@@ -17145,7 +16971,8 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.scale
      * @comp Crafty.math.Matrix2D
-     *
+     * @kind Method
+     * 
      * Applies a post-scaling to this matrix
      *
      * @public
@@ -17171,7 +16998,8 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.setValues
      * @comp Crafty.math.Matrix2D
-     *
+     * @kind Method
+     * 
      * Sets the values of this matrix
      *
      * @public
@@ -17208,7 +17036,8 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.toString
      * @comp Crafty.math.Matrix2D
-     *
+     * @kind Method
+     * 
      * Returns the string representation of this matrix.
      *
      * @public
@@ -17223,7 +17052,8 @@ Crafty.math.Matrix2D = (function () {
     /**@
      * #.translate
      * @comp Crafty.math.Matrix2D
-     *
+     * @kind Method
+     * 
      * Applies a post-translation to this matrix
      *
      * @public
@@ -17251,9 +17081,878 @@ Crafty.math.Matrix2D = (function () {
 var Crafty = require('../core/core.js');
 
 
+
+// This is used to define getters and setters for Motion properties
+// For instance
+//      __motionProp(entity, "a", "x", true) 
+// will define a getter for `ax` which accesses an underlying private property `_ax`
+// If the `setter` property is false, setting a value will be a null-op
+var __motionProp = function(self, prefix, prop, setter) {
+    var publicProp = prefix + prop;
+    var privateProp = "_" + publicProp;
+
+    var motionEvent = { key: "", oldValue: 0};
+    // getters & setters for public property
+    if (setter) {
+        Crafty.defineField(self, publicProp, function() { return this[privateProp]; }, function(newValue) {
+            var oldValue = this[privateProp];
+            if (newValue !== oldValue) {
+                this[privateProp] = newValue;
+
+                motionEvent.key = publicProp;
+                motionEvent.oldValue = oldValue;
+                this.trigger("MotionChange", motionEvent);
+            }
+        });
+    } else {
+        Crafty.defineField(self, publicProp, function() { return this[privateProp]; }, function(newValue) {});
+    }
+
+    // hide private property
+    Object.defineProperty(self, privateProp, {
+        value : 0,
+        writable : true,
+        enumerable : false,
+        configurable : false
+    });
+};
+
+// This defines an alias for a pair of underlying properties which represent the components of a vector
+// It takes an object with vector methods, and redefines its x/y properties as getters and setters to properties of self
+// This allows you to use the vector's special methods to manipulate the entity's properties, 
+// while still allowing you to manipulate those properties directly if performance matters
+var __motionVector = function(self, prefix, setter, vector) {
+    var publicX = prefix + "x",
+        publicY = prefix + "y",
+        privateX = "_" + publicX,
+        privateY = "_" + publicY;
+
+    if (setter) {
+        Crafty.defineField(vector, "x", function() { return self[privateX]; }, function(v) { self[publicX] = v; });
+        Crafty.defineField(vector, "y", function() { return self[privateY]; }, function(v) { self[publicY] = v; });
+    } else {
+        Crafty.defineField(vector, "x", function() { return self[privateX]; }, function(v) {});
+        Crafty.defineField(vector, "y", function() { return self[privateY]; }, function(v) {});
+    }
+    if (Object.seal) { Object.seal(vector); }
+
+    return vector;
+};
+
+/**@
+ * #AngularMotion
+ * @category 2D
+ * @kind Component
+ * 
+ * @trigger Rotated - When entity has rotated due to angular velocity/acceleration a Rotated event is triggered. - Number - Old rotation
+ * @trigger NewRotationDirection - When entity has changed rotational direction due to rotational velocity a NewRotationDirection event is triggered. The event is triggered once, if direction is different from last frame. - -1 | 0 | 1 - New direction
+ * @trigger MotionChange - When a motion property has changed a MotionChange event is triggered. - { key: String, oldValue: Number } - Motion property name and old value
+ *
+ * Component that allows rotating an entity by applying angular velocity and acceleration.
+ * All angular motion values are expressed in degrees per second (e.g. an entity with `vrotation` of 10 will rotate 10 degrees each second).
+ */
+Crafty.c("AngularMotion", {
+    /**@
+     * #.vrotation
+     * @comp AngularMotion
+     * @kind Property
+     * 
+     * A property for accessing/modifying the angular(rotational) velocity. 
+     * The velocity remains constant over time, unless the acceleration increases the velocity.
+     *
+     * @example
+     * ~~~
+     * var ent = Crafty.e("2D, AngularMotion");
+     *
+     * var vrotation = ent.vrotation; // retrieve the angular velocity
+     * ent.vrotation += 1; // increase the angular velocity
+     * ent.vrotation = 0; // reset the angular velocity
+     * ~~~
+     */
+    _vrotation: 0,
+
+    /**@
+     * #.arotation
+     * @comp AngularMotion
+     * @kind Property
+     * 
+     * A property for accessing/modifying the angular(rotational) acceleration. 
+     * The acceleration increases the velocity over time, resulting in ever increasing speed.
+     *
+     * @example
+     * ~~~
+     * var ent = Crafty.e("2D, AngularMotion");
+     *
+     * var arotation = ent.arotation; // retrieve the angular acceleration
+     * ent.arotation += 1; // increase the angular acceleration
+     * ent.arotation = 0; // reset the angular acceleration
+     * ~~~
+     */
+    _arotation: 0,
+
+    /**@
+     * #.drotation
+     * @comp AngularMotion
+     * @kind Property
+     * 
+     * A number that reflects the change in rotation (difference between the old & new rotation) that was applied in the last frame.
+     *
+     * @example
+     * ~~~
+     * var ent = Crafty.e("2D, AngularMotion");
+     *
+     * var drotation = ent.drotation; // the change of rotation in the last frame
+     * ~~~
+     */
+    _drotation: 0,
+
+    init: function () {
+        this.requires("2D");
+
+        __motionProp(this, "v", "rotation", true);
+        __motionProp(this, "a", "rotation", true);
+        __motionProp(this, "d", "rotation", false);
+
+        this.__oldRotationDirection = 0;
+
+        this.bind("EnterFrame", this._angularMotionTick);
+    },
+    remove: function(destroyed) {
+        this.unbind("EnterFrame", this._angularMotionTick);
+    },
+
+    /**@
+     * #.resetAngularMotion
+     * @comp AngularMotion
+     * @kind Method
+     * 
+     * @sign public this .resetAngularMotion()
+     * 
+     * Reset all motion (resets velocity, acceleration, motionDelta).
+     */
+    resetAngularMotion: function() {
+        this._drotation = 0;
+        this.vrotation = 0;
+        this.arotation = 0;
+
+        return this;
+    },
+
+    /*
+     * s += v * Δt + (0.5 * a) * Δt * Δt
+     * v += a * Δt
+     */
+    _angularMotionTick: function(frameData) {
+        var dt = frameData.dt / 1000; // Time in s
+        var oldR = this._rotation,
+            vr = this._vrotation,
+            ar = this._arotation;
+
+        // s += v * Δt + (0.5 * a) * Δt * Δt
+        var newR = oldR + vr * dt + 0.5 * ar * dt * dt;
+        // v += a * Δt
+        this.vrotation = vr + ar * dt;
+
+        // Check if direction of velocity has changed
+        var _vr = this._vrotation, dvr = _vr ? (_vr<0 ? -1:1):0; // Quick implementation of Math.sign
+        if (this.__oldRotationDirection !== dvr) {
+            this.__oldRotationDirection = dvr;
+            this.trigger('NewRotationDirection', dvr);
+        }
+
+        // Check if velocity has changed
+        // Δs = s[t] - s[t-1]
+        this._drotation = newR - oldR;
+        if (this._drotation !== 0) {
+            this.rotation = newR;
+            this.trigger('Rotated', oldR);
+        }
+    }
+});
+
+/**@
+ * #Motion
+ * @category 2D
+ * @kind Component
+ * 
+ * @trigger Moved - When entity has moved due to velocity/acceleration on either x or y axis a Moved event is triggered. If the entity has moved on both axes for diagonal movement the event is triggered twice. - { axis: 'x' | 'y', oldValue: Number } - Old position
+ * @trigger NewDirection - When entity has changed direction due to velocity on either x or y axis a NewDirection event is triggered. The event is triggered once, if direction is different from last frame. - { x: -1 | 0 | 1, y: -1 | 0 | 1 } - New direction
+ * @trigger MotionChange - When a motion property has changed a MotionChange event is triggered. - { key: String, oldValue: Number } - Motion property name and old value
+ *
+ * Component that allows moving an entity by applying linear velocity and acceleration.
+ * All linear motion values are expressed in pixels per second (e.g. an entity with `vx` of 1 will move 1px on the x axis each second).
+ *
+ * @note Several methods return Vector2D objects that dynamically reflect the entity's underlying properties.  If you want a static copy instead, use the vector's `clone()` method.
+ */
+Crafty.c("Motion", {
+    /**@
+     * #.vx
+     * @comp Motion
+     * @kind Property
+     * 
+     * A property for accessing/modifying the linear velocity in the x axis.
+     * The velocity remains constant over time, unless the acceleration changes the velocity.
+     *
+     * @example
+     * ~~~
+     * var ent = Crafty.e("2D, Motion");
+     *
+     * var vx = ent.vx; // retrieve the linear velocity in the x axis
+     * ent.vx += 1; // increase the linear velocity in the x axis
+     * ent.vx = 0; // reset the linear velocity in the x axis
+     * ~~~
+     */
+    _vx: 0,
+
+    /**@
+     * #.vy
+     * @comp Motion
+     * @kind Property
+     * 
+     * A property for accessing/modifying the linear velocity in the y axis.
+     * The velocity remains constant over time, unless the acceleration changes the velocity.
+     *
+     * @example
+     * ~~~
+     * var ent = Crafty.e("2D, Motion");
+     *
+     * var vy = ent.vy; // retrieve the linear velocity in the y axis
+     * ent.vy += 1; // increase the linear velocity in the y axis
+     * ent.vy = 0; // reset the linear velocity in the y axis
+     * ~~~
+     */
+    _vy: 0,
+
+    /**@
+     * #.ax
+     * @comp Motion
+     * @kind Property
+     * 
+     * A property for accessing/modifying the linear acceleration in the x axis.
+     * The acceleration changes the velocity over time.
+     *
+     * @example
+     * ~~~
+     * var ent = Crafty.e("2D, Motion");
+     *
+     * var ax = ent.ax; // retrieve the linear acceleration in the x axis
+     * ent.ax += 1; // increase the linear acceleration in the x axis
+     * ent.ax = 0; // reset the linear acceleration in the x axis
+     * ~~~
+     */
+    _ax: 0,
+
+    /**@
+     * #.ay
+     * @comp Motion
+     * @kind Property
+     * 
+     * A property for accessing/modifying the linear acceleration in the y axis.
+     * The acceleration changes the velocity over time.
+     *
+     * @example
+     * ~~~
+     * var ent = Crafty.e("2D, Motion");
+     *
+     * var ay = ent.ay; // retrieve the linear acceleration in the y axis
+     * ent.ay += 1; // increase the linear acceleration in the y axis
+     * ent.ay = 0; // reset the linear acceleration in the y axis
+     * ~~~
+     */
+    _ay: 0,
+
+    /**@
+     * #.dx
+     * @comp Motion
+     * @kind Property
+     * 
+     * A number that reflects the change in x (difference between the old & new x) that was applied in the last frame.
+     *
+     * @example
+     * ~~~
+     * var ent = Crafty.e("2D, Motion");
+     *
+     * var dx = ent.dx; // the change of x in the last frame
+     * ~~~
+     */
+    _dx: 0,
+
+    /**@
+     * #.dy
+     * @comp Motion
+     * @kind Property
+     * 
+     * A number that reflects the change in y (difference between the old & new y) that was applied in the last frame.
+     *
+     * @example
+     * ~~~
+     * var ent = Crafty.e("2D, Motion");
+     *
+     * var dy = ent.dy; // the change of y in the last frame
+     * ~~~
+     */
+    _dy: 0,
+
+    init: function () {
+        this.requires("2D");
+
+        __motionProp(this, "v", "x", true);
+        __motionProp(this, "v", "y", true);
+        this._velocity = __motionVector(this, "v", true, new Crafty.math.Vector2D());
+        __motionProp(this, "a", "x", true);
+        __motionProp(this, "a", "y", true);
+        this._acceleration = __motionVector(this, "a", true, new Crafty.math.Vector2D());
+        __motionProp(this, "d", "x", false);
+        __motionProp(this, "d", "y", false);
+        this._motionDelta = __motionVector(this, "d", false, new Crafty.math.Vector2D());
+
+        this.__movedEvent = {axis: '', oldValue: 0};
+        this.__oldDirection = {x: 0, y: 0};
+
+        this.bind("EnterFrame", this._linearMotionTick);
+    },
+    remove: function(destroyed) {
+        this.unbind("EnterFrame", this._linearMotionTick);
+    },
+
+    /**@
+     * #.resetMotion
+     * @comp Motion
+     * @kind Method
+     * 
+     * @sign public this .resetMotion()
+     * @return this
+     * 
+     * Reset all linear motion (resets velocity, acceleration, motionDelta).
+     */
+    resetMotion: function() {
+        this.vx = 0; this.vy = 0;
+        this.ax = 0; this.ay = 0;
+        this._dx = 0; this._dy = 0;
+
+        return this;
+    },
+
+    /**@
+     * #.motionDelta
+     * @comp Motion
+     * @kind Method
+     * 
+     * @sign public Vector2D .motionDelta()
+     * @return A Vector2D with the properties {x, y} that reflect the change in x & y.
+     * 
+     * Returns the difference between the old & new position that was applied in the last frame.
+     *
+     * @example
+     * ~~~
+     * var ent = Crafty.e("2D, Motion");
+     *
+     * var deltaY = ent.motionDelta().y; // the change of y in the last frame
+     * ~~~
+     * @see Crafty.math.Vector2D
+     */
+    motionDelta: function() {
+        return this._motionDelta;
+    },
+
+    /**@
+     * #.velocity
+     * @comp Motion
+     * @kind Method
+     * 
+     * Method for accessing/modifying the linear(x,y) velocity. 
+     * The velocity remains constant over time, unless the acceleration increases the velocity.
+     *
+     * @sign public Vector2D .velocity()
+     * @return The velocity Vector2D with the properties {x, y} that reflect the velocities in the <x, y> direction of the entity.
+     *
+     * Returns the current velocity. You can access/modify the properties in order to retrieve/change the velocity.
+
+     * @example
+     * ~~~
+     * var ent = Crafty.e("2D, Motion");
+     *
+     * var vel = ent.velocity(); //returns the velocity vector
+     * vel.x;       // retrieve the velocity in the x direction
+     * vel.x = 0;   // set the velocity in the x direction
+     * vel.x += 4   // add to the velocity in the x direction
+     * ~~~
+     * @see Crafty.math.Vector2D
+     */
+    velocity: function() {
+        return this._velocity;
+    },
+
+
+    /**@
+     * #.acceleration
+     * @comp Motion
+     * @kind Method
+     * 
+     * Method for accessing/modifying the linear(x,y) acceleration. 
+     * The acceleration increases the velocity over time, resulting in ever increasing speed.
+     * 
+     * @sign public Vector2D .acceleration()
+     * @return The acceleration Vector2D with the properties {x, y} that reflects the acceleration in the <x, y> direction of the entity.
+     *
+     * Returns the current acceleration. You can access/modify the properties in order to retrieve/change the acceleration.
+     *
+     * @example
+     * ~~~
+     * var ent = Crafty.e("2D, Motion");
+     *
+     * var acc = ent.acceleration(); //returns the acceleration object
+     * acc.x;       // retrieve the acceleration in the x direction
+     * acc.x = 0;   // set the acceleration in the x direction
+     * acc.x += 4   // add to the acceleration in the x direction
+     * ~~~
+     * @see Crafty.math.Vector2D
+     */
+    acceleration: function() {
+        return this._acceleration;
+    },
+
+    /**@
+     * #.ccdbr
+     * @comp Motion
+     * @kind Method
+     * 
+     * @sign public Object .ccdbr([Object ccdbr])
+     * @param ccdbr - an object to use as output
+     * @returns an object with `_x`, `_y`, `_w`, and `_h` properties; if an object is passed in, it will be reused rather than creating a new object.
+     *
+     * Return an object containing the entity's continuous collision detection bounding rectangle.
+     * The CCDBR encompasses the motion delta of the entity's bounding rectangle since last frame.
+     * The CCDBR is minimal if the entity moved on only one axis since last frame, however it encompasses a non-minimal region if it moved on both axis.
+     * For further details, refer to [FAQ#Tunneling](https://github.com/craftyjs/Crafty/wiki/Crafty-FAQ-%28draft%29#why-are-my-bullets-passing-through-other-entities-without-registering-hits).
+     *
+     * @note The keys have an underscore prefix. This is due to the x, y, w, h properties
+     * being setters and getters that wrap the underlying properties with an underscore (_x, _y, _w, _h).
+     *
+     * @see .motionDelta, Collision#.cbr
+     */
+    ccdbr: function (ccdbr) {
+        var pos = this._cbr || this._mbr || this,
+            dx = this._dx,
+            dy = this._dy,
+            ccdX = 0, ccdY = 0,
+            ccdW = dx > 0 ? (ccdX = dx) : -dx,
+            ccdH = dy > 0 ? (ccdY = dy) : -dy;
+
+        ccdbr = ccdbr || {};
+        ccdbr._x = pos._x - ccdX;
+        ccdbr._y = pos._y - ccdY;
+        ccdbr._w = pos._w + ccdW;
+        ccdbr._h = pos._h + ccdH;
+
+        return ccdbr;
+    },
+
+    /*
+     * s += v * Δt + (0.5 * a) * Δt * Δt
+     * v += a * Δt
+     */
+    _linearMotionTick: function(frameData) {
+        var dt = frameData.dt / 1000; // time in s
+        var oldX = this._x, vx = this._vx, ax = this._ax,
+            oldY = this._y, vy = this._vy, ay = this._ay;
+
+        // s += v * Δt + (0.5 * a) * Δt * Δt
+        var newX = oldX + vx * dt + 0.5 * ax * dt * dt;
+        var newY = oldY + vy * dt + 0.5 * ay * dt * dt;
+        // v += a * Δt
+        this.vx = vx + ax * dt;
+        this.vy = vy + ay * dt;
+
+        // Check if direction of velocity has changed
+        var oldDirection = this.__oldDirection,
+            _vx = this._vx, dvx = _vx ? (_vx<0 ? -1:1):0, // A quick implementation of Math.sign
+            _vy = this._vy, dvy = _vy ? (_vy<0 ? -1:1):0;
+        if (oldDirection.x !== dvx || oldDirection.y !== dvy) {
+            oldDirection.x = dvx;
+            oldDirection.y = dvy;
+            this.trigger('NewDirection', oldDirection);
+        }
+
+        // Check if velocity has changed
+        var movedEvent = this.__movedEvent;
+        // Δs = s[t] - s[t-1]
+        this._dx = newX - oldX;
+        this._dy = newY - oldY;
+        if (this._dx !== 0) {
+            this.x = newX;
+            movedEvent.axis = 'x';
+            movedEvent.oldValue = oldX;
+            this.trigger('Moved', movedEvent);
+        }
+        if (this._dy !== 0) {
+            this.y = newY;
+            movedEvent.axis = 'y';
+            movedEvent.oldValue = oldY;
+            this.trigger('Moved', movedEvent);
+        }
+    }
+});
+
+},{"../core/core.js":8}],47:[function(require,module,exports){
+var Crafty = require('../core/core.js');
+
+/**@
+ * #Supportable
+ * @category 2D
+ * @kind Component
+ * 
+ * @trigger LandedOnGround - When entity has landed. This event is triggered with the object the entity landed on.
+ * @trigger LiftedOffGround - When entity has lifted off. This event is triggered with the object the entity stood on before lift-off.
+ * @trigger CheckLanding - When entity is about to land. This event is triggered with the object the entity is about to land on. Third parties can respond to this event and prevent the entity from being able to land.
+ *
+ * Component that detects if the entity collides with the ground. This component is automatically added and managed by the Gravity component.
+ * The appropriate events are fired when the entity state changes (lands on ground / lifts off ground). The current ground entity can also be accessed with `.ground`.
+ */
+Crafty.c("Supportable", {
+    /**@
+     * #.ground
+     * @comp Supportable
+     * @kind Property
+     *
+     * Access the ground entity (which may be the actual ground entity if it exists, or `null` if it doesn't exist) and thus whether this entity is currently on the ground or not. 
+     * The ground entity is also available through the events, when the ground entity changes.
+     */
+    _ground: null,
+    _groundComp: null,
+    _preventGroundTunneling: false,
+
+    /**@
+     * #.canLand
+     * @comp Supportable
+     * @kind Property
+     *
+     * The canLand boolean determines if the entity is allowed to land or not (e.g. perhaps the entity should not land if it's not falling).
+     * The Supportable component will trigger a "CheckLanding" event. 
+     * Interested parties can listen to this event and prevent the entity from landing by setting `canLand` to false.
+     *
+     * @example
+     * ~~~
+     * var player = Crafty.e("2D, Gravity");
+     * player.bind("CheckLanding", function(ground) {
+     *     if (player.y + player.h > ground.y + player.dy) { // forbid landing, if player's feet are not above ground
+     *         player.canLand = false;
+     *     }
+     * });
+     * ~~~
+     */
+    canLand: true,
+
+    init: function () {
+        this.requires("2D");
+        this.__area = {_x: 0, _y: 0, _w: 0, _h: 0};
+        this.defineField("ground", function() { return this._ground; }, function(newValue) {});
+    },
+    remove: function(destroyed) {
+        this.unbind("EnterFrame", this._detectGroundTick);
+    },
+
+    /*@
+     * #.startGroundDetection
+     * @comp Supportable
+     * @kind Method
+     * 
+     * @sign private this .startGroundDetection([comp])
+     * @param comp - The name of a component that will be treated as ground
+     *
+     * This method is automatically called by the Gravity component and should not be called by the user.
+     *
+     * Enable ground detection for this entity no matter whether comp parameter is specified or not.
+     * If comp parameter is specified all entities with that component will stop this entity from falling.
+     * For a player entity in a platform game this would be a component that is added to all entities
+     * that the player should be able to walk on.
+     * 
+     * @example
+     * ~~~
+     * Crafty.e("2D, DOM, Color, Gravity")
+     *   .color("red")
+     *   .attr({ w: 100, h: 100 })
+     *   .gravity("platform");
+     * ~~~
+     *
+     * @see Gravity
+     */
+    startGroundDetection: function(ground) {
+        if (ground) this._groundComp = ground;
+        this.uniqueBind("EnterFrame", this._detectGroundTick);
+
+        return this;
+    },
+    /*@
+     * #.stopGroundDetection
+     * @comp Supportable
+     * @kind Method
+     * 
+     * @sign private this .stopGroundDetection()
+     *
+     * This method is automatically called by the Gravity component and should not be called by the user.
+     *
+     * Disable ground detection for this component. It can be reenabled by calling .startGroundDetection()
+     */
+    stopGroundDetection: function() {
+        this.unbind("EnterFrame", this._detectGroundTick);
+
+        return this;
+    },
+
+    /**@
+     * #.preventGroundTunneling
+     * @comp Supportable
+     * @kind Method
+     * 
+     * @sign this .preventGroundTunneling([Boolean enable])
+     * @param enable - Boolean indicating whether to enable continous collision detection or not; if omitted defaults to true
+     *
+     * Prevent entity from falling through thin ground entities at high speeds. This setting is disabled by default.
+     * This is performed by approximating continous collision detection, which may impact performance negatively.
+     * For further details, refer to [FAQ#Tunneling](https://github.com/craftyjs/Crafty/wiki/Crafty-FAQ-%28draft%29#why-are-my-bullets-passing-through-other-entities-without-registering-hits).
+     *
+     * @see Motion#.ccdbr
+     */
+    preventGroundTunneling: function(enable) {
+        if (typeof enable === 'undefined')
+            enable = true;
+        if (enable)
+            this.requires("Motion");
+        this._preventGroundTunneling = enable;
+
+        return this;
+    },
+
+    _detectGroundTick: function() {
+        var groundComp = this._groundComp,
+            ground = this._ground,
+            overlap = Crafty.rectManager.overlap,
+            area;
+
+        if (!this._preventGroundTunneling) {
+            var pos = this._cbr || this._mbr || this;
+            area = this.__area;
+            area._x = pos._x;
+            area._y = pos._y;
+            area._w = pos._w;
+            area._h = pos._h;
+        } else {
+            area = this.ccdbr(this.__area);
+        }
+        area._h++; // Increase by 1 to make sure map.search() finds the floor
+        // Decrease width by 1px from left and 1px from right, to fall more gracefully
+        // area._x++; area._w--;
+
+
+        // check if we lift-off
+        if (ground) {
+            var garea = ground._cbr || ground._mbr || ground;
+            if (!(ground.__c[groundComp] && Crafty(ground[0]) === ground && overlap(garea, area))) {
+                this._ground = null;
+                this.trigger("LiftedOffGround", ground); // no collision with ground was detected for first time
+                ground = null;
+            }
+        }
+
+        // check if we land (also possible to land on other ground object in same frame after lift-off from current ground object)
+        if (!ground) {
+            var obj, oarea,
+                results = Crafty.map.search(area, false),
+                i = 0,
+                l = results.length;
+
+            for (; i < l; ++i) {
+                obj = results[i];
+                oarea = obj._cbr || obj._mbr || obj;
+                // check for an intersection with the player
+                if (obj !== this && obj.__c[groundComp] && overlap(oarea, area)) {
+                    this.canLand = true;
+                    this.trigger("CheckLanding", obj); // is entity allowed to land?
+                    if (this.canLand) {
+                        this._ground = ground = obj;
+
+                        // snap entity to ground object
+                        this.y = ground._y - this._h;
+                        if (this._x > ground._x + ground._w)
+                            this.x = ground._x + ground._w - 1;
+                        else if (this._x + this._w < ground._x)
+                            this.x = ground._x - this._w + 1;
+
+                        this.trigger("LandedOnGround", ground); // collision with ground was detected for first time
+                        break;
+                    }
+                }
+            }
+        }
+    }
+});
+
+/**@
+ * #GroundAttacher
+ * @category 2D
+ * @kind Component
+ *
+ * Attach the entity to the ground when it lands. Useful for platformers with moving platforms.
+ * Remove the component to disable the functionality.
+ *
+ * Additionally, this component provides the entity with `Supportable` methods & events.
+ *
+ * @example
+ * ~~~
+ * Crafty.e("2D, Gravity, GroundAttacher")
+ *     .gravity("Platform"); // entity will land on and move with entites that have the "Platform" component
+ * ~~~
+ *
+ * @see Supportable, Gravity
+ */
+Crafty.c("GroundAttacher", {
+    _groundAttach: function(ground) {
+        ground.attach(this);
+    },
+    _groundDetach: function(ground) {
+        ground.detach(this);
+    },
+
+    init: function () {
+        this.requires("Supportable");
+
+        this.bind("LandedOnGround", this._groundAttach);
+        this.bind("LiftedOffGround", this._groundDetach);
+    },
+    remove: function(destroyed) {
+        this.unbind("LandedOnGround", this._groundAttach);
+        this.unbind("LiftedOffGround", this._groundDetach);
+    }
+});
+
+
+/**@
+ * #Gravity
+ * @category 2D
+ * @kind Component
+ * 
+ * Adds gravitational pull to the entity.
+ *
+ * Additionally, this component provides the entity with `Supportable` and `Motion` methods & events.
+ *
+ * @see Supportable, Motion
+ */
+Crafty.c("Gravity", {
+    _gravityConst: 500,
+    _gravityActive: false,
+
+    init: function () {
+        this.requires("2D, Supportable, Motion");
+
+        this.bind("LiftedOffGround", this._startGravity); // start gravity if we are off ground
+        this.bind("LandedOnGround", this._stopGravity); // stop gravity once landed
+    },
+    remove: function(destroyed) {
+        this.unbind("LiftedOffGround", this._startGravity);
+        this.unbind("LandedOnGround", this._stopGravity);
+    },
+
+    _gravityCheckLanding: function(ground) {
+        if (this._dy < 0) 
+            this.canLand = false;
+    },
+
+    /**@
+     * #.gravity
+     * @comp Gravity
+     * @kind Method
+     * 
+     * @sign public this .gravity([comp])
+     * @param comp - The name of a component that will stop this entity from falling
+     *
+     * Enable gravity for this entity no matter whether comp parameter is specified or not.
+     * If comp parameter is specified all entities with that component will stop this entity from falling.
+     * For a player entity in a platform game this would be a component that is added to all entities
+     * that the player should be able to walk on.
+     *
+     * @example
+     * ~~~
+     * Crafty.e("2D, DOM, Color, Gravity")
+     *   .color("red")
+     *   .attr({ w: 100, h: 100 })
+     *   .gravity("platform");
+     * ~~~
+     */
+    gravity: function (comp) {
+        this.uniqueBind("CheckLanding", this._gravityCheckLanding);
+        this.startGroundDetection(comp);
+        this._startGravity();
+
+        return this;
+    },
+    /**@
+     * #.antigravity
+     * @comp Gravity
+     * @kind Method
+     * 
+     * @sign public this .antigravity()
+     * Disable gravity for this component. It can be reenabled by calling .gravity()
+     */
+    antigravity: function () {
+        this._stopGravity();
+        this.stopGroundDetection();
+        this.unbind("CheckLanding", this._gravityCheckLanding);
+
+        return this;
+    },
+
+    /**@
+     * #.gravityConst
+     * @comp Gravity
+     * @kind Method
+     * 
+     * @sign public this .gravityConst(g)
+     * @param g - gravitational constant in pixels per second squared
+     *
+     * Set the gravitational constant to g for this entity. The default is 500. The greater g, the stronger the downwards acceleration.
+     *
+     * @example
+     * ~~~
+     * Crafty.e("2D, DOM, Color, Gravity")
+     *   .color("red")
+     *   .attr({ w: 100, h: 100 })
+     *   .gravityConst(750)
+     *   .gravity("platform");
+     * ~~~
+     */
+    gravityConst: function (g) {
+        if (this._gravityActive) { // gravity active, change acceleration
+            this.ay -= this._gravityConst;
+            this.ay += g;
+        }
+        this._gravityConst = g;
+
+        return this;
+    },
+
+    _startGravity: function() {
+        if (this._gravityActive) return;
+        this._gravityActive = true;
+        this.ay += this._gravityConst;
+    },
+    _stopGravity: function() {
+        if (!this._gravityActive) return;
+        this._gravityActive = false;
+        this.ay = 0;
+        this.vy = 0;
+    }
+});
+
+
+},{"../core/core.js":8}],48:[function(require,module,exports){
+var Crafty = require('../core/core.js');
+
+
 /**@
  * #Crafty.rectManager
  * @category 2D
+ * @kind CoreObj
  *
  * Collection of methods for handling rectangles
  */
@@ -17278,6 +17977,8 @@ Crafty.extend({
       /**@
        * #Crafty.rectManager.overlap
        * @comp Crafty.rectManager
+       * @kind Method
+       * 
        * @sign public Boolean Crafty.rectManager.overlap(Object rectA, Object rectA)
        * @param rectA - An object that must have the `_x, _y, _w, _h` values as properties
        * @param rectB - An object that must have the `_x, _y, _w, _h` values as properties
@@ -17293,6 +17994,8 @@ Crafty.extend({
       /**@
        * #Crafty.rectManager.integerBounds
        * @comp Crafty.rectManager
+       * @kind Method
+       * 
        * @sign public Boolean Crafty.rectManager.integerBounds(Object rect)
        * @param rect - An object that must have the `_x, _y, _w, _h` values as properties
        * @return An enclosing rectangle with integer coordinates
@@ -17315,6 +18018,8 @@ Crafty.extend({
       /**@
       * #Crafty.rectManager.mergeSet
       * @comp Crafty.rectManager
+      * @kind Method
+      *
       * @sign public Object Crafty.rectManager.mergeSet(Object set)
       * @param set - an array of rectangular regions
       *
@@ -17348,6 +18053,8 @@ Crafty.extend({
       /**@
        * #Crafty.rectManager.boundingRect
        * @comp Crafty.rectManager
+       * @kind Method
+       * 
        * @sign public Crafty.rectManager.boundingRect(set)
        * @param set - An array of rectangles
        *
@@ -17428,7 +18135,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":8}],47:[function(require,module,exports){
+},{"../core/core.js":8}],49:[function(require,module,exports){
 /**
  * Spatial HashMap for broad phase collision
  *
@@ -17438,6 +18145,8 @@ Crafty.extend({
     /**@
      * #Crafty.HashMap.constructor
      * @comp Crafty.HashMap
+     * @kind Class
+     * 
      * @sign public void Crafty.HashMap([cellsize])
      * @param cellsize - the cell size. If omitted, `cellsize` is 64.
      *
@@ -17480,6 +18189,8 @@ Crafty.extend({
         /**@
          * #Crafty.map.insert
          * @comp Crafty.map
+         * @kind Method
+         * 
          * @sign public Object Crafty.map.insert(Object obj)
          * @param obj - An entity to be inserted.
          * @returns An object representing this object's entry in the HashMap
@@ -17519,6 +18230,8 @@ Crafty.extend({
         /**@
          * #Crafty.map.search
          * @comp Crafty.map
+         * @kind Method
+         * 
          * @sign public Object Crafty.map.search(Object rect[, Boolean filter])
          * @param rect - the rectangular region to search for entities.
          *               This object must contain the properties `_x`,`_y`,`_w`,`_h`.
@@ -17591,6 +18304,8 @@ Crafty.extend({
         /**@
          * #Crafty.map.remove
          * @comp Crafty.map
+         * @kind Method
+         * 
          * @sign public void Crafty.map.remove(Entry entry)
          * @param entry - An entry to remove from the hashmap
          *
@@ -17631,6 +18346,8 @@ Crafty.extend({
         /**@
          * #Crafty.map.refresh
          * @comp Crafty.map
+         * @kind Method
+         * 
          * @sign public void Crafty.map.refresh(Entry entry)
          * @param entry - An entry to update
          *
@@ -17682,6 +18399,8 @@ Crafty.extend({
         /**@
          * #Crafty.map.boundaries
          * @comp Crafty.map
+         * @kind Method
+         * 
          * @sign public Object Crafty.map.boundaries()
          * @returns An object with the following structure, which represents an MBR which contains all entities
          *
@@ -17709,6 +18428,8 @@ Crafty.extend({
         /**
          * #Crafty.map._keyBoundaries
          * @comp Crafty.map
+         * @kind Method
+         * 
          * @sign private Object Crafty.map._keyBoundaries()
          * @returns An object with the following structure, which represents an MBR which contains all hash keys
          *
@@ -17806,6 +18527,8 @@ Crafty.extend({
         /**@
          * #Crafty.map.traverseRay
          * @comp Crafty.map
+         * @kind Method
+         * 
          * @sign public void Crafty.map.traverseRay(Object origin, Object direction, Function callback)
          * @param origin - the point of origin from which the ray will be cast. The object must contain the properties `_x` and `_y`.
          * @param direction - the direction the ray will be cast. It must be normalized. The object must contain the properties `x` and `y`.
@@ -17991,6 +18714,8 @@ Crafty.extend({
     /**@
      * #Crafty.HashMap
      * @category 2D
+     * @kind Class
+     * 
      * Broad-phase collision detection engine. See background information at
      *
      * - [N Tutorial B - Broad-Phase Collision](http://www.metanetsoftware.com/technique/tutorialB.html)
@@ -18001,6 +18726,8 @@ Crafty.extend({
     /**@
      * #Crafty.HashMap.key
      * @comp Crafty.HashMap
+     * @kind Method
+     * 
      * @sign public Object Crafty.HashMap.key(Object obj)
      * @param obj - an Object that has .mbr() or _x, _y, _w and _h.
      *
