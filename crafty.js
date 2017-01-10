@@ -336,6 +336,8 @@ Crafty.s("Controls", {
     /**@
      * #.defineTriggerGroup
      * @comp Controls
+     * @kind Method
+     * 
      * @sign defineTriggerGroup(string name, obj definition)
      * @param name - a name for the trigger group
      * @param definition - an object which defines the inputs for the trigger
@@ -392,6 +394,8 @@ Crafty.s("Controls", {
     /**@
      * #.defineDpad
      * @comp Controls
+     * @kind Method
+     * 
      * @sign defineDpad(string name, obj definition[, obj options])
      * @param name - a name for the dpad input
      * @param definition - an object which defines the inputs and directions for the dpad
@@ -582,6 +586,8 @@ Crafty.c("Draggable", {
     /**@
      * #.enableDrag
      * @comp Draggable 
+     * @kind Method
+     * 
      * @sign public this .enableDrag(void)
      *
      * Reenable dragging of entity. Use if `.disableDrag` has been called.
@@ -596,6 +602,8 @@ Crafty.c("Draggable", {
     /**@
      * #.disableDrag
      * @comp Draggable
+     * @kind Method
+     * 
      * @sign public this .disableDrag(void)
      *
      * Disables entity dragging. Reenable with `.enableDrag()`.
@@ -610,6 +618,8 @@ Crafty.c("Draggable", {
     /**@
      * #.dragDirection
      * @comp Draggable
+     * @kind Method
+     * 
      * Method used for modifying the drag direction.
      * If direction is set, the entity being dragged will only move along the specified direction.
      * If direction is not set, the entity being dragged will move along any direction.
@@ -726,6 +736,8 @@ Crafty.c("Controllable", {
     /**@
      * #.linkInput
      * @comp Controllable
+     * @kind Method
+     * 
      * @sign public this linkInput(string event, string name, function fn)
      * @param event - the name of the input event
      * @param name - the name of the input
@@ -757,6 +769,8 @@ Crafty.c("Controllable", {
     /**@
      * #.unlinkInput
      * @comp Controllable
+     * @kind Method
+     * 
      * @sign public this linkInput(string event, string name)
      * @param event - the name of the input event
      * @param name - the name of the input
@@ -775,6 +789,8 @@ Crafty.c("Controllable", {
     /**@
      * #.enableControl
      * @comp Controllable
+     * @kind Method
+     * 
      * @sign public this .enableControl()
      *
      * Enable the component to listen to input events.
@@ -792,6 +808,8 @@ Crafty.c("Controllable", {
     /**@
      * #.disableControl
      * @comp Controllable
+     * @kind Method
+     * 
      * @sign public this .disableControl()
      *
      * Disable the component from responding to input events.
@@ -864,6 +882,8 @@ Crafty.c("Multiway", {
     /**@
      * #.multiway
      * @comp Multiway
+     * @kind Method
+     * 
      * @sign public this .multiway([Number speed,] Object keyBindings[, Object options])
      * @param speed - A speed in pixels per second
      * @param keyBindings - What keys should make the entity go in which direction. Direction is specified in degrees
@@ -905,6 +925,8 @@ Crafty.c("Multiway", {
     /**@
      * #.speed
      * @comp Multiway
+     * @kind Method
+     * 
      * @sign public this .speed(Object speed)
      * @param speed - New speed the entity has, for x and y axis.
      *
@@ -952,6 +974,7 @@ Crafty.c("Jumper", {
     /**@
      * #.canJump
      * @comp Jumper
+     * @kind Method
      *
      * The canJump function determines if the entity is allowed to jump or not (e.g. perhaps the entity should be able to double jump).
      * The Jumper component will trigger a "CheckJumping" event.
@@ -974,32 +997,6 @@ Crafty.c("Jumper", {
      */
     canJump: true,
 
-    /**@
-     * #.enableControl
-     * @comp Jumper
-     * @sign public this .enableControl()
-     *
-     * Enable the component to listen to key events.
-     *
-     * @example
-     * ~~~
-     * this.enableControl();
-     * ~~~
-     */
-
-    /**@
-     * #.disableControl
-     * @comp Jumper
-     * @sign public this .disableControl()
-     *
-     * Disable the component to listen to key events.
-     *
-     * @example
-     * ~~~
-     * this.disableControl();
-     * ~~~
-     */
-
     init: function () {
         this.requires("Supportable, Motion, Controllable");
     },
@@ -1018,6 +1015,8 @@ Crafty.c("Jumper", {
     /**@
      * #.jump
      * @comp Jumper
+     * @kind Method
+     * 
      * @sign public this .jump()
      *
      * Directly trigger the entity to jump.
@@ -1036,6 +1035,8 @@ Crafty.c("Jumper", {
     /**@
      * #.jumper
      * @comp Jumper
+     * @kind Method
+     * 
      * @sign public this .jumper([Number jumpSpeed,] Array jumpKeys)
      * @param jumpSpeed - Vertical jump speed in pixels per second
      * @param jumpKeys - Keys to listen for and make entity jump in response
@@ -1086,6 +1087,8 @@ Crafty.c("Jumper", {
     /**@
      * #.jumpSpeed
      * @comp Jumper
+     * @kind Method
+     * 
      * @sign public this .jumpSpeed(Number jumpSpeed)
      * @param jumpSpeed - new vertical jump speed
      *
@@ -1124,6 +1127,8 @@ Crafty.c("Fourway", {
     /**@
      * #.fourway
      * @comp Fourway
+     * @kind Method
+     * 
      * @sign public this .fourway([Number speed])
      * @param speed - The speed of motion in pixels per second.
      *
@@ -1172,6 +1177,8 @@ Crafty.c("Twoway", {
     /**@
      * #.twoway
      * @comp Twoway
+     * @kind Method
+     * 
      * @sign public this .twoway([Number speed[, Number jumpSpeed]])
      * @param speed - A speed in pixels per second
      * @param jumpSpeed - Vertical jump speed in pixels per second
@@ -5963,7 +5970,7 @@ try {
 /**@
  * #Storage
  * @category Utilities
- * @kind Component
+ * @kind Property
  * 
  * Very simple way to get and set values, which will persist when the browser is closed also.
  * Storage wraps around HTML5 Web Storage, which is well-supported across browsers and platforms, but limited to 5MB total storage per domain.
@@ -8371,7 +8378,7 @@ Crafty.c("DOM", {
      * @comp DOM
      * @kind Method
      * 
-     * @sign public this .getId()
+     * @sign public this .getDomId()
      *
      * Get the Id of the DOM element used to represent the entity.
      */
@@ -10568,6 +10575,7 @@ Crafty.c("Sprite", {
     /**@
      * #.sprite
      * @comp Sprite
+     * @kind Method
      *
      * @sign public this .sprite(Number x, Number y[, Number w, Number h])
      * @param x - X cell position
@@ -10599,6 +10607,7 @@ Crafty.c("Sprite", {
     /**@
      * #.__coord
      * @comp Sprite
+     * @kind Property
      *
      * The coordinate of the slide within the sprite in the format of [x, y, w, h].
      */
@@ -10629,6 +10638,8 @@ Crafty.c("Sprite", {
     /**@
      * #.crop
      * @comp Sprite
+     * @kind Method
+     * 
      * @sign public this .crop(Number x, Number y, Number w, Number h)
      * @param x - Offset x position
      * @param y - Offset y position
