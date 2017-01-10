@@ -190,6 +190,24 @@ process.chdir = function (dir) {
 process.umask = function() { return 0; };
 
 },{}],2:[function(require,module,exports){
+
+function createDeprecatedAlias(baseObject, oldName, newName) {
+    Object.defineProperty(baseObject, oldName, {
+        enumerable: false,
+        configurable: false,
+        get: function() { return baseObject[newName]; },
+        set: function(value) { baseObject[newName] = value; }
+    });
+}
+
+module.exports = {
+    defineAliases: function defineAliases(Crafty) {
+        createDeprecatedAlias(Crafty, "image_whitelist", "imageWhitelist");
+    }
+};
+
+
+},{}],3:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -554,7 +572,7 @@ Crafty.s("Controls", {
         if (winner) winner.active = true;
     }
 });
-},{"../core/core.js":8}],3:[function(require,module,exports){
+},{"../core/core.js":9}],4:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 /**@
@@ -1209,7 +1227,7 @@ Crafty.c("Twoway", {
     }
 });
 
-},{"../core/core.js":8}],4:[function(require,module,exports){
+},{"../core/core.js":9}],5:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -1375,7 +1393,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":8}],5:[function(require,module,exports){
+},{"../core/core.js":9}],6:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -2471,7 +2489,7 @@ Crafty.c("Keyboard", {
         return !!Crafty.keydown[key];
     }
 });
-},{"../core/core.js":8}],6:[function(require,module,exports){
+},{"../core/core.js":9}],7:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -2692,7 +2710,7 @@ Crafty.extend({
         RIGHT: 2
     }
 });
-},{"../core/core.js":8}],7:[function(require,module,exports){
+},{"../core/core.js":9}],8:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -2815,8 +2833,9 @@ easing.prototype = {
 };
 
 module.exports = easing;
-},{"../core/core.js":8}],8:[function(require,module,exports){
+},{"../core/core.js":9}],9:[function(require,module,exports){
 var version = require('./version');
+
 
 /**@
  * #Crafty
@@ -4933,7 +4952,7 @@ if (typeof define === 'function') { // AMD
 }
 
 module.exports = Crafty;
-},{"./version":17}],9:[function(require,module,exports){
+},{"./version":18}],10:[function(require,module,exports){
 (function (process){
 var Crafty = require('../core/core.js');
 var document = (typeof window !== "undefined") && window.document;
@@ -5211,7 +5230,7 @@ module.exports = {
 };
 
 }).call(this,require('_process'))
-},{"../core/core.js":8,"_process":1}],10:[function(require,module,exports){
+},{"../core/core.js":9,"_process":1}],11:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 module.exports = {
@@ -5320,7 +5339,7 @@ module.exports = {
         }
     },
     /**@
-     * #Crafty.image_whitelist
+     * #Crafty.imageWhitelist
      * @category Assets
      * @kind Method
      *
@@ -5329,7 +5348,7 @@ module.exports = {
      * @example
      * ~~~
      * // add tif extension to list of supported image files
-     * Crafty.image_whitelist.push("tif");
+     * Crafty.imageWhitelist.push("tif");
      *
      * var assets = {
      *     "sprites": {
@@ -5361,7 +5380,7 @@ module.exports = {
      * @see Crafty.asset
      * @see Crafty.load
      */
-    image_whitelist: ["jpg", "jpeg", "gif", "png", "svg"],
+    imageWhitelist: ["jpg", "jpeg", "gif", "png", "svg"],
     /**@
      * #Crafty.load
      * @category Assets
@@ -5383,7 +5402,7 @@ module.exports = {
      * By default, Crafty will assume all files are in the current path.  For changing these,
      * use the function `Crafty.paths`.
      *
-     * Files with suffixes in `image_whitelist` (case insensitive) will be loaded.
+     * Files with suffixes in `imageWhitelist` (case insensitive) will be loaded.
      *
      * It's possible to pass the full file path(including protocol), instead of just the filename.ext, in case
      * you want some asset to be loaded from another domain.
@@ -5446,7 +5465,7 @@ module.exports = {
      *
      * @see Crafty.paths
      * @see Crafty.assets
-     * @see Crafty.image_whitelist
+     * @see Crafty.imageWhitelist
      * @see Crafty.removeAssets
      */
     load: function (data, oncomplete, onprogress, onerror) {
@@ -5478,7 +5497,7 @@ module.exports = {
                 return Crafty.support.audio && Crafty.audio.supports(getExt(f));
             },
             isValidImage = function(f) {
-                return Crafty.image_whitelist.indexOf(getExt(f)) !== -1;
+                return Crafty.imageWhitelist.indexOf(getExt(f)) !== -1;
             },
             onImgLoad = function(obj,url) {
                 obj.onload = pro;
@@ -5673,7 +5692,7 @@ module.exports = {
     }
 };
 
-},{"../core/core.js":8}],11:[function(require,module,exports){
+},{"../core/core.js":9}],12:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -5781,7 +5800,7 @@ module.exports = {
 };
 
 
-},{"../core/core.js":8}],12:[function(require,module,exports){
+},{"../core/core.js":9}],13:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -5957,7 +5976,7 @@ module.exports = {
     }
 };
 
-},{"../core/core.js":8}],13:[function(require,module,exports){
+},{"../core/core.js":9}],14:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 try {
@@ -6081,7 +6100,7 @@ store.remove = function(key) {
 
 module.exports = store;
 
-},{"../core/core.js":8}],14:[function(require,module,exports){
+},{"../core/core.js":9}],15:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -6255,7 +6274,7 @@ Crafty.CraftySystem.prototype = {
     }
 
 };
-},{"../core/core.js":8}],15:[function(require,module,exports){
+},{"../core/core.js":9}],16:[function(require,module,exports){
 /**@
  * #Delay
  * @category Utilities
@@ -6440,7 +6459,7 @@ module.exports = {
     }
 };
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -6606,9 +6625,9 @@ module.exports = {
   }
 };
 
-},{"../core/core.js":8}],17:[function(require,module,exports){
+},{"../core/core.js":9}],18:[function(require,module,exports){
 module.exports = "0.7.0";
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 var Crafty = require('./core/core');
 
 Crafty.easing = require('./core/animation');
@@ -6667,11 +6686,14 @@ require('./sound/sound');
 require('./debug/debug-layer');
 require('./debug/logging');
 
+// Define some aliases for renamed properties
+require('./aliases').defineAliases(Crafty);
+
 if(window) window.Crafty = Crafty;
 
 module.exports = Crafty;
 
-},{"./controls/controls":3,"./controls/controls-system":2,"./controls/device":4,"./controls/inputs":5,"./controls/keycodes":6,"./core/animation":7,"./core/core":8,"./core/extensions":9,"./core/loader":10,"./core/model":11,"./core/scenes":12,"./core/storage":13,"./core/systems":14,"./core/time":15,"./core/tween":16,"./debug/debug-layer":19,"./debug/logging":20,"./graphics/canvas":22,"./graphics/canvas-layer":21,"./graphics/color":23,"./graphics/dom":26,"./graphics/dom-helper":24,"./graphics/dom-layer":25,"./graphics/drawing":27,"./graphics/gl-textures":28,"./graphics/html":29,"./graphics/image":30,"./graphics/layers":31,"./graphics/particles":32,"./graphics/renderable":33,"./graphics/sprite":35,"./graphics/sprite-animation":34,"./graphics/text":36,"./graphics/viewport":37,"./graphics/webgl":39,"./graphics/webgl-layer":38,"./isometric/diamond-iso":40,"./isometric/isometric":41,"./sound/sound":42,"./spatial/2d":43,"./spatial/collision":44,"./spatial/math":45,"./spatial/motion":46,"./spatial/platform":47,"./spatial/rect-manager":48,"./spatial/spatial-grid":49}],19:[function(require,module,exports){
+},{"./aliases":2,"./controls/controls":4,"./controls/controls-system":3,"./controls/device":5,"./controls/inputs":6,"./controls/keycodes":7,"./core/animation":8,"./core/core":9,"./core/extensions":10,"./core/loader":11,"./core/model":12,"./core/scenes":13,"./core/storage":14,"./core/systems":15,"./core/time":16,"./core/tween":17,"./debug/debug-layer":20,"./debug/logging":21,"./graphics/canvas":23,"./graphics/canvas-layer":22,"./graphics/color":24,"./graphics/dom":27,"./graphics/dom-helper":25,"./graphics/dom-layer":26,"./graphics/drawing":28,"./graphics/gl-textures":29,"./graphics/html":30,"./graphics/image":31,"./graphics/layers":32,"./graphics/particles":33,"./graphics/renderable":34,"./graphics/sprite":36,"./graphics/sprite-animation":35,"./graphics/text":37,"./graphics/viewport":38,"./graphics/webgl":40,"./graphics/webgl-layer":39,"./isometric/diamond-iso":41,"./isometric/isometric":42,"./sound/sound":43,"./spatial/2d":44,"./spatial/collision":45,"./spatial/math":46,"./spatial/motion":47,"./spatial/platform":48,"./spatial/rect-manager":49,"./spatial/spatial-grid":50}],20:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -7116,7 +7138,7 @@ Crafty.DebugCanvas = {
 
 };
 
-},{"../core/core.js":8}],20:[function(require,module,exports){
+},{"../core/core.js":9}],21:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -7157,7 +7179,7 @@ Crafty.extend({
 		}
 	}
 });
-},{"../core/core.js":8}],21:[function(require,module,exports){
+},{"../core/core.js":9}],22:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -7558,7 +7580,7 @@ Crafty._registerLayerTemplate("Canvas", {
 
 });
 
-},{"../core/core.js":8}],22:[function(require,module,exports){
+},{"../core/core.js":9}],23:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -7700,7 +7722,7 @@ Crafty.c("Canvas", {
     }
 });
 
-},{"../core/core.js":8}],23:[function(require,module,exports){
+},{"../core/core.js":9}],24:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -7985,7 +8007,7 @@ Crafty.c("Color", {
 });
 
 
-},{"../core/core.js":8}],24:[function(require,module,exports){
+},{"../core/core.js":9}],25:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -8108,7 +8130,7 @@ Crafty.extend({
         }
     }
 });
-},{"../core/core.js":8}],25:[function(require,module,exports){
+},{"../core/core.js":9}],26:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -8311,7 +8333,7 @@ Crafty._registerLayerTemplate("DOM", {
     }
 
 });
-},{"../core/core.js":8}],26:[function(require,module,exports){
+},{"../core/core.js":9}],27:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -8593,7 +8615,7 @@ Crafty.c("DOM", {
     }
 });
 
-},{"../core/core.js":8}],27:[function(require,module,exports){
+},{"../core/core.js":9}],28:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 Crafty.extend({
@@ -8641,7 +8663,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":8}],28:[function(require,module,exports){
+},{"../core/core.js":9}],29:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 // An object for wrangling textures
@@ -8829,7 +8851,7 @@ TextureWrapper.prototype = {
         gl.uniform2f(gl.getUniformLocation(shader, dimension_name), this.width, this.height);
     }
 };
-},{"../core/core.js":8}],29:[function(require,module,exports){
+},{"../core/core.js":9}],30:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -8921,7 +8943,7 @@ Crafty.c("HTML", {
         return this;
     }
 });
-},{"../core/core.js":8}],30:[function(require,module,exports){
+},{"../core/core.js":9}],31:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -9074,7 +9096,7 @@ Crafty.c("Image", {
     }
 });
 
-},{"../core/core.js":8}],31:[function(require,module,exports){
+},{"../core/core.js":9}],32:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 Crafty.extend({
@@ -9188,7 +9210,7 @@ Crafty.extend({
         });
     }
 });
-},{"../core/core.js":8}],32:[function(require,module,exports){
+},{"../core/core.js":9}],33:[function(require,module,exports){
 var Crafty = require('../core/core.js'),    
     document = window.document;
 
@@ -9627,7 +9649,7 @@ Crafty.c("Particles", {
     }
 });
 
-},{"../core/core.js":8}],33:[function(require,module,exports){
+},{"../core/core.js":9}],34:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -9799,7 +9821,7 @@ Crafty.c("Renderable", {
         return this;
     }
 });
-},{"../core/core.js":8}],34:[function(require,module,exports){
+},{"../core/core.js":9}],35:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -10303,7 +10325,7 @@ Crafty.c("SpriteAnimation", {
     }
 });
 
-},{"../core/core.js":8}],35:[function(require,module,exports){
+},{"../core/core.js":9}],36:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 // Define some variables required for webgl
@@ -10676,7 +10698,7 @@ Crafty.c("Sprite", {
     }
 });
 
-},{"../core/core.js":8}],36:[function(require,module,exports){
+},{"../core/core.js":9}],37:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -11042,7 +11064,7 @@ Crafty.c("Text", {
 
 });
 
-},{"../core/core.js":8}],37:[function(require,module,exports){
+},{"../core/core.js":9}],38:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -11877,7 +11899,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":8}],38:[function(require,module,exports){
+},{"../core/core.js":9}],39:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -12358,7 +12380,7 @@ Crafty._registerLayerTemplate("WebGL", {
 });
 
 
-},{"../core/core.js":8}],39:[function(require,module,exports){
+},{"../core/core.js":9}],40:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 /**@
@@ -12657,7 +12679,7 @@ Crafty.c("WebGL", {
     }
 });
 
-},{"../core/core.js":8}],40:[function(require,module,exports){
+},{"../core/core.js":9}],41:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -12871,7 +12893,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":8}],41:[function(require,module,exports){
+},{"../core/core.js":9}],42:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -13074,7 +13096,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":8}],42:[function(require,module,exports){
+},{"../core/core.js":9}],43:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -13662,7 +13684,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":8}],43:[function(require,module,exports){
+},{"../core/core.js":9}],44:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     HashMap = require('./spatial-grid.js');
 
@@ -14961,7 +14983,7 @@ Crafty.matrix.prototype = {
     }
 };
 
-},{"../core/core.js":8,"./spatial-grid.js":49}],44:[function(require,module,exports){
+},{"../core/core.js":9,"./spatial-grid.js":50}],45:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     DEG_TO_RAD = Math.PI / 180,
     EPSILON = 1e-6;
@@ -15908,7 +15930,7 @@ Crafty.c("Collision", {
     }
 });
 
-},{"../core/core.js":8}],45:[function(require,module,exports){
+},{"../core/core.js":9}],46:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -17089,7 +17111,7 @@ Crafty.math.Matrix2D = (function () {
 
     return Matrix2D;
 })();
-},{"../core/core.js":8}],46:[function(require,module,exports){
+},{"../core/core.js":9}],47:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -17606,7 +17628,7 @@ Crafty.c("Motion", {
     }
 });
 
-},{"../core/core.js":8}],47:[function(require,module,exports){
+},{"../core/core.js":9}],48:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 /**@
@@ -17957,7 +17979,7 @@ Crafty.c("Gravity", {
 });
 
 
-},{"../core/core.js":8}],48:[function(require,module,exports){
+},{"../core/core.js":9}],49:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -18147,7 +18169,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":8}],49:[function(require,module,exports){
+},{"../core/core.js":9}],50:[function(require,module,exports){
 /**
  * Spatial HashMap for broad phase collision
  *
@@ -18780,4 +18802,4 @@ Crafty.extend({
 
     module.exports = HashMap;
 
-},{}]},{},[18]);
+},{}]},{},[19]);
