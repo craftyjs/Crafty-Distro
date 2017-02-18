@@ -5847,7 +5847,7 @@ module.exports = {
      *     Crafty.e("2D, DOM, Text")
      *           .attr({ w: 100, h: 20, x: 150, y: 120 })
      *           .text("Loading")
-     *           .css({ "border": "1px solid red"})
+     *           .textAlign("center")
      *           .textColor("#FFFFFF");
      * });
      *
@@ -8552,10 +8552,18 @@ Crafty.c("DOM", {
         return this;
     },
 
+    _setCssProperty: function(style, key, val) {
+        key = Crafty.domHelper.camelize(key);
+        if (typeof val === "number") val += 'px';
+        style[key] = val;
+        this.trigger("SetStyle", key);
+    },
+
     /**@
      * #.css
      * @comp DOM
      * @kind Method
+     * @trigger SetStyle - for each style that is set - string - propertyName
      * 
      * @sign public css(String property, String value)
      * @param property - CSS property to modify
@@ -8575,13 +8583,15 @@ Crafty.c("DOM", {
      * To return a value, pass the property.
      *
      * Note: For entities with "Text" component, some css properties are controlled by separate functions
-     * `.textFont()` and `.textColor()`, and ignore `.css()` settings. See Text component for details.
+     * `.textFont()`, `.textAlign()` and `.textColor()`.  When possible, prefer text-specific methods, since
+     * they will work for non-DOM text.
+     * See the Text component for details.
      *
      * @example
      * ~~~
-     * this.css({'border-radius': '5px', 'text-decoration': 'line-through'});
-     * this.css("borderRadius", "10px");
-     * this.css("border-radius"); //returns 10px
+     * this.css({'border': '1px solid black', 'text-decoration': 'line-through'});
+     * this.css("textDecoration", "line-through");
+     * this.css("text-Decoration"); //returns line-through
      * ~~~
      */
     css: function (obj, value) {
@@ -8595,21 +8605,19 @@ Crafty.c("DOM", {
             for (key in obj) {
                 if (!obj.hasOwnProperty(key)) continue;
                 val = obj[key];
-                if (typeof val === "number") val += 'px';
-
-                style[Crafty.domHelper.camelize(key)] = val;
+                this._setCssProperty(style, key, val);
             }
         } else {
             //if a value is passed, set the property
             if (value) {
-                if (typeof value === "number") value += 'px';
-                style[Crafty.domHelper.camelize(obj)] = value;
+                this._setCssProperty(style, obj, value);
             } else { //otherwise return the computed property
                 return Crafty.domHelper.getStyle(elem, obj);
             }
         }
 
         this.trigger("Invalidate");
+        
 
         return this;
     }
@@ -10738,9 +10746,10 @@ var Crafty = require('../core/core.js');
  * rotate together.
  *
  * @note For DOM (but not canvas) text entities, various font settings (such as
- * text-decoration) can be set using `.css()` (see DOM component). But
- * you cannot use `.css()` to set the properties which are controlled by `.textFont()`,
- *  `.textColor()`, or `.textAlign()` -- the settings will be ignored.
+ * text-decoration) can be set using `.css()` (see DOM component). If you 
+ * use `.css()` to set the *individual* properties which are controlled by `.textFont()`,
+ *  `.textColor()`, or `.textAlign()`, the text component will set these properties internally as well.
+ * However, if you use `.css()` to set shorthand properties such as `font`, these will be ignored by the text component.
  *
  * @note If you use canvas text with glyphs that are taller than standard letters, portions of the glyphs might be cut off.
  */
@@ -10792,6 +10801,41 @@ Crafty.c("Text", {
 
                 context.restore();
             }
+        },
+
+        // type, weight, size, family, lineHeight, and variant.
+        // For a few hardcoded css properties, set the internal definitions
+        "SetStyle": function(propertyName) {
+            // could check for DOM component, but this event should only be fired by such an entity!
+            // Rather than triggering Invalidate on each of these, we rely on css() triggering that event 
+            switch(propertyName) {
+                case "textAlign": 
+                    this._textAlign = this._element.style.textAlign;
+                    break;
+                case "color":
+                    // Need to set individual color components, so use method
+                    this.textColor(this._element.style.color);
+                    break;
+                case "fontType":
+                    this._textFont.type = this._element.style.fontType;
+                    break;
+                case "fontWeight":
+                    this._textFont.weight = this._element.style.fontWeight;
+                    break;
+                case "fontSize":
+                    this._textFont.size = this._element.style.fontSize;
+                    break;
+                case "fontFamily":
+                    this._textFont.family = this._element.style.fontFamily;
+                    break;
+                case "fontVariant":
+                    this._textFont.variant = this._element.style.fontVariant;
+                    break;
+                case "lineHeight":
+                    this._textFont.lineHeight = this._element.style.lineHeight;
+                    break;
+            }
+           
         }
     },
 
