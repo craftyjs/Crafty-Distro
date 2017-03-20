@@ -1,5 +1,5 @@
 /**
- * craftyjs 0.7.0
+ * craftyjs 0.8.0
  * http://craftyjs.com/
  *
  * Copyright 2017, Louis Stowasser
@@ -6639,7 +6639,7 @@ module.exports = {
 };
 
 },{"../core/core.js":9}],18:[function(require,module,exports){
-module.exports = "0.7.0";
+module.exports = "0.8.0";
 },{}],19:[function(require,module,exports){
 var Crafty = require('./core/core');
 
@@ -9075,7 +9075,7 @@ Crafty.c("Image", {
     // called on image change or layer attachment
     _setupImage: function(layer){
         if (!this.img || !layer) return;
-        
+
         if (layer.type === "Canvas") {
             this._pattern = this._drawContext.createPattern(this.img, this._repeat);
         } else if (layer.type === "WebGL") {
@@ -9116,7 +9116,6 @@ Crafty.c("Image", {
 
     }
 });
-
 },{"../core/core.js":9}],32:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
