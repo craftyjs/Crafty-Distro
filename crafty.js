@@ -3141,6 +3141,13 @@ Crafty.fn = Crafty.prototype = {
             if (comp && "required" in comp) {
                 this.requires( comp.required );
             }
+            // Define properties
+            if (comp && "properties" in comp) {
+                var props = comp.properties;
+                for (var propertyName in props) {
+                    Object.defineProperty(this, propertyName, props[propertyName]);
+                }
+            }
             // Call constructor function
             if (comp && "init" in comp) {
                 comp.init.call(this);
@@ -4569,6 +4576,7 @@ Crafty.extend({
      * - `init`: A function to be called when the component is added to an entity
      * - `remove`: A function which will be called just before a component is removed, or before an entity is destroyed. It is passed a single boolean parameter that is `true` if the entity is being destroyed.
      * - `events`: An object whose properties represent functions bound to events equivalent to the property names.  (See the example below.)  The binding occurs directly after the call to `init`, and will be removed directly before `remove` is called.
+     * - `properties`: A dictionary of properties which will be defined using Object.defineProperty.  Typically used to add setters and getters.
      *
      * In addition to these hardcoded special methods, there are some conventions for writing components.
      *
@@ -9737,7 +9745,7 @@ Crafty.c("Renderable", {
     },
 
     // Setup all the properties that we need to define
-    _graphics_property_definitions: {
+    properties: {
         alpha: {
             set: function (v) {
                 this._setterRenderable('_alpha', v);
@@ -9763,15 +9771,7 @@ Crafty.c("Renderable", {
         _visible: {enumerable:false}
     },
 
-    _defineRenderableProperites: function () {
-        for (var prop in this._graphics_property_definitions){
-            Object.defineProperty(this, prop, this._graphics_property_definitions[prop]);
-        }
-    },
-
     init: function () {
-        // create setters and getters that associate properties such as alpha/_alpha
-        this._defineRenderableProperites();
     },
 
     // Renderable assumes that a draw layer has 3 important methods: attach, detach, and dirty
@@ -13925,7 +13925,7 @@ Crafty.c("2D", {
     _parent: null,
 
     // Setup   all the properties that we need to define
-    _2D_property_definitions: {
+    properties: {
         x: {
             set: function (v) {
                 this._setter2d('_x', v);
@@ -13999,12 +13999,6 @@ Crafty.c("2D", {
         _rotation: {enumerable:false}
     },
 
-    _define2DProperties: function () {
-        for (var prop in this._2D_property_definitions){
-            Object.defineProperty(this, prop, this._2D_property_definitions[prop]);
-        }
-    },
-
     init: function () {
         this._globalZ = this[0];
         this._origin = {
@@ -14019,11 +14013,6 @@ Crafty.c("2D", {
         this._by2 = 0;
 
         this._children = [];
-
-        
-        // create setters and getters that associate properties such as x/_x
-        this._define2DProperties();
-        
 
         //insert self into the HashMap
         this._entry = Crafty.map.insert(this);
