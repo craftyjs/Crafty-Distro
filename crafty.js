@@ -3929,6 +3929,93 @@ Crafty.fn = Crafty.prototype = {
             this._unbindAll();
             delete entities[this[0]];
         });
+    },
+
+    /**@
+     * #.freeze
+     * @comp Crafty Core
+     * @kind Method
+     * 
+     * @sign public this .freeze()
+     * 
+     * @triggers Freeze - Directly before the entity is frozen
+     * 
+     * Freezes the entity.  A frozen entity will not receive events or be displayed by graphics systems. 
+     * It is also removed from the spatial map, which means it will not be found by collisions, 
+     * raycasting, or similar functions.
+     * 
+     * This method may be called upon a collection of entities.
+     * 
+     * @note Because the entity no longer listens to events, modifying its properties can result in an inconsistent state.
+     * 
+     * If custom components need to handle frozen entities, they can listen to the "Freeze" event, which will be triggered before the event system is disabled.
+     * 
+     * @example
+     * 
+     * ```
+     * // Freeze all entities with the Dead component
+     * Crafty("Dead").freeze();
+     * ```
+     * 
+     * @see .unfreeze
+     */
+    freeze: function () {
+        if (this.length === 1 && !this.__frozen) {
+            this.trigger("Freeze", this);
+            this._freezeCallbacks();
+            this.__frozen = true;
+        } else {
+            for (var i = 0; i < this.length; i++) {
+                var e = entities[this[i]];
+                if (e && !e.__frozen) {
+                    e.trigger("Freeze", e);
+                    e._freezeCallbacks();
+                    // Set a frozen flag.  (This is distinct from the __callbackFrozen flag)
+                    e.__frozen = true;
+                }
+            }
+        }
+        return this;
+    },
+
+    /**#
+     * #.unfreeze
+     * @comp Crafty Core
+     * @kind Method
+     * 
+     * @sign public this .unfreeze()
+     * 
+     * @triggers Unfreeze - While the entity is being unfrozen
+     * 
+     * Unfreezes the entity, allowing it to receive events, inserting it back into the spatial map, 
+     * and restoring it to its previous visibility.
+     * 
+     * This method may be called upon a collection of entities.
+     * 
+     * If a custom component needs to know when an entity is unfrozen, they can listen to the "Unfreeze"" event.
+     * 
+     * @example
+     * ```
+     * // Bring the dead back to life!
+     * Crafty("Dead").unfreeze().addComponent("Undead");
+     * ```
+     */
+    unfreeze: function () {
+        if (this.length === 1 && this.__frozen) {
+            this.__frozen = false;
+            this._unfreezeCallbacks();
+            this.trigger("Unfreeze", this);
+        } else {
+            for (var i = 0; i < this.length; i++) {
+                var e = entities[this[i]];
+                if (e && e.__frozen) {
+                    e.__frozen = false;
+                    e._unfreezeCallbacks();
+                    e.trigger("Unfreeze", e);
+                }
+            }
+        }
+        return this;
     }
 };
 
@@ -4026,7 +4113,7 @@ Crafty._callbackMethods = {
 
     // Process for running all callbacks for the given event
     _runCallbacks: function(event, data) {
-        if (!this._callbacks[event]) {
+        if (!this._callbacks[event] || this.__callbacksFrozen) {
             return;
         }
         var callbacks = this._callbacks[event];
@@ -4074,6 +4161,7 @@ Crafty._callbackMethods = {
     // Completely all callbacks for every event, such as on object destruction
     _unbindAll: function() {
         if (!this._callbacks) return;
+        this.__callbacksFrozen = false;
         for (var event in this._callbacks) {
             if (this._callbacks[event]) {
                 // Remove the normal way, in case we've got a nested loop
@@ -4082,6 +4170,30 @@ Crafty._callbackMethods = {
                 delete handlers[event][this[0]];
             }
         }
+    },
+
+    _freezeCallbacks: function() {
+        if (!this._callbacks) return;
+        for (var event in this._callbacks) {
+            if (this._callbacks[event]) {
+                // Remove the callbacks from the global list of handlers
+                delete handlers[event][this[0]];
+            }
+        }
+        // Mark this callback list as frozen
+        this.__callbacksFrozen = true;
+    },
+
+     _unfreezeCallbacks: function() {
+        if (!this._callbacks) return;
+        this.__callbacksFrozen = false;
+        for (var event in this._callbacks) {
+            if (this._callbacks[event]) {
+                // Add the callbacks back to the global list of handlers
+                 handlers[event][this[0]] = this._callbacks[event];
+            }
+        }
+        
     }
 };
 
@@ -6528,7 +6640,7 @@ var Crafty = require('../core/core.js');
  * @category Animation
  * @kind Component
  * 
- * @trigger TweenEnd - when a tween finishes - String - property
+ * @trigger TweenEnd - when a tween finishes - Object - an object containing the properties that finished tweening
  *
  * Component to animate the change in 2D properties over time.
  */
@@ -9837,6 +9949,20 @@ Crafty.c("Renderable", {
     },
 
     init: function () {
+    },
+
+    // Need to store visibility before being frozen
+    _hideOnUnfreeze: false,
+    events: {
+        "Freeze":function(){
+            this._hideOnUnfreeze = !this._visible;
+            this._visible = false;
+            this.trigger("Invalidate");
+        },
+        "Unfreeze":function(){
+            this._visible = !this._hideOnUnfreeze;
+            this.trigger("Invalidate");
+        }
     },
 
     // Renderable assumes that a draw layer has 3 important methods: attach, detach, and dirty
@@ -14095,6 +14221,7 @@ Crafty.c("2D", {
 
         //insert self into the HashMap
         this._entry = Crafty.map.insert(this);
+        
 
         //when object changes, update HashMap
         this.bind("Move", function (e) {
@@ -14144,6 +14271,14 @@ Crafty.c("2D", {
         });
     },
 
+    events: {
+        "Freeze":function(){
+            Crafty.map.remove(this._entry);
+        },
+        "Unfreeze":function(){
+            this._entry = Crafty.map.insert(this, this._entry);
+        }
+    }, 
 
     /**@
      * #.offsetBoundary
@@ -14535,6 +14670,7 @@ Crafty.c("2D", {
         if (("cos" in e) || ("sin" in e)) {
             for (; i < l; ++i) {
                 obj = children[i];
+                if (obj.__frozen) continue;
                 if ('rotate' in obj) obj.rotate(e);
             }
         } else {
@@ -14546,6 +14682,7 @@ Crafty.c("2D", {
 
             for (; i < l; ++i) {
                 obj = children[i];
+                if (obj.__frozen) continue;
                 obj.shift(dx, dy, dw, dh);
             }
         }
@@ -18425,8 +18562,9 @@ Crafty.extend({
          * @comp Crafty.map
          * @kind Method
          * 
-         * @sign public Object Crafty.map.insert(Object obj)
+         * @sign public Object Crafty.map.insert(Object obj[, Object entry])
          * @param obj - An entity to be inserted.
+         * @param entry - An existing entry object to reuse.  (Optional)
          * @returns An object representing this object's entry in the HashMap
          * 
          * `obj` is inserted in '.map' of the corresponding broad phase cells. An object of the following fields is returned.
@@ -18438,12 +18576,10 @@ Crafty.extend({
          * }
          * ~~~
          */
-        insert: function (obj) {
-            var keys = HashMap.key(obj),
-                entry = new Entry(keys, obj, this),
-                i = 0,
-                j,
-                hash;
+        insert: function (obj, entry) {
+            var i, j, hash;
+            var keys = HashMap.key(obj, entry && entry.keys);
+            entry = entry || new Entry(keys, obj, this);
 
             //insert into all x buckets
             for (i = keys.x1; i <= keys.x2; i++) {
