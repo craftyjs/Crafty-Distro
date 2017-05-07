@@ -302,7 +302,7 @@ Crafty.s("Controls", {
     },
 
     events: {
-        "EnterFrameInput": function () {
+        "EnterFrame": function () {
             this.runEvents();
         },
         "KeyDown": function () {
@@ -878,7 +878,7 @@ Crafty.c("Multiway", {
     },
 
     events: {
-        "EnterFrame": function() {
+        "UpdateFrame": function() {
             if (!this.disableControls) {
                 if (typeof this._speed.x !== 'undefined' && this._speed.x !== null){
                     this.vx = this._speed.x * this._direction.x;
@@ -2496,7 +2496,7 @@ Crafty.c("Keyboard", {
      * @example
      * ~~~
      * ent.requires('Keyboard')
-     *    .bind('EnterFrame', function() {
+     *    .bind('UpdateFrame', function() {
      *       if (this.isDown('SPACE'))
      *          this.y--;
      *    });
@@ -3606,7 +3606,7 @@ Crafty.fn = Crafty.prototype = {
      * this.bind("myevent", function() {
      *     this.triggers++; //whenever myevent is triggered, increment
      * });
-     * this.bind("EnterFrame", function() {
+     * this.bind("UpdateFrame", function() {
      *     this.trigger("myevent"); //trigger myevent on every frame
      * });
      * ~~~
@@ -4212,7 +4212,7 @@ Crafty.extend({
      * @category Core
      * @kind Method
      * 
-     * @trigger Load - Just after the viewport is initialised. Before the EnterFrame loops is started
+     * @trigger Load - Just after the viewport is initialised. Before the UpdateFrame loops is started
      * @sign public this Crafty.init([Number width, Number height, String stage_elem])
      * @sign public this Crafty.init([Number width, Number height, HTMLElement stage_elem])
      * @param Number width - Width of the stage
@@ -4221,7 +4221,7 @@ Crafty.extend({
      *
      * Sets the element to use as the stage, creating it if necessary.  By default a div with id 'cr-stage' is used, but if the 'stage_elem' argument is provided that will be used instead.  (see `Crafty.viewport.init`)
      *
-     * Starts the `EnterFrame` interval. This will call the `EnterFrame` event for every frame.
+     * Starts the `UpdateFrame` interval. This will call the `UpdateFrame` event for every frame.
      *
      * Can pass width and height values for the stage otherwise will default to window size.
      *
@@ -4290,7 +4290,7 @@ Crafty.extend({
      * @sign public this Crafty.stop([bool clearState])
      * @param clearState - if true the stage and all game state is cleared.
      *
-     * Stops the EnterFrame interval and removes the stage element.
+     * Stops the `UpdateFrame` interval and removes the stage element.
      *
      * To restart, use `Crafty.init()`.
      * @see Crafty.init
@@ -4334,7 +4334,7 @@ Crafty.extend({
      * @trigger Unpause - when the game is unpaused
      * @sign public this Crafty.pause(void)
      *
-     * Pauses the game by stopping the EnterFrame event from firing. If the game is already paused it is unpaused.
+     * Pauses the game by stopping the `UpdateFrame` event from firing. If the game is already paused it is unpaused.
      * You can pass a boolean parameter if you want to pause or unpause no matter what the current state is.
      * Modern browsers pauses the game when the page is not visible to the user. If you want the Pause event
      * to be triggered when that happens you can enable autoPause in `Crafty.settings`.
@@ -4517,7 +4517,8 @@ Crafty.extend({
              * @kind Method
              * 
              * @sign public void Crafty.timer.step()
-             * @trigger EnterFrame - Triggered on each frame.  Passes the frame number, and the amount of time since the last frame.  If the time is greater than maxTimestep, that will be used instead.  (The default value of maxTimestep is 50 ms.) - { frame: Number, dt:Number }
+             * @trigger EnterFrame - Triggered before each frame.  Passes the frame number, and the amount of time since the last frame.  If the time is greater than maxTimestep, that will be used instead.  (The default value of maxTimestep is 50 ms.) - { frame: Number, dt:Number }
+             * @trigger UpdateFrame - Triggered on each frame.  Passes the frame number, and the amount of time since the last frame.  If the time is greater than maxTimestep, that will be used instead.  (The default value of maxTimestep is 50 ms.) - { frame: Number, dt:Number }
              * @trigger ExitFrame - Triggered after each frame.  Passes the frame number, and the amount of time since the last frame.  If the time is greater than maxTimestep, that will be used instead.  (The default value of maxTimestep is 50 ms.) - { frame: Number, dt:Number }
              * @trigger PreRender - Triggered every time immediately before a scene should be rendered
              * @trigger RenderScene - Triggered every time a scene should be rendered
@@ -4527,7 +4528,7 @@ Crafty.extend({
              * @trigger MeasureRenderTime - Triggered after each render. Passes the time it took to render the scene - Number
              *
              * Advances the game by performing a step. A step consists of one/multiple frames followed by a render. The amount of frames depends on the timer's steptype.
-             * Specifically it triggers `EnterFrame` & `ExitFrame` events for each frame and `PreRender`, `RenderScene` & `PostRender` events for each render.
+             * Specifically it triggers `EnterFrame`, `UpdateFrame` & `ExitFrame` events for each frame and `PreRender`, `RenderScene` & `PostRender` events for each render.
              *
              * @see Crafty.timer.steptype
              * @see Crafty.timer.FPS
@@ -4580,11 +4581,14 @@ Crafty.extend({
                         dt: dt,
                         gameTime: gameTime
                     };
-                    // Handle any changes due to user input
-                    Crafty.trigger("EnterFrameInput", frameData);
-                    // Everything that changes over time hooks into this event
+
+                    // Event that happens before "UpdateFrame",
+                    // e.g. for setting-up movement in response to user input for the next "UpdateFrame" event
                     Crafty.trigger("EnterFrame", frameData);
-                    // Event that happens after "EnterFrame", e.g. for resolivng collisions applied through movement during "EnterFrame" events
+                    // Everything that changes over time hooks into this event
+                    Crafty.trigger("UpdateFrame", frameData);
+                    // Event that happens after "UpdateFrame",
+                    // e.g. for resolivng collisions applied through movement during "UpdateFrame" events
                     Crafty.trigger("ExitFrame", frameData);
                     gameTime += dt;
 
@@ -4647,8 +4651,8 @@ Crafty.extend({
                         frame: frame++,
                         dt: timestep
                     };
-                    Crafty.trigger("EnterFrameInput", frameData);
                     Crafty.trigger("EnterFrame", frameData);
+                    Crafty.trigger("UpdateFrame", frameData);
                     Crafty.trigger("ExitFrame", frameData);
                 }
                 Crafty.trigger("PreRender");
@@ -4738,19 +4742,19 @@ Crafty.extend({
      * Crafty.c("Annoying", {
      *     _message: "HiHi",
      *     init: function() {
-     *         this.bind("EnterFrame", function() { alert(this.message); });
+     *         this.bind("UpdateFrame", function() { alert(this.message); });
      *     },
      *     annoying: function(message) { this.message = message; }
      * });
      *
      * Crafty.e("Annoying").annoying("I'm an orange...");
      * ~~~
-     * To attach to the "EnterFrame" event using the `events` property instead:
+     * To attach to the "UpdateFrame" event using the `events` property instead:
      * ~~~
      * Crafty.c("Annoying", {
      *     _message: "HiHi",
      *     events: {
-     *         "EnterFrame": function(){alert(this.message);}
+     *         "UpdateFrame": function(){alert(this.message);}
      *     }
      *     annoying: function(message) { this.message = message; }
      * });
@@ -6471,7 +6475,7 @@ module.exports = {
     init: function () {
         this._delays = [];
         this._delaysPaused = false;
-        this.bind("EnterFrame", function (frameData) {
+        this.bind("UpdateFrame", function (frameData) {
             if (this._delaysPaused) return;
             var index = this._delays.length;
             while (--index >= 0) {
@@ -6661,7 +6665,7 @@ module.exports = {
     this.tweenGroup = {};
     this.tweenStart = {};
     this.tweens = [];
-    this.uniqueBind("EnterFrame", this._tweenTick);
+    this.uniqueBind("UpdateFrame", this._tweenTick);
 
   },
 
@@ -7094,7 +7098,7 @@ Crafty.c("VisibleMBR", {
     init: function () {
         this.requires("DebugRectangle")
             .debugFill("purple")
-            .bind("EnterFrame", this._assignRect);
+            .bind("PreRender", this._assignRect);
     },
 
     // Internal method for updating the MBR drawn.
@@ -9556,7 +9560,7 @@ Crafty.c("Particles", {
             y: Crafty.viewport.y
         };
 
-        this.bind('EnterFrame', function () {
+        this.bind('UpdateFrame', function () {
             if (this._particlesPaused) return;
             relativeX = this.x + Crafty.viewport.x;
             relativeY = this.y + Crafty.viewport.y;
@@ -10335,7 +10339,7 @@ Crafty.c("SpriteAnimation", {
         this._setFrame(0);
 
         // Start the anim
-        this.bind("EnterFrame", this._animationTick);
+        this.bind("UpdateFrame", this._animationTick);
         this._isPlaying = true;
         this.trigger("StartAnimation", currentReel);
 
@@ -10354,7 +10358,7 @@ Crafty.c("SpriteAnimation", {
      */
     resumeAnimation: function() {
         if (this._isPlaying === false &&  this._currentReel !== null) {
-            this.bind("EnterFrame", this._animationTick);
+            this.bind("UpdateFrame", this._animationTick);
             this._isPlaying = true;
             this._currentReel.easing.resume();
             this.trigger("StartAnimation", this._currentReel);
@@ -10374,7 +10378,7 @@ Crafty.c("SpriteAnimation", {
      */
     pauseAnimation: function () {
         if (this._isPlaying === true) {
-            this.unbind("EnterFrame", this._animationTick);
+            this.unbind("UpdateFrame", this._animationTick);
             this._isPlaying = false;
             this._reels[this._currentReelId].easing.pause();
         }
@@ -10517,7 +10521,7 @@ Crafty.c("SpriteAnimation", {
         return this;
     },
 
-    // Bound to "EnterFrame".  Progresses the animation by dt, changing the frame if necessary.
+    // Bound to "UpdateFrame".  Progresses the animation by dt, changing the frame if necessary.
     // dt is multiplied by the animationSpeed property
     _animationTick: function(frameData) {
         var currentReel = this._reels[this._currentReelId];
@@ -11187,12 +11191,12 @@ Crafty.c("Text", {
      * 
      * @sign public this .dynamicTextGeneration(bool dynamicTextOn[, string textUpdateEvent])
      * @param dynamicTextOn - A flag that indicates whether dyanamic text should be on or off.
-     * @param textUpdateEvent - The name of the event which will trigger text to be updated.  Defaults to "EnterFrame".  (This parameter does nothing if dynamicTextOn is false.)
+     * @param textUpdateEvent - The name of the event which will trigger text to be updated.  Defaults to "UpdateFrame".  (This parameter does nothing if dynamicTextOn is false.)
      *
      * Turns on (or off) dynamic text generation for this entity.  While dynamic text generation is on, 
      * if the `.text()` method is called with a text generating function, the text will be updated each frame.
      * 
-     * If textUpdateEvent is provided, text generation will be bound to that event instead of "EnterFrame".
+     * If textUpdateEvent is provided, text generation will be bound to that event instead of "UpdateFrame".
      *
      * The text generating function is invoked with the event object parameter, which the event was triggered with.
      * 
@@ -11215,7 +11219,7 @@ Crafty.c("Text", {
     dynamicTextGeneration: function(dynamicTextOn, textUpdateEvent) {
         this.unbind(this._textUpdateEvent, this._dynamicTextUpdate);
         if (dynamicTextOn) {
-            this._textUpdateEvent = textUpdateEvent || "EnterFrame";
+            this._textUpdateEvent = textUpdateEvent || "UpdateFrame";
             this.bind(this._textUpdateEvent, this._dynamicTextUpdate);
         }
         return this;
@@ -11597,7 +11601,7 @@ Crafty.extend({
         pan: (function () {
             var targetX, targetY, startingX, startingY, easing;
 
-            function enterFrame(e) {
+            function updateFrame(e) {
                 easing.tick(e.dt);
                 var v = easing.value();
                 Crafty.viewport.x = (1-v) * startingX + v * targetX;
@@ -11611,7 +11615,7 @@ Crafty.extend({
             }
 
             function stopPan(){
-                Crafty.unbind("EnterFrame", enterFrame);
+                Crafty.unbind("UpdateFrame", updateFrame);
             }
 
             Crafty._preBind("StopCamera", stopPan);
@@ -11633,7 +11637,7 @@ Crafty.extend({
                 easing = new Crafty.easing(time, easingFn);
 
                 // bind to event, using uniqueBind prevents multiple copies from being bound
-                Crafty.uniqueBind("EnterFrame", enterFrame);
+                Crafty.uniqueBind("UpdateFrame", updateFrame);
                        
             };
         })(),
@@ -11749,13 +11753,13 @@ Crafty.extend({
             
 
             function stopZoom(){
-                Crafty.unbind("EnterFrame", enterFrame);
+                Crafty.unbind("UpdateFrame", updateFrame);
             }
             Crafty._preBind("StopCamera", stopZoom);
 
             var startingZoom, finalZoom, finalAmount, startingX, finalX, startingY, finalY, easing;
 
-            function enterFrame(e){
+            function updateFrame(e){
                 var amount, v;
 
                 easing.tick(e.dt);
@@ -11816,7 +11820,7 @@ Crafty.extend({
 
                 easing = new Crafty.easing(time, easingFn);
 
-                Crafty.uniqueBind("EnterFrame", enterFrame);
+                Crafty.uniqueBind("UpdateFrame", updateFrame);
             };
 
             
@@ -15844,7 +15848,7 @@ Crafty.c("Collision", {
      *                     The second argument passed will be a Boolean indicating whether the collision with a component occurs for the first time.
      * @param callbackOff - Callback method executed once as soon as collision stops.
      *
-     * Creates an EnterFrame event calling `.hit()` each frame.  When a collision is detected the `callbackOn` will be invoked.
+     * Creates an `UpdateFrame` event calling `.hit()` each frame.  When a collision is detected the `callbackOn` will be invoked.
      *
      * Note that the `callbackOn` will be invoked every frame the collision is active, not just the first time the collision occurs.
      * Use the second argument passed to `callbackOn` to differentiate that, which will be `true` if it's the first time the collision occurs.
@@ -15872,7 +15876,7 @@ Crafty.c("Collision", {
      */
     onHit: function (component, callbackOn, callbackOff) {
         var justHit = false;
-        this.bind("EnterFrame", function () {
+        this.bind("UpdateFrame", function () {
             var hitData = this.hit(component);
             if (hitData) {
                 callbackOn.call(this, hitData, !justHit);
@@ -15937,10 +15941,10 @@ Crafty.c("Collision", {
      *
      * If you want more fine-grained control consider using `.hit()` or even `Crafty.map.search()`.
      *
-     * @note Hit checks are performed upon entering each new frame (using
-     * the *EnterFrame* event). It is entirely possible for object to move in
+     * @note Hit checks are performed on each new frame (using
+     * the *UpdateFrame* event). It is entirely possible for object to move in
      * said frame after the checks were performed (even if the more is the
-     * result of *EnterFrame*, as handlers run in no particular order). In such
+     * result of *UpdateFrame*, as handlers run in no particular order). In such
      * a case, the hit events will not fire until the next check is performed in
      * the following frame.
      *
@@ -15979,7 +15983,7 @@ Crafty.c("Collision", {
             this._collisionData[component] = collisionData = { occurring: false, handler: null };
             collisionData.handler = this._createCollisionHandler(component, collisionData);
 
-            this.bind("EnterFrame", collisionData.handler);
+            this.bind("UpdateFrame", collisionData.handler);
         }
 
         return this;
@@ -16023,7 +16027,7 @@ Crafty.c("Collision", {
 
         if (components.length === 0) {
             for (collisionData in this._collisionData) {
-                this.unbind("EnterFrame", collisionData.handler);
+                this.unbind("UpdateFrame", collisionData.handler);
             }
 
             this._collisionData = {};
@@ -16041,7 +16045,7 @@ Crafty.c("Collision", {
                 continue;
             }
 
-            this.unbind("EnterFrame", collisionData.handler);
+            this.unbind("UpdateFrame", collisionData.handler);
             delete this._collisionData[component];
         }
 
@@ -17590,10 +17594,10 @@ Crafty.c("AngularMotion", {
 
         this.__oldRotationDirection = 0;
 
-        this.bind("EnterFrame", this._angularMotionTick);
+        this.bind("UpdateFrame", this._angularMotionTick);
     },
     remove: function(destroyed) {
-        this.unbind("EnterFrame", this._angularMotionTick);
+        this.unbind("UpdateFrame", this._angularMotionTick);
     },
 
     /**@
@@ -17784,10 +17788,10 @@ Crafty.c("Motion", {
         this.__movedEvent = {axis: '', oldValue: 0};
         this.__oldDirection = {x: 0, y: 0};
 
-        this.bind("EnterFrame", this._linearMotionTick);
+        this.bind("UpdateFrame", this._linearMotionTick);
     },
     remove: function(destroyed) {
-        this.unbind("EnterFrame", this._linearMotionTick);
+        this.unbind("UpdateFrame", this._linearMotionTick);
     },
 
     /**@
@@ -18024,7 +18028,7 @@ Crafty.c("Supportable", {
         this.defineField("ground", function() { return this._ground; }, function(newValue) {});
     },
     remove: function(destroyed) {
-        this.unbind("EnterFrame", this._detectGroundTick);
+        this.unbind("UpdateFrame", this._detectGroundTick);
     },
 
     /*@
@@ -18054,7 +18058,7 @@ Crafty.c("Supportable", {
      */
     startGroundDetection: function(ground) {
         if (ground) this._groundComp = ground;
-        this.uniqueBind("EnterFrame", this._detectGroundTick);
+        this.uniqueBind("UpdateFrame", this._detectGroundTick);
 
         return this;
     },
@@ -18070,7 +18074,7 @@ Crafty.c("Supportable", {
      * Disable ground detection for this component. It can be reenabled by calling .startGroundDetection()
      */
     stopGroundDetection: function() {
-        this.unbind("EnterFrame", this._detectGroundTick);
+        this.unbind("UpdateFrame", this._detectGroundTick);
 
         return this;
     },
