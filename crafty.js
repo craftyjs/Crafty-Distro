@@ -2,7 +2,7 @@
  * craftyjs 0.8.0
  * http://craftyjs.com/
  *
- * Copyright 2017, Louis Stowasser
+ * Copyright 2018, Louis Stowasser
  * Licensed under the MIT license.
  */
 
@@ -2696,7 +2696,9 @@ Crafty.fn = Crafty.prototype = {
         }
         delete this.__c[id];
         // update map from component to (entityId -> entity)
-        delete compEntities[id][this[0]];
+        if (compEntities[id]) {
+            delete compEntities[id][this[0]];
+        }
 
         return this;
     },
