@@ -5727,16 +5727,6 @@ Crafty.CraftySystem.prototype = {
  * This syncs with Crafty's internal clock, and so should generally be preferred to using methods such as `setTimeout`.
  */
 module.exports = {
-    /**@
-     * #.delaySpeed
-     * @comp Delay
-     *
-     * The rate of the delay. This property defaults to 1.
-     * When setting delaySpeed to 0.5, delays will take twice as long,
-     * setting it to 2.0 will make them twice as short
-     */
-    delaySpeed: 1,
-
     init: function () {
         this._delays = [];
         this._delaysPaused = false;
@@ -5749,7 +5739,7 @@ module.exports = {
                     // remove canceled item from array
                     this._delays.splice(index, 1);
                 } else {
-                    item.accumulator += frameData.dt * this.delaySpeed;
+                    item.accumulator+=frameData.dt;
                     // The while loop handles the (pathological) case where dt>delay
                     while(item.accumulator >= item.delay && item.repeat >= 0){
                         item.accumulator -= item.delay;
@@ -5926,16 +5916,6 @@ var Crafty = require('../core/core.js');
  */
 module.exports = {
 
-  /**@
-   * #.tweenSpeed
-   * @comp Tween
-   *
-   * The rate of the tween. This property defaults to 1.
-   * When setting tweenSpeed to 0.5, tweens will take twice as long,
-   * setting it to 2.0 will make them twice as short
-   */
-  tweenSpeed: 1,
-
   init: function(){
     this.tweenGroup = {};
     this.tweenStart = {};
@@ -5948,7 +5928,7 @@ module.exports = {
     var tween, v, i;
     for ( i = this.tweens.length-1; i>=0; i--){
       tween = this.tweens[i];
-      tween.easing.tick(frameData.dt * this.tweenSpeed);
+      tween.easing.tick(frameData.dt);
       v  = tween.easing.value();
       this._doTween(tween.props, v);
       if (tween.easing.complete) {
