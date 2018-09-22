@@ -4502,7 +4502,7 @@ if (typeof define === 'function') { // AMD
 }
 
 module.exports = Crafty;
-},{"./version":19}],11:[function(require,module,exports){
+},{"./version":20}],11:[function(require,module,exports){
 (function (process){
 var Crafty = require('../core/core.js');
 var document = (typeof window !== "undefined") && window.document;
@@ -4661,14 +4661,14 @@ var document = (typeof window !== "undefined") && window.document;
 
 }).call(this,require('_process'))
 },{"../core/core.js":10,"_process":1}],12:[function(require,module,exports){
-var Crafty = require('../core/core.js');
+var Crafty = require('../core/core.js'), Utility = require('./utility');
 
 module.exports = {
     /**@
      * #Crafty.assets
      * @category Assets
      * @kind Property
-     * 
+     *
      * An object containing every asset used in the current Crafty game.
      * The key is the URL and the value is the `Audio` or `Image` object.
      *
@@ -4686,7 +4686,7 @@ module.exports = {
      * #Crafty.paths
      * @category Assets
      * @kind Method
-     * 
+     *
      * @sign public void Crafty.paths([Object paths])
      * @param paths - Object containing paths for audio and images folders
      *
@@ -4732,7 +4732,7 @@ module.exports = {
      * #Crafty.asset
      * @category Assets
      * @kind Method
-     * 
+     *
      * @trigger NewAsset - After setting new asset - Object - key and value of new added asset.
      * @sign public void Crafty.asset(String key, Object asset)
      * @param key - asset url.
@@ -4815,7 +4815,7 @@ module.exports = {
      * #Crafty.load
      * @category Assets
      * @kind Method
-     * 
+     *
      * @sign public void Crafty.load(Object assets, Function onLoad[, Function onProgress[, Function onError]])
      * @param assets - Object JSON formatted (or JSON string), with assets to load (accepts sounds, images and sprites)
      * @param onLoad - Callback when the assets are loaded
@@ -4913,9 +4913,6 @@ module.exports = {
                 (data.sprites ? Object.keys(data.sprites).length : 0),
             current, fileUrl, obj, type, asset,
             paths = Crafty.paths(),
-            getExt = function(f) {
-                return f.substr(f.lastIndexOf('.') + 1).toLowerCase();
-            },
             getFilePath = function(type,f) {
                 return (f.search("://") === -1 ? (type === "audio" ? paths.audio + f : paths.images + f) : f);
             },
@@ -4924,10 +4921,21 @@ module.exports = {
                 return Crafty.asset(a) || null;
             },
             isSupportedAudio = function(f) {
-                return Crafty.support.audio && Crafty.audio.supports(getExt(f));
+
+                return Crafty.support.audio && Crafty.audio.supports(
+                    Utility.fileTypeOf( f ).type
+                );
             },
             isValidImage = function(f) {
-                return Crafty.imageWhitelist.indexOf(getExt(f)) !== -1;
+
+                return -1 < Crafty.imageWhitelist.indexOf(
+                    Utility.fileTypeOf( f ).type
+                );
+            },
+            shortURLOf = function (URI) {
+
+                return  (Utility.fileTypeOf( URI ).schema === 'data')  ?
+                    URL.createObjectURL( Utility.toBlob( URI ) )  :  URI;
             },
             onImgLoad = function(obj,url) {
                 obj.onload = pro;
@@ -4937,7 +4945,6 @@ module.exports = {
             };
 
         //Progress function
-
         function pro() {
             var src = this.src;
 
@@ -4957,8 +4964,8 @@ module.exports = {
 
             if (j === total && oncomplete) oncomplete();
         }
-        //Error function
 
+        //Error function
         function err() {
             var src = this.src;
             if (onerror)
@@ -4982,36 +4989,49 @@ module.exports = {
                 obj = null;
 
                 if (type === "audio") {
-                    if (typeof current === "object") {
-                        var files = [];
-                        for (var i in current) {
-                            fileUrl = getFilePath(type, current[i]);
-                            if (!isAsset(fileUrl) && isSupportedAudio(current[i]) && !Crafty.audio.sounds[asset])
-                                files.push(fileUrl);
-                        }
-                        if (files.length > 0)
-                            obj = Crafty.audio.add(asset, files);
-                    } else if (typeof current === "string") {
-                        fileUrl = getFilePath(type, current);
-                        if (!isAsset(fileUrl) && isSupportedAudio(current) && !Crafty.audio.sounds[asset])
-                            obj = Crafty.audio.add(asset, fileUrl);
-                    }
+                    current = (typeof current === "object")  ?
+                        current  :  {'': current + ''};
+
+                    // Disable (Don't make functions in a loop) warning
+                    // jshint -W083
+                    var files = Object.keys( current ).filter(function (key) {
+
+                        var fileUrl = getFilePath(type, current[key]);
+
+                        if (
+                            !isAsset( fileUrl )  &&
+                            isSupportedAudio( current[key] )  &&
+                            !Crafty.audio.sounds[asset]
+                        )
+                            return  shortURLOf( fileUrl );
+                    });
+                    // jshint +W083
+
+                    if ( files[0] )  obj = Crafty.audio.add(asset, files);
                     //extract actual audio obj if audio creation was successfull
-                    if (obj)
-                        obj = obj.obj;
+                    if ( obj )  obj = obj.obj;
 
                     //addEventListener is supported on IE9 , Audio as well
                     if (obj && obj.addEventListener)
                         obj.addEventListener('canplaythrough', pro, false);
                 } else {
-                    asset = (type === "sprites" ? asset : current);
+                    asset = (type === "sprites")  ?  asset  :  current;
+
                     fileUrl = getFilePath(type, asset);
-                    if (!isAsset(fileUrl) && isValidImage(asset)) {
+
+                    if (!isAsset( fileUrl )  &&  isValidImage( asset )) {
+
                         obj = new Image();
+                        fileUrl = shortURLOf( fileUrl );
+
                         if (type === "sprites")
-                            Crafty.sprite(current.tile, current.tileh, fileUrl, current.map,
-                              current.paddingX, current.paddingY, current.paddingAroundBorder);
+                            Crafty.sprite(
+                                current.tile, current.tileh, fileUrl, current.map,
+                                current.paddingX, current.paddingY, current.paddingAroundBorder
+                            );
+
                         Crafty.asset(fileUrl, obj);
+
                         onImgLoad(obj, fileUrl);
                     }
                 }
@@ -5026,7 +5046,6 @@ module.exports = {
 
         // If we aren't trying to handle *any* of the files, that's as complete as it gets!
         if (total === 0 && oncomplete) oncomplete();
-
     },
     /**@
      * #Crafty.removeAssets
@@ -5122,7 +5141,7 @@ module.exports = {
     }
 };
 
-},{"../core/core.js":10}],13:[function(require,module,exports){
+},{"../core/core.js":10,"./utility":19}],13:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -6090,8 +6109,63 @@ module.exports = {
 };
 
 },{"../core/core.js":10}],19:[function(require,module,exports){
-module.exports = "0.8.0";
+exports.blobOf = function blobOf(URI) {
+
+    var XHR = new XMLHttpRequest();
+    XHR.responseType = 'blob';
+    XHR.open('GET', URI);
+
+    return  new Promise(function (resolve, reject) {
+        XHR.onload = function () {  resolve( this.response );  };
+        XHR.onerror = reject;
+        XHR.send();
+    });
+};
+
+var DataURI = /^data:(.+?\/(.+?))?(;base64)?,(\S+)/;
+
+exports.fileTypeOf = function fileTypeOf(URI) {
+    var schema = /^(?:(\w+):)?.+?(?:\.(\w+))?$/.exec( URI );
+
+    switch ( schema[1] ) {
+        case 'data': return {
+            schema: 'data',  type: DataURI.exec( URI )[2]
+        };
+        case 'blob': return exports.blobOf( URI ).then(function (blob) {
+            return {
+                schema: 'blob',  type: blob.type
+            };
+        });
+        default: return {
+            schema: schema[1],  type: schema[2]
+        };
+    }
+};
+
+var BlobBuilder = window.WebKitBlobBuilder || window.MozBlobBuilder || window.MSBlobBuilder;
+
+exports.toBlob = function toBlob(dataURI) {
+    dataURI = DataURI.exec( dataURI );
+
+    var type = dataURI[1], base64 = dataURI[3], data = dataURI[4];
+    data = base64  ?  window.atob( data )  :  data;
+
+    var aBuffer = new ArrayBuffer( data.length );
+    var uBuffer = new Uint8Array( aBuffer );
+
+    for (var i = 0;  data[i];  i++)  uBuffer[i] = data.charCodeAt( i );
+
+    if (! BlobBuilder)
+        return  new window.Blob([aBuffer],  {type: type});
+
+    var builder = new BlobBuilder();
+    builder.append( aBuffer );
+    return  builder.getBlob( type );
+};
+
 },{}],20:[function(require,module,exports){
+module.exports = "0.8.0";
+},{}],21:[function(require,module,exports){
 // Define common features available in both browser and node
 module.exports = function(requireNew) {
     if (requireNew) {
@@ -6132,7 +6206,7 @@ module.exports = function(requireNew) {
 
     return Crafty;
 };
-},{"./controls/controls":4,"./controls/controls-system":3,"./controls/keyboard":5,"./controls/keycodes":6,"./controls/mouse":7,"./controls/touch":8,"./core/animation":9,"./core/core":10,"./core/extensions":11,"./core/model":13,"./core/scenes":14,"./core/storage":15,"./core/systems":16,"./core/time":17,"./core/tween":18,"./debug/logging":23,"./spatial/2d":54,"./spatial/collision":55,"./spatial/math":56,"./spatial/motion":57,"./spatial/platform":58,"./spatial/rect-manager":59,"./spatial/spatial-grid":60}],21:[function(require,module,exports){
+},{"./controls/controls":4,"./controls/controls-system":3,"./controls/keyboard":5,"./controls/keycodes":6,"./controls/mouse":7,"./controls/touch":8,"./core/animation":9,"./core/core":10,"./core/extensions":11,"./core/model":13,"./core/scenes":14,"./core/storage":15,"./core/systems":16,"./core/time":17,"./core/tween":18,"./debug/logging":24,"./spatial/2d":55,"./spatial/collision":56,"./spatial/math":57,"./spatial/motion":58,"./spatial/platform":59,"./spatial/rect-manager":60,"./spatial/spatial-grid":61}],22:[function(require,module,exports){
 // Define common features
 var Crafty = require('./crafty-common.js')();
 
@@ -6186,7 +6260,7 @@ if (window) window.Crafty = Crafty;
 
 module.exports = Crafty;
 
-},{"./aliases":2,"./core/loader":12,"./crafty-common.js":20,"./debug/debug-layer":22,"./graphics/canvas":25,"./graphics/canvas-layer":24,"./graphics/color":26,"./graphics/dom":29,"./graphics/dom-helper":27,"./graphics/dom-layer":28,"./graphics/drawing":30,"./graphics/gl-textures":31,"./graphics/html":32,"./graphics/image":33,"./graphics/layers":34,"./graphics/particles":35,"./graphics/renderable":36,"./graphics/sprite":38,"./graphics/sprite-animation":37,"./graphics/text":39,"./graphics/viewport":40,"./graphics/webgl":42,"./graphics/webgl-layer":41,"./inputs/device":43,"./inputs/dom-events":44,"./inputs/keyboard":45,"./inputs/lifecycle":46,"./inputs/mouse":47,"./inputs/pointer":48,"./inputs/touch":49,"./inputs/util":50,"./isometric/diamond-iso":51,"./isometric/isometric":52,"./sound/sound":53}],22:[function(require,module,exports){
+},{"./aliases":2,"./core/loader":12,"./crafty-common.js":21,"./debug/debug-layer":23,"./graphics/canvas":26,"./graphics/canvas-layer":25,"./graphics/color":27,"./graphics/dom":30,"./graphics/dom-helper":28,"./graphics/dom-layer":29,"./graphics/drawing":31,"./graphics/gl-textures":32,"./graphics/html":33,"./graphics/image":34,"./graphics/layers":35,"./graphics/particles":36,"./graphics/renderable":37,"./graphics/sprite":39,"./graphics/sprite-animation":38,"./graphics/text":40,"./graphics/viewport":41,"./graphics/webgl":43,"./graphics/webgl-layer":42,"./inputs/device":44,"./inputs/dom-events":45,"./inputs/keyboard":46,"./inputs/lifecycle":47,"./inputs/mouse":48,"./inputs/pointer":49,"./inputs/touch":50,"./inputs/util":51,"./isometric/diamond-iso":52,"./isometric/isometric":53,"./sound/sound":54}],23:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -6661,7 +6735,7 @@ Crafty.DebugCanvas = {
 
 };
 
-},{"../core/core.js":10}],23:[function(require,module,exports){
+},{"../core/core.js":10}],24:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -6702,7 +6776,7 @@ Crafty.extend({
 		}
 	}
 });
-},{"../core/core.js":10}],24:[function(require,module,exports){
+},{"../core/core.js":10}],25:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 /**@
@@ -7153,7 +7227,7 @@ Crafty._registerLayerTemplate("Canvas", {
 
 });
 
-},{"../core/core.js":10}],25:[function(require,module,exports){
+},{"../core/core.js":10}],26:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -7288,7 +7362,7 @@ Crafty.c("Canvas", {
     }
 });
 
-},{"../core/core.js":10}],26:[function(require,module,exports){
+},{"../core/core.js":10}],27:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -7576,7 +7650,7 @@ Crafty.c("Color", {
 });
 
 
-},{"../core/core.js":10}],27:[function(require,module,exports){
+},{"../core/core.js":10}],28:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -7695,7 +7769,7 @@ Crafty.extend({
         }
     }
 });
-},{"../core/core.js":10}],28:[function(require,module,exports){
+},{"../core/core.js":10}],29:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -7889,7 +7963,7 @@ Crafty._registerLayerTemplate("DOM", {
     }
 
 });
-},{"../core/core.js":10}],29:[function(require,module,exports){
+},{"../core/core.js":10}],30:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -8179,7 +8253,7 @@ Crafty.c("DOM", {
     }
 });
 
-},{"../core/core.js":10}],30:[function(require,module,exports){
+},{"../core/core.js":10}],31:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 Crafty.extend({
@@ -8249,7 +8323,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":10}],31:[function(require,module,exports){
+},{"../core/core.js":10}],32:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 // An object for wrangling textures
@@ -8437,7 +8511,7 @@ TextureWrapper.prototype = {
         gl.uniform2f(gl.getUniformLocation(shader, dimension_name), this.width, this.height);
     }
 };
-},{"../core/core.js":10}],32:[function(require,module,exports){
+},{"../core/core.js":10}],33:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -8529,7 +8603,7 @@ Crafty.c("HTML", {
         return this;
     }
 });
-},{"../core/core.js":10}],33:[function(require,module,exports){
+},{"../core/core.js":10}],34:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -8689,7 +8763,7 @@ Crafty.c("Image", {
 
     }
 });
-},{"../core/core.js":10}],34:[function(require,module,exports){
+},{"../core/core.js":10}],35:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 Crafty.extend({
@@ -8882,7 +8956,7 @@ Crafty.extend({
         });
     }
 });
-},{"../core/core.js":10}],35:[function(require,module,exports){
+},{"../core/core.js":10}],36:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -9324,7 +9398,7 @@ Crafty.c("Particles", {
     }
 });
 
-},{"../core/core.js":10}],36:[function(require,module,exports){
+},{"../core/core.js":10}],37:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -9502,7 +9576,7 @@ Crafty.c("Renderable", {
         return this;
     }
 });
-},{"../core/core.js":10}],37:[function(require,module,exports){
+},{"../core/core.js":10}],38:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -10046,7 +10120,7 @@ Crafty.c("SpriteAnimation", {
         return this._reels[reelId];
     }
 });
-},{"../core/core.js":10}],38:[function(require,module,exports){
+},{"../core/core.js":10}],39:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 // Define some variables required for webgl
@@ -10419,7 +10493,7 @@ Crafty.c("Sprite", {
     }
 });
 
-},{"../core/core.js":10}],39:[function(require,module,exports){
+},{"../core/core.js":10}],40:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -10825,7 +10899,7 @@ Crafty.c("Text", {
 
 });
 
-},{"../core/core.js":10}],40:[function(require,module,exports){
+},{"../core/core.js":10}],41:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -11679,7 +11753,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":10}],41:[function(require,module,exports){
+},{"../core/core.js":10}],42:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -12151,7 +12225,7 @@ Crafty._registerLayerTemplate("WebGL", {
 });
 
 
-},{"../core/core.js":10}],42:[function(require,module,exports){
+},{"../core/core.js":10}],43:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 /**@
@@ -12437,7 +12511,7 @@ Crafty.c("WebGL", {
     }
 });
 
-},{"../core/core.js":10}],43:[function(require,module,exports){
+},{"../core/core.js":10}],44:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -12603,7 +12677,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":10}],44:[function(require,module,exports){
+},{"../core/core.js":10}],45:[function(require,module,exports){
 module.exports = {
     _events: {},
 
@@ -12701,7 +12775,7 @@ module.exports = {
     }
 };
 
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 /**@
@@ -12813,7 +12887,7 @@ Crafty.c("Keyboard", {
     }
 });
 
-},{"../core/core.js":10}],46:[function(require,module,exports){
+},{"../core/core.js":10}],47:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -12887,7 +12961,7 @@ Crafty._preBind("CraftyStop", function () {
     }
 });
 
-},{"../core/core.js":10}],47:[function(require,module,exports){
+},{"../core/core.js":10}],48:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 /**@
@@ -13318,7 +13392,7 @@ Crafty.c("MouseDrag", {
     }
 });
 
-},{"../core/core.js":10}],48:[function(require,module,exports){
+},{"../core/core.js":10}],49:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 Crafty.extend({
@@ -13541,7 +13615,7 @@ Crafty.c("Button", {
     }
 });
 
-},{"../core/core.js":10}],49:[function(require,module,exports){
+},{"../core/core.js":10}],50:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 Crafty.extend({
@@ -13850,7 +13924,7 @@ Crafty.c("Touch", {
     }
 });
 
-},{"../core/core.js":10}],50:[function(require,module,exports){
+},{"../core/core.js":10}],51:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 // common base functionality for all EventDispatchers
@@ -13933,7 +14007,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":10}],51:[function(require,module,exports){
+},{"../core/core.js":10}],52:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -14147,7 +14221,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":10}],52:[function(require,module,exports){
+},{"../core/core.js":10}],53:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -14350,7 +14424,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":10}],53:[function(require,module,exports){
+},{"../core/core.js":10}],54:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     document = window.document;
 
@@ -14938,7 +15012,7 @@ Crafty.extend({
     }
 });
 
-},{"../core/core.js":10}],54:[function(require,module,exports){
+},{"../core/core.js":10}],55:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 var M = Math,
@@ -16305,7 +16379,7 @@ Crafty.matrix.prototype = {
     }
 };
 
-},{"../core/core.js":10}],55:[function(require,module,exports){
+},{"../core/core.js":10}],56:[function(require,module,exports){
 var Crafty = require('../core/core.js'),
     DEG_TO_RAD = Math.PI / 180,
     EPSILON = 1e-6;
@@ -17264,7 +17338,7 @@ Crafty.c("Collision", {
     }
 });
 
-},{"../core/core.js":10}],56:[function(require,module,exports){
+},{"../core/core.js":10}],57:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -18490,7 +18564,7 @@ Crafty.math.Matrix2D = (function () {
 
     return Matrix2D;
 })();
-},{"../core/core.js":10}],57:[function(require,module,exports){
+},{"../core/core.js":10}],58:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -18993,7 +19067,7 @@ Crafty.c("Motion", {
     }
 });
 
-},{"../core/core.js":10}],58:[function(require,module,exports){
+},{"../core/core.js":10}],59:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 /**@
@@ -19347,7 +19421,7 @@ Crafty.c("Gravity", {
 });
 
 
-},{"../core/core.js":10}],59:[function(require,module,exports){
+},{"../core/core.js":10}],60:[function(require,module,exports){
 var Crafty = require('../core/core.js');
 
 
@@ -19530,7 +19604,7 @@ Crafty.extend({
 
 });
 
-},{"../core/core.js":10}],60:[function(require,module,exports){
+},{"../core/core.js":10}],61:[function(require,module,exports){
 /**
  * Spatial HashMap for broad phase collision
  *
@@ -20212,4 +20286,4 @@ Entry.prototype = {
 
 module.exports = HashMap;
 
-},{}]},{},[21]);
+},{}]},{},[22]);
